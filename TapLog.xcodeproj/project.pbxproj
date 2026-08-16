@@ -1,0 +1,687 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		03D459D8382BC1695FFB1F77 /* CSVExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F39BE7063CC4D232FC7DD8D1 /* CSVExporter.swift */; };
+		1932E41B91F45E46AA7B947E /* TapLogWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE6D869DDDC20393088C7D57 /* TapLogWidgetBundle.swift */; };
+		29A7E78D7E66C5C96DB5CC33 /* Money.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E288AE6E7A4297523866942 /* Money.swift */; };
+		2DFADCEFE987ACAA518EE64E /* SpendCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF3DE2DAA95012E652F3392 /* SpendCategory.swift */; };
+		301F07FA37534C328DC6AA6F /* DebugSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3ABAFEF33AB24EADE9F540E /* DebugSeeder.swift */; };
+		32F0EE12DA061219B09071DA /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1313CBDF617D18A21F9F2E9 /* ShareViewController.swift */; };
+		458C5F0772D39EB04AC604D9 /* TapLogWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C5F641E7F91BA446B4783A55 /* TapLogWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		494EE6FABA03802CC3E6CDEA /* EntryRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DE4D63F839A1FC98CE3CC4 /* EntryRowView.swift */; };
+		564D486201F2A0EC049A833D /* TapLogApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B07A4859D752E1C04081F18 /* TapLogApp.swift */; };
+		58044425907448C520D7A63D /* StoreLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A781E9B64AAEA272FA487658 /* StoreLocator.swift */; };
+		5F671BC0FCCA7E9800A2A044 /* CaptureForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CAC674E8E824850DF01E0ED /* CaptureForm.swift */; };
+		62EC609BE55A806E0181FD63 /* StoreLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A781E9B64AAEA272FA487658 /* StoreLocator.swift */; };
+		654FE0290D434A453699DD27 /* Money.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E288AE6E7A4297523866942 /* Money.swift */; };
+		72B644339EF9A33BC1108162 /* ProLocked.swift in Sources */ = {isa = PBXBuildFile; fileRef = 867EE56E324BE481266AE2DD /* ProLocked.swift */; };
+		8CE70B98B9C3944E1BF4634D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991D5BACEE57C2FC20B39564 /* ContentView.swift */; };
+		8CEDFE125F57EF2D49C58BAB /* SpendWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AFDA712F13988B761C89CF1 /* SpendWidget.swift */; };
+		8FD6B5B53E4E7526850DD72D /* LogExpenseIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D624420DCFD82FB945A607A /* LogExpenseIntent.swift */; };
+		935B66767E2C57C360E8072A /* StoreLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A781E9B64AAEA272FA487658 /* StoreLocator.swift */; };
+		96C8A026B355082E77E556A2 /* EntryListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE40F61B2DF72FE7EF9035AF /* EntryListView.swift */; };
+		AC7E61336FFA39CD1A104DE6 /* Entry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E06859D8DD2DC20B4D96A32 /* Entry.swift */; };
+		BAA215AEB6EB92DDBE543F6A /* Entry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E06859D8DD2DC20B4D96A32 /* Entry.swift */; };
+		BB76D8D3AB714C8081432CC6 /* CapturePrefill.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CBA4D4E213F6B83EB33639D /* CapturePrefill.swift */; };
+		BF76C176A18872D43DD7A917 /* ShareParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0364EBB65D36FBB3D9F2EC9D /* ShareParser.swift */; };
+		C54D8C953287D1116C24A803 /* SpendCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF3DE2DAA95012E652F3392 /* SpendCategory.swift */; };
+		CEADB6C297B760768476F0C7 /* Entry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E06859D8DD2DC20B4D96A32 /* Entry.swift */; };
+		CED590693197D171DAE1BEFD /* WeeklyRecapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02C8CB826A1268661AB0A657 /* WeeklyRecapView.swift */; };
+		D080D8C375310E1E3F7670C3 /* UndoToast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41FB7CC857B85AD2F6C016F5 /* UndoToast.swift */; };
+		DABDD1131FE8B6E4541DC315 /* SpendCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF3DE2DAA95012E652F3392 /* SpendCategory.swift */; };
+		E37461D086CDA7EFB0634484 /* UndoStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52F262C9AE91426858ADB810 /* UndoStack.swift */; };
+		EBD36511DF423247C3455D83 /* TapLogShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F616AC66CBCE53CF8CAB9A65 /* TapLogShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		F3CCA6BC2DACB7FBAAA1A68D /* Money.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E288AE6E7A4297523866942 /* Money.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		279455DC787698668F105AEE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1C6644AA9CD3D222F4CB713D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FBAE260331CEC4A7F670AE0F;
+			remoteInfo = TapLogShare;
+		};
+		91697090624F4A46AA53031D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1C6644AA9CD3D222F4CB713D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0ADA24EDFEDF80A58717CC5B;
+			remoteInfo = TapLogWidget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		0BEBD79DE78583F8532EF4F9 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				458C5F0772D39EB04AC604D9 /* TapLogWidget.appex in Embed Foundation Extensions */,
+				EBD36511DF423247C3455D83 /* TapLogShare.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		02C8CB826A1268661AB0A657 /* WeeklyRecapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRecapView.swift; sourceTree = "<group>"; };
+		0364EBB65D36FBB3D9F2EC9D /* ShareParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareParser.swift; sourceTree = "<group>"; };
+		05DE4D63F839A1FC98CE3CC4 /* EntryRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryRowView.swift; sourceTree = "<group>"; };
+		0B07A4859D752E1C04081F18 /* TapLogApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapLogApp.swift; sourceTree = "<group>"; };
+		2CAC674E8E824850DF01E0ED /* CaptureForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureForm.swift; sourceTree = "<group>"; };
+		3BF3DE2DAA95012E652F3392 /* SpendCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendCategory.swift; sourceTree = "<group>"; };
+		3D624420DCFD82FB945A607A /* LogExpenseIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogExpenseIntent.swift; sourceTree = "<group>"; };
+		3E288AE6E7A4297523866942 /* Money.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Money.swift; sourceTree = "<group>"; };
+		41FB7CC857B85AD2F6C016F5 /* UndoToast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoToast.swift; sourceTree = "<group>"; };
+		4CBA4D4E213F6B83EB33639D /* CapturePrefill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapturePrefill.swift; sourceTree = "<group>"; };
+		52F262C9AE91426858ADB810 /* UndoStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoStack.swift; sourceTree = "<group>"; };
+		549B39D3541189E897AF5D32 /* TapLog.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TapLog.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5E06859D8DD2DC20B4D96A32 /* Entry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Entry.swift; sourceTree = "<group>"; };
+		867EE56E324BE481266AE2DD /* ProLocked.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProLocked.swift; sourceTree = "<group>"; };
+		8AFDA712F13988B761C89CF1 /* SpendWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendWidget.swift; sourceTree = "<group>"; };
+		991D5BACEE57C2FC20B39564 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A781E9B64AAEA272FA487658 /* StoreLocator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreLocator.swift; sourceTree = "<group>"; };
+		B3ABAFEF33AB24EADE9F540E /* DebugSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugSeeder.swift; sourceTree = "<group>"; };
+		BE6D869DDDC20393088C7D57 /* TapLogWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapLogWidgetBundle.swift; sourceTree = "<group>"; };
+		C5F641E7F91BA446B4783A55 /* TapLogWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = TapLogWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		CE40F61B2DF72FE7EF9035AF /* EntryListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryListView.swift; sourceTree = "<group>"; };
+		D1313CBDF617D18A21F9F2E9 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
+		F39BE7063CC4D232FC7DD8D1 /* CSVExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVExporter.swift; sourceTree = "<group>"; };
+		F616AC66CBCE53CF8CAB9A65 /* TapLogShare.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = TapLogShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		02F8445422A8AF3C900ADC7C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				549B39D3541189E897AF5D32 /* TapLog.app */,
+				F616AC66CBCE53CF8CAB9A65 /* TapLogShare.appex */,
+				C5F641E7F91BA446B4783A55 /* TapLogWidget.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		101B4A14EB9C080DF4FC1EB3 /* Undo */ = {
+			isa = PBXGroup;
+			children = (
+				52F262C9AE91426858ADB810 /* UndoStack.swift */,
+			);
+			path = Undo;
+			sourceTree = "<group>";
+		};
+		377B4091CE0E241D73106BF9 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				3E288AE6E7A4297523866942 /* Money.swift */,
+				A781E9B64AAEA272FA487658 /* StoreLocator.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		4093F69C4B6BD21897921237 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				DD419AD43FC28DD18EB4FD91 /* TapLog */,
+				48A0F0DD26E15EF914B64A9D /* TapLogShare */,
+				411B9F33292450102E826BAE /* TapLogWidget */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		411B9F33292450102E826BAE /* TapLogWidget */ = {
+			isa = PBXGroup;
+			children = (
+				8AFDA712F13988B761C89CF1 /* SpendWidget.swift */,
+				BE6D869DDDC20393088C7D57 /* TapLogWidgetBundle.swift */,
+			);
+			path = TapLogWidget;
+			sourceTree = "<group>";
+		};
+		48A0F0DD26E15EF914B64A9D /* TapLogShare */ = {
+			isa = PBXGroup;
+			children = (
+				0364EBB65D36FBB3D9F2EC9D /* ShareParser.swift */,
+				D1313CBDF617D18A21F9F2E9 /* ShareViewController.swift */,
+			);
+			path = TapLogShare;
+			sourceTree = "<group>";
+		};
+		50C4952E1602F8B48DCACC13 /* Export */ = {
+			isa = PBXGroup;
+			children = (
+				F39BE7063CC4D232FC7DD8D1 /* CSVExporter.swift */,
+			);
+			path = Export;
+			sourceTree = "<group>";
+		};
+		535EFC3F4E05F3208924FF99 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				5E06859D8DD2DC20B4D96A32 /* Entry.swift */,
+				3BF3DE2DAA95012E652F3392 /* SpendCategory.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		8061F7A43588DD4518500D3E /* List */ = {
+			isa = PBXGroup;
+			children = (
+				CE40F61B2DF72FE7EF9035AF /* EntryListView.swift */,
+				05DE4D63F839A1FC98CE3CC4 /* EntryRowView.swift */,
+				41FB7CC857B85AD2F6C016F5 /* UndoToast.swift */,
+			);
+			path = List;
+			sourceTree = "<group>";
+		};
+		9BE5902B46A636176A849DA2 /* AppIntents */ = {
+			isa = PBXGroup;
+			children = (
+				3D624420DCFD82FB945A607A /* LogExpenseIntent.swift */,
+			);
+			path = AppIntents;
+			sourceTree = "<group>";
+		};
+		DB46199CC2722490B5AFBD71 /* Debug */ = {
+			isa = PBXGroup;
+			children = (
+				B3ABAFEF33AB24EADE9F540E /* DebugSeeder.swift */,
+			);
+			path = Debug;
+			sourceTree = "<group>";
+		};
+		DD419AD43FC28DD18EB4FD91 /* TapLog */ = {
+			isa = PBXGroup;
+			children = (
+				991D5BACEE57C2FC20B39564 /* ContentView.swift */,
+				0B07A4859D752E1C04081F18 /* TapLogApp.swift */,
+				9BE5902B46A636176A849DA2 /* AppIntents */,
+				F9BF45D897A49CD3D6646FF0 /* Capture */,
+				DB46199CC2722490B5AFBD71 /* Debug */,
+				EADA5AF07CE726CB1EFB30DB /* DeepLink */,
+				50C4952E1602F8B48DCACC13 /* Export */,
+				8061F7A43588DD4518500D3E /* List */,
+				535EFC3F4E05F3208924FF99 /* Models */,
+				EA7A8FEFEB3638FC13AA5ABB /* Recap */,
+				377B4091CE0E241D73106BF9 /* Shared */,
+				101B4A14EB9C080DF4FC1EB3 /* Undo */,
+			);
+			path = TapLog;
+			sourceTree = "<group>";
+		};
+		EA7A8FEFEB3638FC13AA5ABB /* Recap */ = {
+			isa = PBXGroup;
+			children = (
+				867EE56E324BE481266AE2DD /* ProLocked.swift */,
+				02C8CB826A1268661AB0A657 /* WeeklyRecapView.swift */,
+			);
+			path = Recap;
+			sourceTree = "<group>";
+		};
+		EADA5AF07CE726CB1EFB30DB /* DeepLink */ = {
+			isa = PBXGroup;
+			children = (
+				4CBA4D4E213F6B83EB33639D /* CapturePrefill.swift */,
+			);
+			path = DeepLink;
+			sourceTree = "<group>";
+		};
+		F9BF45D897A49CD3D6646FF0 /* Capture */ = {
+			isa = PBXGroup;
+			children = (
+				2CAC674E8E824850DF01E0ED /* CaptureForm.swift */,
+			);
+			path = Capture;
+			sourceTree = "<group>";
+		};
+		FBE596BDA7A5BA3D46DF81DE = {
+			isa = PBXGroup;
+			children = (
+				4093F69C4B6BD21897921237 /* Sources */,
+				02F8445422A8AF3C900ADC7C /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0ADA24EDFEDF80A58717CC5B /* TapLogWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4A1340FBB2EDD99950693A2A /* Build configuration list for PBXNativeTarget "TapLogWidget" */;
+			buildPhases = (
+				930E78B83D8BF60FC54AC728 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TapLogWidget;
+			packageProductDependencies = (
+			);
+			productName = TapLogWidget;
+			productReference = C5F641E7F91BA446B4783A55 /* TapLogWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		C68C7FF68B45F0C5A1F99592 /* TapLog */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2D91C4FB2CBFB8CEA08CE43B /* Build configuration list for PBXNativeTarget "TapLog" */;
+			buildPhases = (
+				2723C6FD2DC0AB8B6A773556 /* Sources */,
+				0BEBD79DE78583F8532EF4F9 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				ED82D98E1F9C79646A6112BE /* PBXTargetDependency */,
+				FE697CEBCAF4206A4506FE8C /* PBXTargetDependency */,
+			);
+			name = TapLog;
+			packageProductDependencies = (
+			);
+			productName = TapLog;
+			productReference = 549B39D3541189E897AF5D32 /* TapLog.app */;
+			productType = "com.apple.product-type.application";
+		};
+		FBAE260331CEC4A7F670AE0F /* TapLogShare */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 96E2A177E76043BD02F3989D /* Build configuration list for PBXNativeTarget "TapLogShare" */;
+			buildPhases = (
+				E71609ADD56292AEC6D90E1B /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TapLogShare;
+			packageProductDependencies = (
+			);
+			productName = TapLogShare;
+			productReference = F616AC66CBCE53CF8CAB9A65 /* TapLogShare.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		1C6644AA9CD3D222F4CB713D /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					0ADA24EDFEDF80A58717CC5B = {
+						ProvisioningStyle = Automatic;
+					};
+					C68C7FF68B45F0C5A1F99592 = {
+						ProvisioningStyle = Automatic;
+					};
+					FBAE260331CEC4A7F670AE0F = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = F2D654F912F8C4D4BFB75093 /* Build configuration list for PBXProject "TapLog" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = FBE596BDA7A5BA3D46DF81DE;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 02F8445422A8AF3C900ADC7C /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C68C7FF68B45F0C5A1F99592 /* TapLog */,
+				0ADA24EDFEDF80A58717CC5B /* TapLogWidget */,
+				FBAE260331CEC4A7F670AE0F /* TapLogShare */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		2723C6FD2DC0AB8B6A773556 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				03D459D8382BC1695FFB1F77 /* CSVExporter.swift in Sources */,
+				5F671BC0FCCA7E9800A2A044 /* CaptureForm.swift in Sources */,
+				BB76D8D3AB714C8081432CC6 /* CapturePrefill.swift in Sources */,
+				8CE70B98B9C3944E1BF4634D /* ContentView.swift in Sources */,
+				301F07FA37534C328DC6AA6F /* DebugSeeder.swift in Sources */,
+				CEADB6C297B760768476F0C7 /* Entry.swift in Sources */,
+				96C8A026B355082E77E556A2 /* EntryListView.swift in Sources */,
+				494EE6FABA03802CC3E6CDEA /* EntryRowView.swift in Sources */,
+				8FD6B5B53E4E7526850DD72D /* LogExpenseIntent.swift in Sources */,
+				F3CCA6BC2DACB7FBAAA1A68D /* Money.swift in Sources */,
+				72B644339EF9A33BC1108162 /* ProLocked.swift in Sources */,
+				DABDD1131FE8B6E4541DC315 /* SpendCategory.swift in Sources */,
+				935B66767E2C57C360E8072A /* StoreLocator.swift in Sources */,
+				564D486201F2A0EC049A833D /* TapLogApp.swift in Sources */,
+				E37461D086CDA7EFB0634484 /* UndoStack.swift in Sources */,
+				D080D8C375310E1E3F7670C3 /* UndoToast.swift in Sources */,
+				CED590693197D171DAE1BEFD /* WeeklyRecapView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		930E78B83D8BF60FC54AC728 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BAA215AEB6EB92DDBE543F6A /* Entry.swift in Sources */,
+				654FE0290D434A453699DD27 /* Money.swift in Sources */,
+				C54D8C953287D1116C24A803 /* SpendCategory.swift in Sources */,
+				8CEDFE125F57EF2D49C58BAB /* SpendWidget.swift in Sources */,
+				62EC609BE55A806E0181FD63 /* StoreLocator.swift in Sources */,
+				1932E41B91F45E46AA7B947E /* TapLogWidgetBundle.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E71609ADD56292AEC6D90E1B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AC7E61336FFA39CD1A104DE6 /* Entry.swift in Sources */,
+				29A7E78D7E66C5C96DB5CC33 /* Money.swift in Sources */,
+				BF76C176A18872D43DD7A917 /* ShareParser.swift in Sources */,
+				32F0EE12DA061219B09071DA /* ShareViewController.swift in Sources */,
+				2DFADCEFE987ACAA518EE64E /* SpendCategory.swift in Sources */,
+				58044425907448C520D7A63D /* StoreLocator.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		ED82D98E1F9C79646A6112BE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0ADA24EDFEDF80A58717CC5B /* TapLogWidget */;
+			targetProxy = 91697090624F4A46AA53031D /* PBXContainerItemProxy */;
+		};
+		FE697CEBCAF4206A4506FE8C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FBAE260331CEC4A7F670AE0F /* TapLogShare */;
+			targetProxy = 279455DC787698668F105AEE /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		00C9A02B66678A6B84C13812 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Configs/TapLogShare.entitlements;
+				INFOPLIST_FILE = "Configs/TapLogShare-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.taplog.share;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		1453B5C06C869F33179EBE8B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		220277EA756225F30AEBAD00 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Configs/TapLogWidget.entitlements;
+				INFOPLIST_FILE = "Configs/TapLogWidget-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.taplog.widget;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		40D6D6FD51C38E55FB14A52A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		71BCBE5AD1772A0301C32BC4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Configs/TapLog.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Configs/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.taplog;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		7D46F86B800DEFFE1EACE546 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Configs/TapLogShare.entitlements;
+				INFOPLIST_FILE = "Configs/TapLogShare-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.taplog.share;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		93E2DDC96D0A9087512EB111 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Configs/TapLog.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Configs/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.taplog;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		D584E0FC7B9524F1A5A90372 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Configs/TapLogWidget.entitlements;
+				INFOPLIST_FILE = "Configs/TapLogWidget-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.taplog.widget;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2D91C4FB2CBFB8CEA08CE43B /* Build configuration list for PBXNativeTarget "TapLog" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				71BCBE5AD1772A0301C32BC4 /* Debug */,
+				93E2DDC96D0A9087512EB111 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		4A1340FBB2EDD99950693A2A /* Build configuration list for PBXNativeTarget "TapLogWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				220277EA756225F30AEBAD00 /* Debug */,
+				D584E0FC7B9524F1A5A90372 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		96E2A177E76043BD02F3989D /* Build configuration list for PBXNativeTarget "TapLogShare" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				00C9A02B66678A6B84C13812 /* Debug */,
+				7D46F86B800DEFFE1EACE546 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F2D654F912F8C4D4BFB75093 /* Build configuration list for PBXProject "TapLog" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1453B5C06C869F33179EBE8B /* Debug */,
+				40D6D6FD51C38E55FB14A52A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 1C6644AA9CD3D222F4CB713D /* Project object */;
+}

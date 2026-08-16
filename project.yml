@@ -1,0 +1,97 @@
+name: TapLog
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    CODE_SIGN_STYLE: Automatic
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: 0.1.0
+targets:
+  TapLog:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources/TapLog
+    dependencies:
+      - target: TapLogWidget
+        embed: true
+      - target: TapLogShare
+        embed: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.taplog
+        TARGETED_DEVICE_FAMILY: "1"
+    info:
+      path: Configs/Info.plist
+      properties:
+        CFBundleDisplayName: TapLog
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        CFBundleURLTypes:
+          - CFBundleURLName: com.example.taplog
+            CFBundleURLSchemes:
+              - taplog
+    entitlements:
+      path: Configs/TapLog.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.example.taplog
+  TapLogWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Sources/TapLogWidget
+      - path: Sources/TapLog/Models
+      - path: Sources/TapLog/Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.taplog.widget
+        SKIP_INSTALL: YES
+    info:
+      path: Configs/TapLogWidget-Info.plist
+      properties:
+        CFBundleDisplayName: TapLog Widget
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: Configs/TapLogWidget.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.example.taplog
+  TapLogShare:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Sources/TapLogShare
+      - path: Sources/TapLog/Models
+      - path: Sources/TapLog/Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.taplog.share
+        SKIP_INSTALL: YES
+    info:
+      path: Configs/TapLogShare-Info.plist
+      properties:
+        CFBundleDisplayName: Add to TapLog
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+    entitlements:
+      path: Configs/TapLogShare.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.example.taplog
+schemes:
+  TapLog:
+    build:
+      targets:
+        TapLog: all
+    run:
+      config: Debug
+    archive:
+      config: Release
