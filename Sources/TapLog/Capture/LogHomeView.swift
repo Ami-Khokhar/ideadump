@@ -33,6 +33,9 @@ struct LogHomeView: View {
     let prefill: CapturePrefill?
     let onLogged: (() -> Void)?
     let onCancelOnboarding: (() -> Void)?
+    /// Lets the owner clear the consumed deep-link prefill so it isn't re-injected
+    /// the next time the home view reappears (e.g. after closing a sheet).
+    let onPrefillConsumed: (() -> Void)?
 
     private var lookup: CategoryLookup { CategoryLookup(categories) }
 
@@ -69,6 +72,16 @@ struct LogHomeView: View {
             if !hasFocused {
                 hasFocused = true
                 amountFocused = true
+            }
+            // Dev/testing hook: `simctl launch ... -autolog 12.50` logs an expense
+            // shortly after launch, exercising the exact save path headlessly.
+            let args = ProcessInfo.processInfo.arguments
+            if let index = args.lastIndex(of: "-autolog"), args.indices.contains(index + 1) {
+                let value = args[index + 1]
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    amountText = value
+                    save()
+                }
             }
         }
         .onChange(of: prefill) { applyPrefill() }
@@ -249,6 +262,8 @@ struct LogHomeView: View {
         if prefill.amountText != nil || prefill.note != nil {
             amountFocused = true
         }
+        // Consumed: the owner clears it so it never re-applies on a later appear.
+        onPrefillConsumed?()
     }
 
     private func save() {

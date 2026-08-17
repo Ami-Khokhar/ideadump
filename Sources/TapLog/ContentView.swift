@@ -38,6 +38,9 @@ struct ContentView: View {
                 isOnboarding: isOnboardingCapture,
                 prefill: prefill,
                 onLogged: {
+                    // Only advance the flow during the onboarding capture beat —
+                    // otherwise EVERY log would re-open the categories cover.
+                    guard isOnboardingCapture else { return }
                     onboardingStepRaw = OnboardingStep.categories.rawValue
                     isOnboardingCapture = false
                     onboardingStep = .categories
@@ -45,6 +48,9 @@ struct ContentView: View {
                 onCancelOnboarding: {
                     isOnboardingCapture = false
                     onboardingActive = false
+                },
+                onPrefillConsumed: {
+                    prefill = nil
                 }
             )
             .toolbar {
@@ -87,6 +93,15 @@ struct ContentView: View {
             //   in-app shortly after launch (exercises the live-update path while a
             //   sheet may be up, exactly like the user changing it in Settings).
             let args = ProcessInfo.processInfo.arguments
+            if args.contains("-onboarding") {
+                // Dev/testing hook: jump straight into the onboarding capture beat,
+                // exactly as if the user had finished the welcome. Pairs with
+                // `-autolog` to exercise the post-log onboarding advance headlessly.
+                hasLaunchedBefore = true
+                onboardingActive = true
+                onboardingStepRaw = OnboardingStep.capture.rawValue
+                isOnboardingCapture = true
+            }
             if let index = args.lastIndex(of: "-route"),
                args.indices.contains(index + 1),
                let route = Route(rawValue: args[index + 1]) {
@@ -184,7 +199,11 @@ struct ContentView: View {
                 onboardingStep = .frontDoors
             })
         case .frontDoors:
-            SetupFrontDoorsView()
+            // Finishing this step is the end of onboarding — clear the active flag so
+            // the resume branch never re-shows this cover on a later cold launch.
+            SetupFrontDoorsView(onDone: {
+                onboardingActive = false
+            })
         }
     }
 }

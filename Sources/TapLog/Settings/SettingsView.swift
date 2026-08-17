@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import WidgetKit
 
 /// The settings sheet — reached from the home screen's menu. Currency and appearance
 /// are stored in the shared App Group defaults so the widget and share extension
@@ -53,6 +54,7 @@ struct SettingsView: View {
                             modelContext.delete(entry)
                         }
                         try? modelContext.save()
+                        WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
                     }
                 }
 

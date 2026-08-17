@@ -6,6 +6,10 @@ import UIKit
 struct SetupFrontDoorsView: View {
     @Environment(\.dismiss) private var dismiss
 
+    /// Called when the user finishes the screen (Done or Not now). The onboarding
+    /// flow uses it to mark onboarding complete; the menu entry leaves it nil.
+    var onDone: (() -> Void)? = nil
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -50,6 +54,7 @@ struct SetupFrontDoorsView: View {
                     )
 
                     Button {
+                        onDone?()
                         dismiss()
                     } label: {
                         Text("Done")
@@ -65,7 +70,10 @@ struct SetupFrontDoorsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Not now") { dismiss() }
+                    Button("Not now") {
+                        onDone?()
+                        dismiss()
+                    }
                 }
             }
         }
