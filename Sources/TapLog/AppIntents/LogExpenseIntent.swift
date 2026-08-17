@@ -22,15 +22,16 @@ struct LogExpenseIntent: AppIntent {
     func perform() async throws -> some IntentResult {
         let container = StoreLocator.makeContainer()
         let context = container.mainContext
+        let categories = (try? context.fetch(FetchDescriptor<SpendCategory>())) ?? []
 
         let categoryKey: String
         if let raw = category?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty {
             let lower = raw.lowercased()
-            categoryKey = SpendCategory.all.first {
-                $0.key == lower || $0.name.lowercased() == lower
-            }?.key ?? SpendCategory.defaultKey
+            categoryKey = categories.first {
+                $0.key.lowercased() == lower || $0.name.lowercased() == lower
+            }?.key ?? categories.first?.key ?? SpendCategory.fallbackKey
         } else {
-            categoryKey = SpendCategory.defaultKey
+            categoryKey = categories.first?.key ?? SpendCategory.fallbackKey
         }
 
         let entry = Entry(amount: Decimal(amount), category: categoryKey, note: note)

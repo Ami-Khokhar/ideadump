@@ -17,6 +17,9 @@ struct EntryListView: View {
     @Query(filter: #Predicate<Entry> { $0.isPending }, sort: \Entry.date, order: .reverse)
     private var pendingEntries: [Entry]
 
+    @Query(sort: \SpendCategory.sortOrder)
+    private var categories: [SpendCategory]
+
     @State private var showingArchived = false
     @State private var showingCapture = false
     @State private var capturePrefill: CapturePrefill?
@@ -25,6 +28,8 @@ struct EntryListView: View {
     private var displayedEntries: [Entry] {
         showingArchived ? archivedEntries : activeEntries
     }
+
+    private var lookup: CategoryLookup { CategoryLookup(categories) }
 
     var body: some View {
         NavigationStack {
@@ -50,7 +55,7 @@ struct EntryListView: View {
                         }
                         Section(showingArchived ? "Archived" : "Recent") {
                             ForEach(displayedEntries) { entry in
-                                EntryRowView(entry: entry)
+                                EntryRowView(entry: entry, lookup: lookup)
                                     .contentShape(Rectangle())
                                     .onTapGesture { editingEntry = entry }
                                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {

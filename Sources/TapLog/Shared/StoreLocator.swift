@@ -12,7 +12,10 @@ enum StoreLocator {
     static func makeContainer() -> ModelContainer {
         let configuration = ModelConfiguration(url: storeURL)
         do {
-            return try ModelContainer(for: Entry.self, configurations: configuration)
+            return try ModelContainer(
+                for: Entry.self, SpendCategory.self,
+                configurations: configuration
+            )
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")
         }

@@ -17,6 +17,7 @@
 		458C5F0772D39EB04AC604D9 /* TapLogWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C5F641E7F91BA446B4783A55 /* TapLogWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		494EE6FABA03802CC3E6CDEA /* EntryRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DE4D63F839A1FC98CE3CC4 /* EntryRowView.swift */; };
 		564D486201F2A0EC049A833D /* TapLogApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B07A4859D752E1C04081F18 /* TapLogApp.swift */; };
+		57D04FC2A52051890047230F /* CategoryManageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 050E9E68352EA3E37605FE71 /* CategoryManageView.swift */; };
 		58044425907448C520D7A63D /* StoreLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A781E9B64AAEA272FA487658 /* StoreLocator.swift */; };
 		5F671BC0FCCA7E9800A2A044 /* CaptureForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CAC674E8E824850DF01E0ED /* CaptureForm.swift */; };
 		62EC609BE55A806E0181FD63 /* StoreLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A781E9B64AAEA272FA487658 /* StoreLocator.swift */; };
@@ -78,6 +79,7 @@
 /* Begin PBXFileReference section */
 		02C8CB826A1268661AB0A657 /* WeeklyRecapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRecapView.swift; sourceTree = "<group>"; };
 		0364EBB65D36FBB3D9F2EC9D /* ShareParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareParser.swift; sourceTree = "<group>"; };
+		050E9E68352EA3E37605FE71 /* CategoryManageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryManageView.swift; sourceTree = "<group>"; };
 		05DE4D63F839A1FC98CE3CC4 /* EntryRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryRowView.swift; sourceTree = "<group>"; };
 		0B07A4859D752E1C04081F18 /* TapLogApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapLogApp.swift; sourceTree = "<group>"; };
 		2CAC674E8E824850DF01E0ED /* CaptureForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureForm.swift; sourceTree = "<group>"; };
@@ -243,6 +245,7 @@
 			isa = PBXGroup;
 			children = (
 				2CAC674E8E824850DF01E0ED /* CaptureForm.swift */,
+				050E9E68352EA3E37605FE71 /* CategoryManageView.swift */,
 			);
 			path = Capture;
 			sourceTree = "<group>";
@@ -361,6 +364,7 @@
 				03D459D8382BC1695FFB1F77 /* CSVExporter.swift in Sources */,
 				5F671BC0FCCA7E9800A2A044 /* CaptureForm.swift in Sources */,
 				BB76D8D3AB714C8081432CC6 /* CapturePrefill.swift in Sources */,
+				57D04FC2A52051890047230F /* CategoryManageView.swift in Sources */,
 				8CE70B98B9C3944E1BF4634D /* ContentView.swift in Sources */,
 				301F07FA37534C328DC6AA6F /* DebugSeeder.swift in Sources */,
 				CEADB6C297B760768476F0C7 /* Entry.swift in Sources */,

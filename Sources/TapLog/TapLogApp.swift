@@ -9,6 +9,8 @@ struct TapLogApp: App {
     init() {
         let container = StoreLocator.makeContainer()
         self.container = container
+        // Seed the default category set on first launch.
+        DebugSeeder.seedCategoriesIfNeeded(container: container)
         // Hidden hook for automated testing: `simctl launch ... -seedSampleData`
         DebugSeeder.seedIfRequested(container: container)
     }

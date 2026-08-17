@@ -7,6 +7,11 @@ struct WeeklyRecapView: View {
     @Query(filter: #Predicate<Entry> { !$0.isArchived && !$0.isPending }, sort: \Entry.date)
     private var entries: [Entry]
 
+    @Query(sort: \SpendCategory.sortOrder)
+    private var categories: [SpendCategory]
+
+    private var lookup: CategoryLookup { CategoryLookup(categories) }
+
     var body: some View {
         NavigationStack {
             Group {
@@ -21,7 +26,7 @@ struct WeeklyRecapView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     if isPro {
                         ShareLink(
-                            item: CSVFile(text: CSVExporter.makeCSV(entries: entries)),
+                            item: CSVFile(text: CSVExporter.makeCSV(entries: entries, lookup: lookup)),
                             preview: SharePreview("TapLog Export")
                         ) {
                             Image(systemName: "square.and.arrow.up")
@@ -58,9 +63,9 @@ struct WeeklyRecapView: View {
             Section("By category") {
                 ForEach(thisTotals.sorted { $0.value > $1.value }, id: \.key) { item in
                     HStack {
-                        Text(SpendCategory.emoji(for: item.key))
+                        Text(lookup.emoji(for: item.key))
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(SpendCategory.name(for: item.key))
+                            Text(lookup.name(for: item.key))
                             ProgressView(
                                 value: Double(truncating: NSDecimalNumber(decimal: item.value)),
                                 total: Double(truncating: NSDecimalNumber(decimal: maxAmount))

@@ -19,11 +19,19 @@ a human running the Xcode build/test loop.
   behind a non-functional Pro lock.
 - ✅ **M6 (agent portion)** — debug seed/clear menu, haptics on save. Device signing,
   Action Button, and TestFlight remain human tasks (see M6 below).
+- ✅ **Custom categories** (post-M6, user-requested) — no fixed list: categories are
+  user-managed SwiftData records with add + swipe-delete, defaults (Food, Transport,
+  Rent, …) seeded only on first launch, and dynamic name/emoji resolution everywhere
+  (list, recap, CSV, intents, deep link).
 
 **Verified on the iOS 26.5 simulator (iPhone 17 Pro):** `xcodebuild` builds all three
 scheme targets clean; app installs, launches, seeds 12 sample entries into
 `group.com.example.taplog/TapLog.store`, and both extensions are embedded in the
 `.app` bundle. Screenshots: `docs/taplog-launch.png`, `docs/taplog-list.png`.
+
+**Verified in the simulator:** the existing store migrated (new `ZSPENDCATEGORY` table)
+and seeded 9 default categories with entries untouched; the capture form renders the
+user's categories.
 
 **Toolchain notes from the actual build:** the machine's Xcode 26.x SDK removed
 `ModelContainer.newBackgroundContext()` and renamed some Transferable APIs, and

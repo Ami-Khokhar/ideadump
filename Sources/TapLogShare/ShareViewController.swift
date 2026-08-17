@@ -49,9 +49,10 @@ final class ShareViewController: UIViewController {
     private func savePendingEntry(amount: Decimal?, note: String?) {
         let container = StoreLocator.makeContainer()
         let context = container.mainContext
+        let categories = (try? context.fetch(FetchDescriptor<SpendCategory>())) ?? []
         let entry = Entry(
             amount: amount ?? 0,
-            category: SpendCategory.defaultKey,
+            category: categories.first?.key ?? SpendCategory.fallbackKey,
             note: note,
             isPending: true
         )

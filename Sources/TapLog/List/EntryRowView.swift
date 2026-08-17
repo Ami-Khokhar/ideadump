@@ -2,15 +2,16 @@ import SwiftUI
 
 struct EntryRowView: View {
     let entry: Entry
+    let lookup: CategoryLookup
 
     var body: some View {
         HStack(spacing: 12) {
-            Text(SpendCategory.emoji(for: entry.category))
+            Text(lookup.emoji(for: entry.category))
                 .font(.title3)
                 .frame(width: 36, height: 36)
                 .background(Color(.secondarySystemBackground), in: Circle())
             VStack(alignment: .leading, spacing: 2) {
-                Text(SpendCategory.name(for: entry.category))
+                Text(lookup.name(for: entry.category))
                     .font(.body.weight(.medium))
                 if let note = entry.note, !note.isEmpty {
                     Text(note)

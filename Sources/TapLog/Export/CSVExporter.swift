@@ -35,14 +35,14 @@ extension CSVFile: Transferable {
 }
 
 enum CSVExporter {
-    static func makeCSV(entries: [Entry]) -> String {
+    static func makeCSV(entries: [Entry], lookup: CategoryLookup) -> String {
         var csv = "Date,Amount,Category,Note,Archived\n"
         for entry in entries {
             let note = (entry.note ?? "").replacingOccurrences(of: "\"", with: "\"\"")
             let fields = [
                 entry.date.formatted(.iso8601),
                 Money.plainString(entry.amount),
-                SpendCategory.name(for: entry.category),
+                lookup.name(for: entry.category),
                 "\"\(note)\"",
                 entry.isArchived ? "yes" : "no",
             ]

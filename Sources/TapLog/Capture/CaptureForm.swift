@@ -15,14 +15,17 @@ struct CaptureForm: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var undoStack: UndoStack
 
-    @AppStorage("lastUsedCategory") private var lastUsedCategoryKey: String = SpendCategory.defaultKey
+    @AppStorage("lastUsedCategory") private var lastUsedCategoryKey: String = SpendCategory.fallbackKey
+    @Query(sort: \SpendCategory.sortOrder) private var categories: [SpendCategory]
 
     let mode: Mode
 
     @State private var amountText: String
     @State private var selectedCategoryKey: String
+    @State private var prefillCategoryQuery: String
     @State private var note: String
     @State private var showAmountError = false
+    @State private var showingManageCategories = false
     @FocusState private var amountFocused: Bool
 
     init(mode: Mode, prefill: CapturePrefill = CapturePrefill()) {
@@ -31,10 +34,12 @@ struct CaptureForm: View {
         case .create:
             _amountText = State(initialValue: prefill.amountText ?? "")
             _note = State(initialValue: prefill.note ?? "")
-            _selectedCategoryKey = State(initialValue: prefill.categoryKey ?? "")
+            _prefillCategoryQuery = State(initialValue: prefill.categoryQuery ?? "")
+            _selectedCategoryKey = State(initialValue: "")
         case .edit(let entry):
             _amountText = State(initialValue: Money.plainString(entry.amount))
             _note = State(initialValue: entry.note ?? "")
+            _prefillCategoryQuery = State(initialValue: "")
             _selectedCategoryKey = State(initialValue: entry.category)
         }
     }
@@ -43,6 +48,8 @@ struct CaptureForm: View {
         if case .edit = mode { return true }
         return false
     }
+
+    private var lookup: CategoryLookup { CategoryLookup(categories) }
 
     var body: some View {
         NavigationStack {
@@ -62,11 +69,17 @@ struct CaptureForm: View {
                 }
 
                 Section("Category") {
+                    if categories.isEmpty {
+                        Text("No categories yet — add one with the + button.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
-                            ForEach(SpendCategory.all) { category in
+                            ForEach(categories) { category in
                                 categoryButton(category)
                             }
+                            addCategoryButton
                         }
                         .padding(.vertical, 4)
                     }
@@ -88,12 +101,32 @@ struct CaptureForm: View {
                 }
             }
             .onAppear {
-                if selectedCategoryKey.isEmpty {
-                    selectedCategoryKey = lastUsedCategoryKey
-                }
+                resolveCategory()
                 amountFocused = true
             }
+            .sheet(isPresented: $showingManageCategories) {
+                CategoryManageView()
+            }
         }
+    }
+
+    /// Picks the category to pre-select: deep-link/Siri hint first, then the last-used
+    /// one if it still exists, then the first available.
+    private func resolveCategory() {
+        if !prefillCategoryQuery.isEmpty {
+            let query = prefillCategoryQuery.lowercased()
+            if let match = categories.first(where: {
+                $0.key.lowercased() == query || $0.name.lowercased() == query
+            }) {
+                selectedCategoryKey = match.key
+                return
+            }
+        }
+        if let lastUsed = categories.first(where: { $0.key == lastUsedCategoryKey }) {
+            selectedCategoryKey = lastUsed.key
+            return
+        }
+        selectedCategoryKey = categories.first?.key ?? ""
     }
 
     private func categoryButton(_ category: SpendCategory) -> some View {
@@ -123,6 +156,24 @@ struct CaptureForm: View {
         .buttonStyle(.plain)
     }
 
+    private var addCategoryButton: some View {
+        Button {
+            showingManageCategories = true
+        } label: {
+            VStack(spacing: 4) {
+                Image(systemName: "plus")
+                    .font(.title3)
+                Text("Add")
+                    .font(.caption)
+            }
+            .frame(minWidth: 58)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 8)
+            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
     private func save() {
         guard let amount = Money.parse(amountText), amount > 0 else {
             showAmountError = true
@@ -130,18 +181,19 @@ struct CaptureForm: View {
         }
 
         let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        let categoryKey = selectedCategoryKey.isEmpty ? SpendCategory.fallbackKey : selectedCategoryKey
 
         switch mode {
         case .create:
             let entry = Entry(
                 amount: amount,
-                category: selectedCategoryKey,
+                category: categoryKey,
                 note: trimmedNote.isEmpty ? nil : trimmedNote
             )
             modelContext.insert(entry)
             try? modelContext.save()
-            lastUsedCategoryKey = selectedCategoryKey
-            undoStack.record("Logged \(Money.format(amount)) · \(SpendCategory.name(for: selectedCategoryKey))") {
+            lastUsedCategoryKey = categoryKey
+            undoStack.record("Logged \(Money.format(amount)) · \(lookup.name(for: categoryKey))") {
                 modelContext.delete(entry)
                 try? modelContext.save()
             }
@@ -153,11 +205,11 @@ struct CaptureForm: View {
                 isPending: entry.isPending
             )
             entry.amount = amount
-            entry.category = selectedCategoryKey
+            entry.category = categoryKey
             entry.note = trimmedNote.isEmpty ? nil : trimmedNote
             entry.isPending = false
             try? modelContext.save()
-            undoStack.record("Edited \(Money.format(amount)) · \(SpendCategory.name(for: selectedCategoryKey))") {
+            undoStack.record("Edited \(Money.format(amount)) · \(lookup.name(for: categoryKey))") {
                 entry.amount = previous.amount
                 entry.category = previous.category
                 entry.note = previous.note

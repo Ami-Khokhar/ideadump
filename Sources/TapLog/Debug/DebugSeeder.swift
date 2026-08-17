@@ -5,6 +5,21 @@ import WidgetKit
 /// Seeds sample data. Called from the debug menu, and automatically at launch when the
 /// process is started with `-seedSampleData` (e.g. from `simctl launch` for testing).
 enum DebugSeeder {
+    /// Seeds the default category set the first time the store is opened, so the
+    /// capture form is never empty. Users can delete or extend these freely.
+    @MainActor
+    static func seedCategoriesIfNeeded(container: ModelContainer) {
+        let context = container.mainContext
+        let count = (try? context.fetchCount(FetchDescriptor<SpendCategory>())) ?? 0
+        guard count == 0 else { return }
+        for (index, seed) in SpendCategory.defaultSeeds.enumerated() {
+            context.insert(SpendCategory(
+                key: seed.key, name: seed.name, emoji: seed.emoji, sortOrder: index
+            ))
+        }
+        try? context.save()
+    }
+
     @MainActor
     static func seedIfRequested(container: ModelContainer) {
         guard ProcessInfo.processInfo.arguments.contains("-seedSampleData") else { return }

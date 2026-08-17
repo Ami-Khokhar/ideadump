@@ -26,8 +26,10 @@ struct QuickLogIntent: AppIntent {
     func perform() async throws -> some IntentResult {
         let container = StoreLocator.makeContainer()
         let context = container.mainContext
-        let categoryKey = SpendCategory.all.first { $0.key == category }?.key
-            ?? SpendCategory.defaultKey
+        let categories = (try? context.fetch(FetchDescriptor<SpendCategory>())) ?? []
+        let categoryKey = categories.first { $0.key == category }?.key
+            ?? categories.first?.key
+            ?? SpendCategory.fallbackKey
         let entry = Entry(amount: Decimal(amount), category: categoryKey, note: nil)
         context.insert(entry)
         try context.save()

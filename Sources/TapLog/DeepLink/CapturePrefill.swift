@@ -2,14 +2,16 @@ import Foundation
 
 /// Values that pre-fill the capture form when the app is opened via a deep link
 /// like `taplog://log?amount=12.50&note=coffee&category=Coffee`.
+/// The category is kept as raw text and resolved against the user's category list
+/// by the form, so it also matches custom categories.
 struct CapturePrefill {
     var amountText: String?
-    var categoryKey: String?
+    var categoryQuery: String?
     var note: String?
 
-    init(amountText: String? = nil, categoryKey: String? = nil, note: String? = nil) {
+    init(amountText: String? = nil, categoryQuery: String? = nil, note: String? = nil) {
         self.amountText = amountText
-        self.categoryKey = categoryKey
+        self.categoryQuery = categoryQuery
         self.note = note
     }
 
@@ -27,12 +29,6 @@ struct CapturePrefill {
 
         amountText = value("amount")
         note = value("note")
-
-        if let raw = value("category"), !raw.isEmpty {
-            let lower = raw.lowercased()
-            categoryKey = SpendCategory.all.first {
-                $0.key == lower || $0.name.lowercased() == lower
-            }?.key
-        }
+        categoryQuery = value("category")
     }
 }
