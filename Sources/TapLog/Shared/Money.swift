@@ -1,6 +1,56 @@
 import Foundation
 
 enum Money {
+    // MARK: - Currency setting (shared with widget + share extension)
+
+    /// Common currencies for the Settings picker. `code` is the ISO 4217 code used by
+    /// `formatted(.currency(code:))`; `symbol` is what the capture hero shows.
+    static let supportedCurrencies: [(code: String, symbol: String, name: String)] = [
+        ("USD", "$", "US Dollar"),
+        ("EUR", "€", "Euro"),
+        ("GBP", "£", "British Pound"),
+        ("JPY", "¥", "Japanese Yen"),
+        ("INR", "₹", "Indian Rupee"),
+        ("CAD", "$", "Canadian Dollar"),
+        ("AUD", "$", "Australian Dollar"),
+        ("CHF", "CHF", "Swiss Franc"),
+        ("CNY", "¥", "Chinese Yuan"),
+        ("SEK", "kr", "Swedish Krona"),
+        ("NOK", "kr", "Norwegian Krone"),
+        ("KRW", "₩", "South Korean Won"),
+        ("BRL", "R$", "Brazilian Real"),
+        ("MXN", "$", "Mexican Peso"),
+        ("SGD", "$", "Singapore Dollar"),
+        ("NZD", "$", "New Zealand Dollar"),
+        ("ZAR", "R", "South African Rand"),
+    ]
+
+    /// Defaults shared with the widget and share extension, so a currency chosen in
+    /// Settings is respected everywhere.
+    static var sharedDefaults: UserDefaults? {
+        UserDefaults(suiteName: StoreLocator.appGroupID)
+    }
+
+    /// The user's chosen currency code, falling back to the device locale.
+    static var currencyCode: String {
+        sharedDefaults?.string(forKey: "currencyCode")
+            ?? Locale.current.currency?.identifier
+            ?? "USD"
+    }
+
+    /// Display symbol for the capture hero ("$", "€", "¥", …).
+    static var currencySymbol: String {
+        if let match = supportedCurrencies.first(where: { $0.code == currencyCode }) {
+            return match.symbol
+        }
+        return Locale(identifier: currencyCode).currencySymbol ?? "$"
+    }
+
+    /// The amount format used everywhere — follows the user's currency setting.
+    static func format(_ amount: Decimal) -> String {
+        amount.formatted(.currency(code: currencyCode))
+    }
+
     /// Parses user input like "12.50", "12,50", "$1,200", or "1.200,50" into a Decimal.
     ///
     /// Handles both `.` and `,` as decimal *or* grouping separators without assuming a
@@ -58,8 +108,4 @@ enum Money {
         NSDecimalNumber(decimal: amount).stringValue
     }
 
-    /// Locale-aware currency display, e.g. "$12.50".
-    static func format(_ amount: Decimal) -> String {
-        amount.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD"))
-    }
 }

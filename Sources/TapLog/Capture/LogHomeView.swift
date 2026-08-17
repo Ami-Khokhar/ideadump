@@ -33,7 +33,6 @@ struct LogHomeView: View {
     let prefill: CapturePrefill?
     let onLogged: (() -> Void)?
     let onCancelOnboarding: (() -> Void)?
-    @Binding var selectedTab: Int
 
     private var lookup: CategoryLookup { CategoryLookup(categories) }
 
@@ -56,7 +55,6 @@ struct LogHomeView: View {
             categoryChips
             noteField
             logButton
-            recentStrip
         }
         .background(Theme.background)
         .onAppear {
@@ -105,7 +103,7 @@ struct LogHomeView: View {
     private var hero: some View {
         VStack(spacing: 12) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text("$")
+                Text(Money.currencySymbol)
                     .font(Theme.amount(44, weight: .semibold))
                     .foregroundStyle(Theme.textTertiary)
                 TextField("0", text: $amountText)
@@ -221,62 +219,6 @@ struct LogHomeView: View {
         .disabled(!canLog)
         .padding(.horizontal, 28)
         .padding(.top, 14)
-    }
-
-    private var recentStrip: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("RECENT")
-                    .font(.caption2.weight(.semibold))
-                    .kerning(0.9)
-                    .foregroundStyle(Theme.textTertiary)
-                Spacer()
-                Button {
-                    selectedTab = 1
-                } label: {
-                    Text("See all")
-                        .font(.footnote.weight(.medium))
-                        .foregroundStyle(Theme.accent)
-                }
-            }
-            .padding(.horizontal, 28)
-            .padding(.bottom, 2)
-
-            ForEach(activeEntries.prefix(3)) { entry in
-                Button {
-                    selectedTab = 1
-                } label: {
-                    HStack(spacing: 12) {
-                        Text(lookup.emoji(for: entry.category))
-                            .font(.body)
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(lookup.name(for: entry.category))
-                                .font(.subheadline.weight(.medium))
-                                .foregroundStyle(Theme.textPrimary)
-                            Text(entry.date.formatted(.dateTime.hour().minute()))
-                                .font(.caption)
-                                .foregroundStyle(Theme.textTertiary)
-                        }
-                        Spacer()
-                        Text(Money.format(entry.amount))
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(Theme.textPrimary)
-                            .monospacedDigit()
-                    }
-                    .padding(.horizontal, 28)
-                    .padding(.vertical, 9)
-                }
-                .buttonStyle(.plain)
-                .overlay(alignment: .bottom) {
-                    Rectangle()
-                        .fill(Theme.hairline)
-                        .frame(height: 1)
-                        .padding(.horizontal, 28)
-                }
-            }
-        }
-        .padding(.top, 22)
-        .padding(.bottom, 28)
     }
 
     // MARK: - Actions

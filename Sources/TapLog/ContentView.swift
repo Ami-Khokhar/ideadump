@@ -1,9 +1,10 @@
 import SwiftUI
 import SwiftData
 
-/// App root: three tabs — Log (capture-first home, the default), History, Recap.
-/// Also hosts the first-session onboarding state machine, deep-link prefill, and the
-/// app-wide undo toast so it works from any tab.
+/// App root: a single capture-first home screen. Everything else — History, Recap,
+/// front doors, Settings — lives behind the dropdown menu so the home page stays a
+/// pure logging surface. Also hosts the first-session onboarding state machine,
+/// deep-link prefill, appearance override, and the app-wide undo toast.
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var undoStack: UndoStack
@@ -11,18 +12,36 @@ struct ContentView: View {
     @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore = false
     @AppStorage("onboardingActive") private var onboardingActive = false
     @AppStorage("onboardingStepRaw") private var onboardingStepRaw = OnboardingStep.capture.rawValue
+    @AppStorage("appearanceMode") private var appearanceMode = "system"
 
     @Query private var allEntries: [Entry]
 
-    @State private var selectedTab = 0
     @State private var onboardingStep: OnboardingStep?
     @State private var isOnboardingCapture = false
     @State private var prefill: CapturePrefill?
+    @State private var route: Route?
+
+    enum Route: String, Identifiable {
+        case history
+        case recap
+        case frontDoors
+        case settings
+
+        var id: String { rawValue }
+    }
 
     private var hasAnyEntry: Bool { !allEntries.isEmpty }
 
+    private var colorScheme: ColorScheme? {
+        switch appearanceMode {
+        case "light": .light
+        case "dark": .dark
+        default: nil
+        }
+    }
+
     var body: some View {
-        TabView(selection: $selectedTab) {
+        NavigationStack {
             LogHomeView(
                 isOnboarding: isOnboardingCapture,
                 prefill: prefill,
@@ -34,36 +53,67 @@ struct ContentView: View {
                 onCancelOnboarding: {
                     isOnboardingCapture = false
                     onboardingActive = false
-                },
-                selectedTab: $selectedTab
+                }
             )
-            .tabItem { Label("Log", systemImage: "plus.circle") }
-            .tag(0)
-
-            EntryListView()
-                .tabItem { Label("History", systemImage: "clock") }
-                .tag(1)
-
-            WeeklyRecapView()
-                .tabItem { Label("Recap", systemImage: "chart.bar") }
-                .tag(2)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Button {
+                            route = .history
+                        } label: {
+                            Label("History", systemImage: "clock")
+                        }
+                        Button {
+                            route = .recap
+                        } label: {
+                            Label("Recap", systemImage: "chart.bar")
+                        }
+                        Divider()
+                        Button {
+                            route = .frontDoors
+                        } label: {
+                            Label("Log without opening TapLog", systemImage: "sparkles")
+                        }
+                        Divider()
+                        Button {
+                            route = .settings
+                        } label: {
+                            Label("Settings", systemImage: "gearshape")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                    }
+                }
+            }
         }
+        .preferredColorScheme(colorScheme)
         .tint(Theme.accent)
         .onAppear {
             handleLaunchFlow()
-            // Dev/testing hook: `simctl launch ... -tab 1` opens a specific tab.
+            // Dev/testing hook: `simctl launch ... -route history` opens a sheet.
             let args = ProcessInfo.processInfo.arguments
-            if let index = args.lastIndex(of: "-tab"),
+            if let index = args.lastIndex(of: "-route"),
                args.indices.contains(index + 1),
-               let raw = Int(args[index + 1]),
-               (0...2).contains(raw) {
-                selectedTab = raw
+               let route = Route(rawValue: args[index + 1]) {
+                self.route = route
             }
         }
         .onOpenURL { url in
             guard let prefill = CapturePrefill(url: url) else { return }
             self.prefill = prefill
-            selectedTab = 0
+        }
+        .sheet(item: $route) { route in
+            switch route {
+            case .history:
+                EntryListView()
+                    .environmentObject(undoStack)
+            case .recap:
+                WeeklyRecapView()
+            case .frontDoors:
+                SetupFrontDoorsView()
+            case .settings:
+                SettingsView()
+            }
         }
         .fullScreenCover(item: $onboardingStep, onDismiss: {
             onboardingStep = nil

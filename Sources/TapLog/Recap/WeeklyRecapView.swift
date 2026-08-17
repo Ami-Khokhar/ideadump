@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct WeeklyRecapView: View {
+    @Environment(\.dismiss) private var dismiss
     @AppStorage("isProDemo") private var isPro = false
     @AppStorage("logsLogged") private var logsLogged = 0
     @AppStorage("recapTeaseDismissed") private var recapTeaseDismissed = false
@@ -30,6 +31,12 @@ struct WeeklyRecapView: View {
             }
             .background(Theme.background)
             .navigationTitle("Recap")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                        .fontWeight(.semibold)
+                }
+            }
         }
     }
 

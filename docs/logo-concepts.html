@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TapLog — Logo Concepts</title>
+<style>
+  :root {
+    --bg: #F7F5F2; --text: #1C1B1A; --text-2: #6E6A64; --text-3: #A39E96;
+    --surface: #EFECE7; --accent: #6B8F71; --hairline: rgba(28,27,26,.10);
+  }
+  [data-theme="dark"] {
+    --bg: #121110; --text: #F0EEEB; --text-2: #8A857E; --text-3: #5C5852;
+    --surface: #1C1B1A; --accent: #7FA085; --hairline: rgba(240,238,235,.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    background: #0A0A0A; color: #f5f5f5; min-height: 100vh;
+    padding: 2.5rem 2rem 4rem;
+  }
+  header { max-width: 1100px; margin: 0 auto 2.5rem; }
+  header h1 { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.02em; }
+  header p { color: #999; margin-top: .5rem; font-size: .95rem; line-height: 1.6; max-width: 640px; }
+  .toolbar { display: flex; gap: .5rem; margin-top: 1.25rem; }
+  .btn {
+    border: 1px solid #333; background: #1a1a1a; color: #eee;
+    border-radius: 10px; padding: .45rem .85rem; font-size: .8rem; cursor: pointer;
+  }
+  .btn.active { border-color: #6B8F71; color: #9ec49f; }
+
+  .concepts { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+  .concept {
+    background: #1a1a1a; border-radius: 18px; padding: 1.75rem;
+    display: flex; flex-direction: column; gap: 1.5rem;
+  }
+  .concept .name { font-size: 1.05rem; font-weight: 700; display: flex; align-items: baseline; gap: .5rem; }
+  .concept .letter {
+    font-size: .7rem; font-weight: 800; color: #1a1a1a; background: #9ec49f;
+    border-radius: 6px; padding: 2px 7px; letter-spacing: .04em;
+  }
+  .concept .why { font-size: .82rem; color: #aaa; line-height: 1.55; flex: 1; }
+  .concept .pick {
+    font-size: .72rem; font-weight: 600; color: #1a1a1a; background: #9ec49f;
+    border-radius: 999px; padding: 3px 10px; align-self: flex-start;
+  }
+
+  .stage {
+    background: var(--bg); border-radius: 14px; padding: 1.5rem;
+    display: flex; flex-direction: column; align-items: center; gap: 1rem;
+    transition: background .3s;
+  }
+  .stage .mark { width: 120px; height: 120px; }
+  .stage .cap { font-size: .72rem; color: var(--text-3); letter-spacing: .06em; font-weight: 600; }
+
+  .tiles { display: flex; gap: 1.25rem; align-items: center; justify-content: center; }
+  .tile { width: 96px; height: 96px; border-radius: 22.5%; overflow: hidden; flex-shrink: 0; }
+  .tile svg { width: 100%; height: 100%; display: block; }
+  .tile-raw { border-radius: 10px; }
+  .tile-label { font-size: .68rem; color: var(--text-3); text-align: center; margin-top: .4rem; }
+
+  .lockup { display: flex; align-items: center; gap: .7rem; }
+  .lockup svg { width: 34px; height: 34px; }
+  .lockup .word {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Rounded", system-ui, sans-serif;
+    font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; color: var(--text);
+  }
+  .lockup .word em { font-style: normal; color: var(--accent); }
+
+  /* home screen strip */
+  .homes { max-width: 1100px; margin: 2.5rem auto 0; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .home {
+    border-radius: 24px; padding: 1.5rem; min-height: 240px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; align-content: start;
+  }
+  .home.light { background: linear-gradient(160deg, #E8E6E3, #CFD8D0); }
+  .home.dark { background: linear-gradient(160deg, #1F2322, #101412); }
+  .home .icon { width: 60px; height: 60px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+  .home .icon svg { width: 100%; height: 100%; }
+  .home .icon span { color: #fff; font-weight: 600; font-size: 1.3rem; }
+  .home .lbl { font-size: .65rem; color: #555; text-align: center; margin-top: .3rem; }
+  .home.dark .lbl { color: #aaa; }
+  .homes-title { max-width: 1100px; margin: 3rem auto 0; font-size: .85rem; color: #888; letter-spacing: .05em; font-weight: 600; }
+
+  .note {
+    max-width: 1100px; margin: 2.5rem auto 0; font-size: .85rem; color: #999;
+    line-height: 1.7; background: #141414; border: 1px solid #2a2a2a;
+    border-radius: 14px; padding: 1.25rem 1.5rem;
+  }
+  .note strong { color: #eee; }
+  .note code { color: #9ec49f; }
+</style>
+</head>
+<body data-theme="light">
+
+<header>
+  <h1>TapLog — Logo concepts</h1>
+  <p>Three directions for the mark. Each shows the standalone mark, the iOS app-icon tile (flat square + how the system masks it), the wordmark lockup, and how it sits on a home screen.</p>
+  <div class="toolbar">
+    <button class="btn active" id="themeBtn" onclick="toggleTheme()">🌙 Dark stage</button>
+  </div>
+</header>
+
+<!-- SVG marks -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="mark-tap" viewBox="0 0 200 200">
+      <circle cx="100" cy="100" r="21" fill="#6B8F71"/>
+      <circle cx="100" cy="100" r="47" fill="none" stroke="#1C1B1A" stroke-width="8"/>
+      <circle cx="100" cy="100" r="76" fill="none" stroke="#6B8F71" stroke-width="5" opacity="0.55"/>
+    </symbol>
+    <symbol id="mark-ledger" viewBox="0 0 200 200">
+      <line x1="52" y1="76" x2="148" y2="76" stroke="#1C1B1A" stroke-width="9" stroke-linecap="round" opacity="0.20"/>
+      <line x1="52" y1="122" x2="148" y2="122" stroke="#1C1B1A" stroke-width="9" stroke-linecap="round" opacity="0.20"/>
+      <line x1="52" y1="168" x2="120" y2="168" stroke="#6B8F71" stroke-width="9" stroke-linecap="round"/>
+      <circle cx="52" cy="168" r="11" fill="#6B8F71"/>
+    </symbol>
+    <symbol id="mark-coin" viewBox="0 0 200 200">
+      <circle cx="100" cy="100" r="72" fill="none" stroke="#1C1B1A" stroke-width="10"/>
+      <circle cx="100" cy="100" r="60" fill="none" stroke="#1C1B1A" stroke-width="2" opacity="0.3"/>
+      <path d="M64 106 L90 130 L138 78" fill="none" stroke="#6B8F71" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="concepts">
+
+  <!-- A: Tap -->
+  <div class="concept">
+    <div class="name"><span class="letter">A</span> The Tap</div>
+    <div class="stage">
+      <svg class="mark"><use href="#mark-tap"/></svg>
+      <span class="cap">STANDALONE MARK</span>
+      <div class="tiles">
+        <div>
+          <div class="tile tile-raw" style="background:#F7F5F2"><svg><use href="#mark-tap"/></svg></div>
+          <div class="tile-label">raw square</div>
+        </div>
+        <div>
+          <div class="tile" style="background:#F7F5F2"><svg><use href="#mark-tap"/></svg></div>
+          <div class="tile-label">iOS mask</div>
+        </div>
+      </div>
+      <div class="lockup">
+        <svg><use href="#mark-tap"/></svg>
+        <span class="word">Tap<em>Log</em></span>
+      </div>
+    </div>
+    <p class="why">A dot with two ripple rings — the literal "tap to log" promise, drawn as a moment frozen on paper. Zen-minimal, unmistakable at 29px, reads in monochrome, and echoes the app's own interaction language (the widget, the undo toast).</p>
+    <span class="pick">MY PICK</span>
+  </div>
+
+  <!-- B: Ledger -->
+  <div class="concept">
+    <div class="name"><span class="letter">B</span> The Ledger</div>
+    <div class="stage">
+      <svg class="mark"><use href="#mark-ledger"/></svg>
+      <span class="cap">STANDALONE MARK</span>
+      <div class="tiles">
+        <div>
+          <div class="tile tile-raw" style="background:#F7F5F2"><svg><use href="#mark-ledger"/></svg></div>
+          <div class="tile-label">raw square</div>
+        </div>
+        <div>
+          <div class="tile" style="background:#F7F5F2"><svg><use href="#mark-ledger"/></svg></div>
+          <div class="tile-label">iOS mask</div>
+        </div>
+      </div>
+      <div class="lockup">
+        <svg><use href="#mark-ledger"/></svg>
+        <span class="word">Tap<em>Log</em></span>
+      </div>
+    </div>
+    <p class="why">Three ledger lines — the last one sage with a bullet, the entry you just logged. Speaks to the "log" half of the name and the weekly recap payoff. Slightly quieter; the lines need to survive at small sizes.</p>
+  </div>
+
+  <!-- C: Coin-check -->
+  <div class="concept">
+    <div class="name"><span class="letter">C</span> The Coin</div>
+    <div class="stage">
+      <svg class="mark"><use href="#mark-coin"/></svg>
+      <span class="cap">STANDALONE MARK</span>
+      <div class="tiles">
+        <div>
+          <div class="tile tile-raw" style="background:#F7F5F2"><svg><use href="#mark-coin"/></svg></div>
+          <div class="tile-label">raw square</div>
+        </div>
+        <div>
+          <div class="tile" style="background:#F7F5F2"><svg><use href="#mark-coin"/></svg></div>
+          <div class="tile-label">iOS mask</div>
+        </div>
+      </div>
+      <div class="lockup">
+        <svg><use href="#mark-coin"/></svg>
+        <span class="word">Tap<em>Log</em></span>
+      </div>
+    </div>
+    <p class="why">A coin with a check — money, logged. The clearest "expense tracker" signal of the three, and the friendliest at a glance. Trade-off: coin+check is a familiar shape in finance apps, so it's the least distinctive of the set.</p>
+  </div>
+
+</div>
+
+<div class="homes-title">ON THE HOME SCREEN — LIGHT AND DARK WALLPAPERS</div>
+<div class="homes">
+  <div class="home light">
+    <div><div class="icon" style="background:linear-gradient(140deg,#FF9F68,#FF7A45)"><span>📷</span></div><div class="lbl">Photos</div></div>
+    <div><div class="icon" style="background:#F6B93B"><span>🎵</span></div><div class="lbl">Music</div></div>
+    <div><div class="icon" style="background:#F7F5F2"><svg><use href="#mark-tap"/></svg></div><div class="lbl" style="color:#333">TapLog</div></div>
+    <div><div class="icon" style="background:linear-gradient(140deg,#5AC8FA,#2AA7E0)"><span>✉️</span></div><div class="lbl">Mail</div></div>
+  </div>
+  <div class="home dark">
+    <div><div class="icon" style="background:linear-gradient(140deg,#8E8E93,#636366)"><span>📷</span></div><div class="lbl">Photos</div></div>
+    <div><div class="icon" style="background:#C77E12"><span>🎵</span></div><div class="lbl">Music</div></div>
+    <div><div class="icon" style="background:#F7F5F2"><svg><use href="#mark-tap"/></svg></div><div class="lbl">TapLog</div></div>
+    <div><div class="icon" style="background:linear-gradient(140deg,#3478F6,#1D5FD6)"><span>✉️</span></div><div class="lbl">Mail</div></div>
+  </div>
+</div>
+
+<div class="note">
+  <strong>Why A (The Tap) is my pick:</strong> it's the only concept that names the product's *behavior*, not just its category — a tap is the action, the ripple is the log hitting the ledger. It's the most zen (three shapes, no text), the most distinctive against the sea of green-circle finance icons, and it degrades beautifully to monochrome for the widget and share-sheet glyphs. The coin is the safe choice if we'd rather scream "money tracker" than "5-second capture". <br><br>
+  Once you pick, I'll render it as the real <code>1024×1024</code> app icon, wire it into the Xcode project (Assets.xcassets), and screenshot it on the simulator home screen.
+</div>
+
+<script>
+function toggleTheme() {
+  const dark = document.body.dataset.theme !== "dark";
+  document.body.dataset.theme = dark ? "dark" : "light";
+  document.getElementById("themeBtn").textContent = dark ? "☀️ Light stage" : "🌙 Dark stage";
+  document.getElementById("themeBtn").classList.toggle("active", !dark);
+}
+</script>
+</body>
+</html>

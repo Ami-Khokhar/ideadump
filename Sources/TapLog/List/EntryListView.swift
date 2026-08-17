@@ -19,6 +19,7 @@ enum OnboardingStep: Int, Identifiable {
 struct EntryListView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var undoStack: UndoStack
+    @Environment(\.dismiss) private var dismiss
 
     @AppStorage("isProDemo") private var isPro = false
 
@@ -95,6 +96,10 @@ struct EntryListView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     debugMenu
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                        .fontWeight(.semibold)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
