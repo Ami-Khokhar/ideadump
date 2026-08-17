@@ -48,6 +48,7 @@ targets:
       - path: Sources/TapLogWidget
       - path: Sources/TapLog/Models
       - path: Sources/TapLog/Shared
+      - path: Sources/TapLog/AppIntents
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.example.taplog.widget

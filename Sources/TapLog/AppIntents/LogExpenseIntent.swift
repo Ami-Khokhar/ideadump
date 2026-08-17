@@ -7,7 +7,7 @@ import WidgetKit
 struct LogExpenseIntent: AppIntent {
     static var title: LocalizedStringResource = "Log Expense"
     static var description = IntentDescription("Logs a purchase to TapLog.")
-    static var openAppWhenRun: Bool = true
+    static var openAppWhenRun: Bool = false
 
     @Parameter(title: "Amount")
     var amount: Double

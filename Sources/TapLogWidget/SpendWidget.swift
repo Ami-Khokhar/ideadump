@@ -46,26 +46,52 @@ struct SpendProvider: TimelineProvider {
 }
 
 struct SpendWidgetEntryView: View {
+    @Environment(\.widgetFamily) private var family
     var entry: SpendSnapshot
 
     var body: some View {
-        Link(destination: URL(string: "taplog://log")!) {
-            VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
                 Label("Today", systemImage: "creditcard")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                Text(Money.format(entry.total))
-                    .font(.title2.bold())
-                    .monospacedDigit()
-                    .minimumScaleFactor(0.7)
-                    .lineLimit(1)
-                Text("\(entry.count) \(entry.count == 1 ? "log" : "logs")")
-                    .font(.caption)
+                Spacer()
+                Text("\(entry.count)")
+                    .font(.caption2)
                     .foregroundStyle(.secondary)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            Text(Money.format(entry.total))
+                .font(.title2.bold())
+                .monospacedDigit()
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
+            Spacer(minLength: 0)
+            if family == .systemMedium {
+                HStack(spacing: 8) {
+                    quickLogButton(amount: 4.5, category: "coffee", label: "☕️ $4.50")
+                    quickLogButton(amount: 12, category: "food", label: "🍽️ $12")
+                }
+            } else {
+                Link(destination: URL(string: "taplog://log")!) {
+                    Text("Tap to log")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.tint)
+                }
+            }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .containerBackground(for: .widget) { Color(.systemBackground) }
+    }
+
+    private func quickLogButton(amount: Double, category: String, label: String) -> some View {
+        Button(intent: QuickLogIntent(amount: amount, category: category)) {
+            Text(label)
+                .font(.caption.weight(.semibold))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+                .background(Color.accentColor.opacity(0.15), in: RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
     }
 }
 
