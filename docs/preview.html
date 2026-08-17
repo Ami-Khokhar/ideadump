@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TapLog — Prototype Preview</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 40px 24px;
+    background: #0e1116; color: #e6e9ef;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  h1 { font-size: 28px; margin: 0 0 6px; }
+  .sub { color: #9aa4b2; margin: 0 0 28px; }
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 999px;
+    background: #1d4d3a; color: #6ee7a8; font-size: 13px; font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px; max-width: 1100px;
+  }
+  figure { margin: 0; background: #171c24; border: 1px solid #262d3a; border-radius: 12px; padding: 14px; }
+  figure img { width: 100%; height: auto; border-radius: 8px; display: block; background: #000; }
+  figcaption { margin-top: 10px; font-size: 13px; color: #9aa4b2; }
+  .status { max-width: 1100px; margin-top: 28px; }
+  .status h2 { font-size: 16px; margin: 0 0 10px; color: #c6cdd8; }
+  ul { margin: 0; padding-left: 20px; line-height: 1.7; }
+  li { font-size: 14px; }
+  code {
+    background: #171c24; padding: 2px 6px; border-radius: 6px;
+    font-size: 12.5px; color: #8ecdf5;
+  }
+</style>
+</head>
+<body>
+  <span class="badge">● BUILDING &amp; RUNNING ON SIMULATOR</span>
+  <h1>TapLog — iOS Prototype</h1>
+  <p class="sub">Local-first expense logging · capture in ≤5 seconds · all milestones M0–M5 + M6-agent built &amp; verified on iPhone 17 Pro (iOS 26.5) simulator</p>
+
+  <div class="grid">
+    <figure>
+      <img src="taplog-list.png" alt="TapLog entry list with 12 seeded expenses">
+      <figcaption><b>Entry list</b> — 12 seeded expenses, newest first, swipe to edit/archive/delete, 5-second undo toast</figcaption>
+    </figure>
+    <figure>
+      <img src="taplog-final.png" alt="TapLog after opening the deep link to the capture form">
+      <figcaption><b>Deep link</b> — <code>taplog://log?amount=12.50&amp;note=coffee</code> pre-fills the capture form</figcaption>
+    </figure>
+    <figure>
+      <img src="taplog-launch.png" alt="TapLog on first launch">
+      <figcaption><b>First launch</b> — app installed and launched via <code>simctl</code></figcaption>
+    </figure>
+  </div>
+
+  <div class="status">
+    <h2>Shipped in this build (commit <code>8e6936b</code>)</h2>
+    <ul>
+      <li><b>Capture loop</b> — 3-tap form (amount → category → Log), SwiftData in the App Group container</li>
+      <li><b>Front doors</b> — <code>taplog://</code> deep link, &ldquo;Log Expense&rdquo; Siri/Shortcuts intent, home-screen widget, share sheet that parses bank-SMS text into pending entries</li>
+      <li><b>Payoff</b> — weekly recap (this week vs. last, by category) + CSV export, behind a non-functional Pro lock</li>
+      <li><b>Verified</b> — all 3 targets build clean; 12 rows confirmed in the SQLite store; deep link handled with zero errors</li>
+    </ul>
+    <h2>Try it live</h2>
+    <ul>
+      <li>Open the <b>Simulator</b> app — TapLog is installed and running on the iPhone 17 Pro sim</li>
+      <li>Fresh run: <code>xcodegen generate</code> → build in Xcode, or <code>simctl launch booted com.example.taplog -seedSampleData</code></li>
+      <li>Deep link: <code>simctl openurl booted "taplog://log?amount=12.50&amp;note=coffee&amp;category=Coffee"</code></li>
+    </ul>
+  </div>
+</body>
+</html>
