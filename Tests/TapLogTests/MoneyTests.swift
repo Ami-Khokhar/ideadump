@@ -55,6 +55,15 @@ final class MoneyTests: XCTestCase {
 
     // MARK: - parse: rejects garbage
 
+    func testRejectsAbsurdAmounts() {
+        // Pasted junk (phone numbers, etc.) must never become corrupted expenses.
+        XCTAssertNil(Money.parse("7887883774877847847"))
+        XCTAssertNil(Money.parse("12345678901234567890"))
+        XCTAssertNil(Money.parse("$1,000,000,000"))
+        XCTAssertEqual(Money.parse("999,999,999.99"), Decimal(string: "999999999.99"))
+        XCTAssertNil(Money.parse("1,000,000,000"))
+    }
+
     func testRejectsNonNumericInput() {
         XCTAssertNil(Money.parse(""))
         XCTAssertNil(Money.parse("   "))

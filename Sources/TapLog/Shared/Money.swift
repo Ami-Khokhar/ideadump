@@ -90,8 +90,18 @@ enum Money {
             normalized = stripped
         }
 
-        return Decimal(string: normalized, locale: Locale(identifier: "en_US_POSIX"))
+        guard let value = Decimal(string: normalized, locale: Locale(identifier: "en_US_POSIX")) else {
+            return nil
+        }
+        // Reject absurd amounts (e.g. a pasted phone number) — they'd corrupt totals
+        // and are never a real expense.
+        guard value >= 0 && value <= maxAmount else { return nil }
+        return value
     }
+
+    /// Largest accepted amount. Generous for any real expense; anything above is
+    /// almost certainly pasted garbage, not a purchase.
+    static let maxAmount: Decimal = 999_999_999.99
 
     /// Converts an amount that arrived as a `Double` (Siri/Shortcuts/widget intents pass
     /// `Double`) into a Decimal rounded to cents, avoiding binary-float artifacts like

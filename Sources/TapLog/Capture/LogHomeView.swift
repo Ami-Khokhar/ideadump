@@ -54,7 +54,14 @@ struct LogHomeView: View {
             hero
             categoryChips
             noteField
+        }
+        // Pin the Log button in the bottom safe area so it always floats ABOVE the
+        // keyboard. Without this, the button (the last element) is pushed underneath
+        // the keyboard on a real device and logging becomes impossible.
+        .safeAreaInset(edge: .bottom, spacing: 0) {
             logButton
+                .padding(.bottom, 12)
+                .padding(.top, 4)
         }
         .background(Theme.background)
         .onAppear {
