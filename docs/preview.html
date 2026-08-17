@@ -54,9 +54,24 @@
       <img src="taplog-launch.png" alt="TapLog on first launch">
       <figcaption><b>First launch</b> — app installed and launched via <code>simctl</code></figcaption>
     </figure>
+    <figure>
+      <img src="taplog-onboarding.png" alt="Onboarding: capture form auto-opened on first launch">
+      <figcaption><b>Onboarding 1 — first launch</b> — the capture form auto-opens with the 5-second coach line; no tour screens</figcaption>
+    </figure>
+    <figure>
+      <img src="taplog-setup-sheet.png" alt="Setup sheet after the third log">
+      <figcaption><b>Onboarding 2 — after 3 logs</b> — “Log without TapLog”: widget, Siri, Action Button</figcaption>
+    </figure>
   </div>
 
   <div class="status">
+    <h2>Onboarding flow</h2>
+    <ul>
+      <li><b>First launch</b> — capture form auto-opens, amount focused, one coach line. First log in ~5 seconds.</li>
+      <li><b>After 3 logs</b> — one dismissible sheet: “Log without TapLog” (widget, Siri, Action Button).</li>
+      <li><b>After 5 logs</b> — Recap tab shows a small “you’ve logged N expenses” tease.</li>
+      <li>Arriving via deep link or share sheet skips onboarding entirely.</li>
+    </ul>
     <h2>Shipped in this build (commit <code>8e6936b</code>)</h2>
     <ul>
       <li><b>Capture loop</b> — 3-tap form (amount → category → Log), SwiftData in the App Group container</li>

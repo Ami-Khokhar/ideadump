@@ -16,9 +16,11 @@ struct CaptureForm: View {
     @EnvironmentObject private var undoStack: UndoStack
 
     @AppStorage("lastUsedCategory") private var lastUsedCategoryKey: String = SpendCategory.fallbackKey
+    @AppStorage("logsLogged") private var logsLogged = 0
     @Query(sort: \SpendCategory.sortOrder) private var categories: [SpendCategory]
 
     let mode: Mode
+    let isOnboarding: Bool
 
     @State private var amountText: String
     @State private var selectedCategoryKey: String
@@ -28,8 +30,9 @@ struct CaptureForm: View {
     @State private var showingManageCategories = false
     @FocusState private var amountFocused: Bool
 
-    init(mode: Mode, prefill: CapturePrefill = CapturePrefill()) {
+    init(mode: Mode, prefill: CapturePrefill = CapturePrefill(), isOnboarding: Bool = false) {
         self.mode = mode
+        self.isOnboarding = isOnboarding
         switch mode {
         case .create:
             _amountText = State(initialValue: prefill.amountText ?? "")
@@ -88,9 +91,14 @@ struct CaptureForm: View {
                 Section("Note") {
                     TextField("Optional", text: $note)
                 }
+        }
+        .navigationTitle(isEditing ? "Edit Entry" : "Log Expense")
+        .navigationBarTitleDisplayMode(.inline)
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if isOnboarding {
+                onboardingHeader
             }
-            .navigationTitle(isEditing ? "Edit Entry" : "Log Expense")
-            .navigationBarTitleDisplayMode(.inline)
+        }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -127,6 +135,19 @@ struct CaptureForm: View {
             return
         }
         selectedCategoryKey = categories.first?.key ?? ""
+    }
+
+    private var onboardingHeader: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "hand.tap.fill")
+                .foregroundStyle(.tint)
+            Text("Your first expense — type the amount, tap Log. About 5 seconds.")
+                .font(.footnote)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(.thinMaterial)
     }
 
     private func categoryButton(_ category: SpendCategory) -> some View {
@@ -193,6 +214,7 @@ struct CaptureForm: View {
             modelContext.insert(entry)
             try? modelContext.save()
             lastUsedCategoryKey = categoryKey
+            logsLogged += 1
             undoStack.record("Logged \(Money.format(amount)) · \(lookup.name(for: categoryKey))") {
                 modelContext.delete(entry)
                 try? modelContext.save()

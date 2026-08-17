@@ -20,8 +20,14 @@ struct EntryListView: View {
     @Query(sort: \SpendCategory.sortOrder)
     private var categories: [SpendCategory]
 
+    @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore = false
+    @AppStorage("logsLogged") private var logsLogged = 0
+    @AppStorage("setupSheetDismissed") private var setupSheetDismissed = false
+
     @State private var showingArchived = false
     @State private var showingCapture = false
+    @State private var firstLaunchCapture = false
+    @State private var showingSetupSheet = false
     @State private var capturePrefill: CapturePrefill?
     @State private var editingEntry: Entry?
 
@@ -103,16 +109,37 @@ struct EntryListView: View {
                 CaptureForm(mode: .create, prefill: capturePrefill ?? CapturePrefill())
                     .environmentObject(undoStack)
             }
+            .sheet(isPresented: $firstLaunchCapture) {
+                CaptureForm(mode: .create, isOnboarding: true)
+                    .environmentObject(undoStack)
+            }
+            .sheet(isPresented: $showingSetupSheet, onDismiss: { setupSheetDismissed = true }) {
+                SetupFrontDoorsView()
+                    .presentationDetents([.medium, .large])
+            }
             .sheet(item: $editingEntry) { entry in
                 CaptureForm(mode: .edit(entry))
                     .environmentObject(undoStack)
             }
+            .onAppear(perform: handleLaunchFlow)
             .onOpenURL { url in
                 guard let prefill = CapturePrefill(url: url) else { return }
                 capturePrefill = prefill
                 showingCapture = true
             }
             .overlay(alignment: .bottom) { UndoToast() }
+        }
+    }
+
+    // MARK: - First-launch onboarding
+
+    private func handleLaunchFlow() {
+        if !hasLaunchedBefore && capturePrefill == nil && editingEntry == nil {
+            hasLaunchedBefore = true
+            firstLaunchCapture = true
+        }
+        if !setupSheetDismissed && logsLogged >= 3 {
+            showingSetupSheet = true
         }
     }
 

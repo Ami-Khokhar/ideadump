@@ -3,6 +3,8 @@ import SwiftData
 
 struct WeeklyRecapView: View {
     @AppStorage("isProDemo") private var isPro = false
+    @AppStorage("logsLogged") private var logsLogged = 0
+    @AppStorage("recapTeaseDismissed") private var recapTeaseDismissed = false
 
     @Query(filter: #Predicate<Entry> { !$0.isArchived && !$0.isPending }, sort: \Entry.date)
     private var entries: [Entry]
@@ -14,11 +16,16 @@ struct WeeklyRecapView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if isPro {
-                    recapContent
-                } else {
-                    ProLocked(feature: "Weekly Recap")
+            VStack(spacing: 0) {
+                if logsLogged >= 5 && !recapTeaseDismissed {
+                    recapTeaseBanner
+                }
+                Group {
+                    if isPro {
+                        recapContent
+                    } else {
+                        ProLocked(feature: "Weekly Recap")
+                    }
                 }
             }
             .navigationTitle("Recap")
@@ -89,6 +96,31 @@ struct WeeklyRecapView: View {
                 }
             }
         }
+    }
+
+    private var recapTeaseBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "chart.line.uptrend.xyaxis")
+                .foregroundStyle(.tint)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("You've logged \(logsLogged) expenses so far")
+                    .font(.footnote.weight(.semibold))
+                Text("Come back weekly — patterns show up fast.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+            Button {
+                recapTeaseDismissed = true
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(Color.accentColor.opacity(0.12))
     }
 
     private func splitWeeks() -> (this: [Entry], last: [Entry]) {

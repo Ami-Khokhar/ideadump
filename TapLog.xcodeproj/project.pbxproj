@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		03D459D8382BC1695FFB1F77 /* CSVExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F39BE7063CC4D232FC7DD8D1 /* CSVExporter.swift */; };
 		1932E41B91F45E46AA7B947E /* TapLogWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE6D869DDDC20393088C7D57 /* TapLogWidgetBundle.swift */; };
+		2344142B18619D974F6B8ECA /* SetupFrontDoorsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5ECFDD7A235B57950FEB84D8 /* SetupFrontDoorsView.swift */; };
 		29A7E78D7E66C5C96DB5CC33 /* Money.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E288AE6E7A4297523866942 /* Money.swift */; };
 		2DFADCEFE987ACAA518EE64E /* SpendCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF3DE2DAA95012E652F3392 /* SpendCategory.swift */; };
 		301F07FA37534C328DC6AA6F /* DebugSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3ABAFEF33AB24EADE9F540E /* DebugSeeder.swift */; };
@@ -91,6 +92,7 @@
 		52F262C9AE91426858ADB810 /* UndoStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoStack.swift; sourceTree = "<group>"; };
 		549B39D3541189E897AF5D32 /* TapLog.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TapLog.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5E06859D8DD2DC20B4D96A32 /* Entry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Entry.swift; sourceTree = "<group>"; };
+		5ECFDD7A235B57950FEB84D8 /* SetupFrontDoorsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupFrontDoorsView.swift; sourceTree = "<group>"; };
 		867EE56E324BE481266AE2DD /* ProLocked.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProLocked.swift; sourceTree = "<group>"; };
 		8AFDA712F13988B761C89CF1 /* SpendWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendWidget.swift; sourceTree = "<group>"; };
 		991D5BACEE57C2FC20B39564 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -217,11 +219,20 @@
 				50C4952E1602F8B48DCACC13 /* Export */,
 				8061F7A43588DD4518500D3E /* List */,
 				535EFC3F4E05F3208924FF99 /* Models */,
+				E5CAD5CE754A14CEB143C9BA /* Onboarding */,
 				EA7A8FEFEB3638FC13AA5ABB /* Recap */,
 				377B4091CE0E241D73106BF9 /* Shared */,
 				101B4A14EB9C080DF4FC1EB3 /* Undo */,
 			);
 			path = TapLog;
+			sourceTree = "<group>";
+		};
+		E5CAD5CE754A14CEB143C9BA /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				5ECFDD7A235B57950FEB84D8 /* SetupFrontDoorsView.swift */,
+			);
+			path = Onboarding;
 			sourceTree = "<group>";
 		};
 		EA7A8FEFEB3638FC13AA5ABB /* Recap */ = {
@@ -374,6 +385,7 @@
 				F3CCA6BC2DACB7FBAAA1A68D /* Money.swift in Sources */,
 				72B644339EF9A33BC1108162 /* ProLocked.swift in Sources */,
 				3DC3F135860710F724D5FEDE /* QuickLogIntent.swift in Sources */,
+				2344142B18619D974F6B8ECA /* SetupFrontDoorsView.swift in Sources */,
 				DABDD1131FE8B6E4541DC315 /* SpendCategory.swift in Sources */,
 				935B66767E2C57C360E8072A /* StoreLocator.swift in Sources */,
 				564D486201F2A0EC049A833D /* TapLogApp.swift in Sources */,
