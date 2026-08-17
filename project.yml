@@ -87,6 +87,19 @@ targets:
       properties:
         com.apple.security.application-groups:
           - group.com.example.taplog
+  TapLogTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests/TapLogTests
+    dependencies:
+      - target: TapLog
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.taplog.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/TapLog.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TapLog"
+        BUNDLE_LOADER: "$(TEST_HOST)"
 schemes:
   TapLog:
     build:
@@ -94,5 +107,9 @@ schemes:
         TapLog: all
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - TapLogTests
     archive:
       config: Release

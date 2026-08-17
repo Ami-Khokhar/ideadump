@@ -4,6 +4,21 @@ Target: a working prototype of TapLog on a real iPhone, ~1 week of focused full-
 effort with one AI coding agent (Claude Code or Codex) doing the code generation, and
 a human running the Xcode build/test loop.
 
+## Status — all milestones built + zen UI (Aug 18, 2026)
+
+### Zen UI redesign (approved & shipped)
+- **Capture-first home** — the Log tab is the default; hero amount field, category
+  chips, pill Log button, Recent strip. History is one tab away (no more "+" button).
+- **Warm-neutral theme** — `Theme.swift` design system: paper `#F7F5F2` / near-black
+  `#121110`, sage accent `#6B8F71`, hairline dividers, rounded monospaced numerals.
+- **3 tabs** — Log (default) / History / Recap; undo toast moved to app root so it
+  works from any tab; onboarding state machine moved to ContentView.
+- **4-beat onboarding** — Welcome → first log on the home screen → "your categories"
+  (in-use guard) → front doors. Deep links still skip the welcome.
+- **Verified** — pixel-sampled the simulator screenshots: exact theme hexes in both
+  modes, sage pill enables only with a valid amount (deep-link prefill), history rows
+  and recap bars render; 11 unit tests pass.
+
 ## Status — all milestones built (Aug 16, 2026)
 
 - ✅ **M0 Scaffold** — XcodeGen project, SwiftData in the App Group container, 3 targets.

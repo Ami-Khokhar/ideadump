@@ -11,9 +11,9 @@ struct SetupFrontDoorsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("You've logged a few expenses 🎉")
+                        Text("One more thing 🎉")
                             .font(.title3.bold())
-                        Text("Now make the next ones faster — log without opening TapLog.")
+                        Text("Next time you won't even open the app to log an expense. Pick a front door:")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -102,7 +102,7 @@ struct SetupFrontDoorsView: View {
             Spacer(minLength: 0)
         }
         .padding(14)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14))
     }
 
     private func openShortcuts() {

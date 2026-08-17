@@ -30,7 +30,7 @@ struct QuickLogIntent: AppIntent {
         let categoryKey = categories.first { $0.key == category }?.key
             ?? categories.first?.key
             ?? SpendCategory.fallbackKey
-        let entry = Entry(amount: Decimal(amount), category: categoryKey, note: nil)
+        let entry = Entry(amount: Money.fromAmount(amount), category: categoryKey, note: nil)
         context.insert(entry)
         try context.save()
         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")

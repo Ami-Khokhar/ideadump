@@ -34,7 +34,7 @@ struct LogExpenseIntent: AppIntent {
             categoryKey = categories.first?.key ?? SpendCategory.fallbackKey
         }
 
-        let entry = Entry(amount: Decimal(amount), category: categoryKey, note: note)
+        let entry = Entry(amount: Money.fromAmount(amount), category: categoryKey, note: note)
         context.insert(entry)
         try context.save()
 

@@ -2,6 +2,20 @@ import SwiftUI
 import SwiftData
 import WidgetKit
 
+/// One-shot onboarding beats. Chained via `onboardingActive`; the current step is
+/// persisted so a mid-session kill resumes instead of restarting from the welcome.
+enum OnboardingStep: Int, Identifiable {
+    case welcome = 0
+    case capture = 1
+    case categories = 2
+    case frontDoors = 3
+
+    var id: Int { rawValue }
+}
+
+/// The History tab — a browse surface for past entries. Logging happens on the
+/// home (Log) tab, so this screen has no "+"; entries are edited on tap and
+/// archived/deleted by swipe.
 struct EntryListView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var undoStack: UndoStack
@@ -20,15 +34,8 @@ struct EntryListView: View {
     @Query(sort: \SpendCategory.sortOrder)
     private var categories: [SpendCategory]
 
-    @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore = false
-    @AppStorage("logsLogged") private var logsLogged = 0
-    @AppStorage("setupSheetDismissed") private var setupSheetDismissed = false
-
     @State private var showingArchived = false
-    @State private var showingCapture = false
-    @State private var firstLaunchCapture = false
     @State private var showingSetupSheet = false
-    @State private var capturePrefill: CapturePrefill?
     @State private var editingEntry: Entry?
 
     private var displayedEntries: [Entry] {
@@ -47,7 +54,7 @@ struct EntryListView: View {
                         description: Text(
                             showingArchived
                                 ? "Archived entries appear here."
-                                : "Tap + or use the Action Button to log your first expense."
+                                : "Log your first expense on the Log tab — it takes about 5 seconds."
                         )
                     )
                 } else {
@@ -67,10 +74,10 @@ struct EntryListView: View {
                                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                         if showingArchived {
                                             Button("Unarchive") { unarchive(entry) }
-                                                .tint(.blue)
+                                                .tint(Theme.accent)
                                         } else {
                                             Button("Archive") { archive(entry) }
-                                                .tint(.orange)
+                                                .tint(Theme.accent)
                                         }
                                         Button(role: .destructive) { delete(entry) } label: {
                                             Label("Delete", systemImage: "trash")
@@ -79,15 +86,24 @@ struct EntryListView: View {
                             }
                         }
                     }
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
                 }
             }
-            .navigationTitle("TapLog")
+            .navigationTitle("History")
+            .background(Theme.background)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     debugMenu
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
+                        Button {
+                            showingSetupSheet = true
+                        } label: {
+                            Label("Log without opening TapLog", systemImage: "sparkles")
+                        }
+                        Divider()
                         Picker("View", selection: $showingArchived) {
                             Label("Active", systemImage: "list.bullet").tag(false)
                             Label("Archived", systemImage: "archivebox").tag(true)
@@ -96,24 +112,8 @@ struct EntryListView: View {
                         Image(systemName: showingArchived ? "archivebox.fill" : "line.3.horizontal.decrease.circle")
                     }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        capturePrefill = nil
-                        showingCapture = true
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                }
             }
-            .sheet(isPresented: $showingCapture, onDismiss: { capturePrefill = nil }) {
-                CaptureForm(mode: .create, prefill: capturePrefill ?? CapturePrefill())
-                    .environmentObject(undoStack)
-            }
-            .sheet(isPresented: $firstLaunchCapture) {
-                CaptureForm(mode: .create, isOnboarding: true)
-                    .environmentObject(undoStack)
-            }
-            .sheet(isPresented: $showingSetupSheet, onDismiss: { setupSheetDismissed = true }) {
+            .sheet(isPresented: $showingSetupSheet) {
                 SetupFrontDoorsView()
                     .presentationDetents([.medium, .large])
             }
@@ -121,25 +121,6 @@ struct EntryListView: View {
                 CaptureForm(mode: .edit(entry))
                     .environmentObject(undoStack)
             }
-            .onAppear(perform: handleLaunchFlow)
-            .onOpenURL { url in
-                guard let prefill = CapturePrefill(url: url) else { return }
-                capturePrefill = prefill
-                showingCapture = true
-            }
-            .overlay(alignment: .bottom) { UndoToast() }
-        }
-    }
-
-    // MARK: - First-launch onboarding
-
-    private func handleLaunchFlow() {
-        if !hasLaunchedBefore && capturePrefill == nil && editingEntry == nil {
-            hasLaunchedBefore = true
-            firstLaunchCapture = true
-        }
-        if !setupSheetDismissed && logsLogged >= 3 {
-            showingSetupSheet = true
         }
     }
 
@@ -168,7 +149,7 @@ struct EntryListView: View {
             Spacer()
             Button("Add") { confirmPending(entry) }
                 .buttonStyle(.bordered)
-                .tint(.accentColor)
+                .tint(Theme.accent)
             Button("Discard", role: .destructive) { discardPending(entry) }
                 .buttonStyle(.bordered)
         }

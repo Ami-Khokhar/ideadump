@@ -4,7 +4,7 @@ import Foundation
 /// like `taplog://log?amount=12.50&note=coffee&category=Coffee`.
 /// The category is kept as raw text and resolved against the user's category list
 /// by the form, so it also matches custom categories.
-struct CapturePrefill {
+struct CapturePrefill: Equatable {
     var amountText: String?
     var categoryQuery: String?
     var note: String?

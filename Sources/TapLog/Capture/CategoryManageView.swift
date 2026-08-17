@@ -65,7 +65,7 @@ struct CategoryManageView: View {
     }
 }
 
-private struct AddCategorySheet: View {
+struct AddCategorySheet: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 

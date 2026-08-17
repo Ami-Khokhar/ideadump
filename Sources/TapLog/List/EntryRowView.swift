@@ -9,7 +9,7 @@ struct EntryRowView: View {
             Text(lookup.emoji(for: entry.category))
                 .font(.title3)
                 .frame(width: 36, height: 36)
-                .background(Color(.secondarySystemBackground), in: Circle())
+                .background(Theme.surface, in: Circle())
             VStack(alignment: .leading, spacing: 2) {
                 Text(lookup.name(for: entry.category))
                     .font(.body.weight(.medium))

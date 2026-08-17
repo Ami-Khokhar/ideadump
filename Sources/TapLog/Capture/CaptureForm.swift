@@ -21,6 +21,9 @@ struct CaptureForm: View {
 
     let mode: Mode
     let isOnboarding: Bool
+    /// When set (onboarding Step 1), a successful log advances the flow instead of
+    /// dismissing the form.
+    let onLogged: (() -> Void)?
 
     @State private var amountText: String
     @State private var selectedCategoryKey: String
@@ -30,9 +33,15 @@ struct CaptureForm: View {
     @State private var showingManageCategories = false
     @FocusState private var amountFocused: Bool
 
-    init(mode: Mode, prefill: CapturePrefill = CapturePrefill(), isOnboarding: Bool = false) {
+    init(
+        mode: Mode,
+        prefill: CapturePrefill = CapturePrefill(),
+        isOnboarding: Bool = false,
+        onLogged: (() -> Void)? = nil
+    ) {
         self.mode = mode
         self.isOnboarding = isOnboarding
+        self.onLogged = onLogged
         switch mode {
         case .create:
             _amountText = State(initialValue: prefill.amountText ?? "")
@@ -242,6 +251,10 @@ struct CaptureForm: View {
 
         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
         UINotificationFeedbackGenerator().notificationOccurred(.success)
-        dismiss()
+        if let onLogged {
+            onLogged()
+        } else {
+            dismiss()
+        }
     }
 }

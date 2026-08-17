@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TapLog — Zen UI Mockup</title>
+<style>
+  :root {
+    --bg: #F7F5F2;
+    --surface: #EFECE7;
+    --surface-2: #E7E3DC;
+    --text: #1C1B1A;
+    --text-2: #6E6A64;
+    --text-3: #A39E96;
+    --accent: #6B8F71;
+    --accent-soft: rgba(107, 143, 113, 0.14);
+    --hairline: rgba(28, 27, 26, 0.08);
+    --pill-text: #FAF9F7;
+    --toast: rgba(28, 27, 26, 0.92);
+    --toast-text: #F5F3F0;
+  }
+  [data-theme="dark"] {
+    --bg: #121110;
+    --surface: #1C1B1A;
+    --surface-2: #242220;
+    --text: #F0EEEB;
+    --text-2: #8A857E;
+    --text-3: #5C5852;
+    --accent: #7FA085;
+    --accent-soft: rgba(127, 160, 133, 0.16);
+    --hairline: rgba(240, 238, 235, 0.08);
+    --pill-text: #121110;
+    --toast: rgba(240, 238, 235, 0.94);
+    --toast-text: #1C1B1A;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    background: #0A0A0A;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3rem;
+    padding: 2rem;
+    color: #f5f5f5;
+  }
+
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: 260px;
+  }
+  .controls h1 { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; }
+  .controls p { font-size: 0.85rem; color: #999; line-height: 1.6; }
+  .controls .note { font-size: 0.75rem; color: #666; }
+  .btn-row { display: flex; gap: 0.5rem; }
+  .btn {
+    border: 1px solid #333; background: #1a1a1a; color: #eee;
+    border-radius: 10px; padding: 0.5rem 0.85rem; font-size: 0.8rem; cursor: pointer;
+    transition: all .15s;
+  }
+  .btn:hover { border-color: #555; }
+  .btn.active { border-color: #6B8F71; color: #9ec49f; background: #16231a; }
+
+  .device {
+    width: 393px; height: 852px;
+    background: var(--bg);
+    border-radius: 54px;
+    box-shadow: 0 0 0 10px #1c1c1c, 0 0 0 11px #333, 0 30px 80px rgba(0,0,0,.6);
+    position: relative;
+    overflow: hidden;
+    transition: background .35s ease;
+    color: var(--text);
+  }
+  .island {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 34px; background: #000; border-radius: 20px; z-index: 50;
+  }
+  .statusbar {
+    position: absolute; top: 0; left: 0; right: 0; height: 54px; z-index: 40;
+    display: flex; justify-content: space-between; align-items: flex-end;
+    padding: 0 32px 8px; font-size: 15px; font-weight: 600; color: var(--text);
+  }
+  .statusbar .right { display: flex; gap: 6px; align-items: center; }
+  .statusbar svg { display: block; }
+
+  .screen { position: absolute; inset: 0; display: flex; flex-direction: column; }
+  .screen.hidden { display: none; }
+
+  /* ---------- LOG (home) ---------- */
+  .log-screen { padding-top: 88px; }
+  .log-status {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 28px; font-size: 13px; color: var(--text-2); letter-spacing: 0.01em;
+  }
+  .log-status .today { font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+  .hero {
+    flex: 1; display: flex; flex-direction: column; justify-content: center;
+    padding: 0 28px; min-height: 0;
+  }
+  .amount-wrap { text-align: center; }
+  .amount {
+    font-size: 84px; font-weight: 700; letter-spacing: -0.03em;
+    font-family: -apple-system, "SF Pro Display", system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
+    background: none; border: none; outline: none;
+    color: var(--text); width: 100%; text-align: center;
+    caret-color: var(--accent);
+    padding: 0;
+  }
+  .amount::placeholder { color: var(--text-3); font-weight: 600; }
+  .currency { font-size: 40px; font-weight: 600; color: var(--text-3); vertical-align: top; margin-right: 6px; }
+  .amount-line { font-size: 84px; line-height: 1; color: var(--text); font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+  .amount-line .cur { font-size: 40px; font-weight: 600; color: var(--text-3); vertical-align: top; margin-right: 6px; }
+  .amount-line .blink { animation: blink 1.1s step-end infinite; color: var(--text-3); font-weight: 400; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .hero-caption { text-align: center; margin-top: 10px; font-size: 13px; color: var(--text-3); }
+
+  .chips {
+    display: flex; gap: 10px; overflow-x: auto; padding: 14px 28px 4px;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    min-width: 62px; padding: 12px 8px 8px; border-radius: 16px;
+    background: var(--surface); border: none; cursor: pointer;
+    transition: all .2s ease; color: var(--text);
+  }
+  .chip .emo { font-size: 26px; line-height: 1; filter: grayscale(0.15); transition: all .2s; }
+  .chip .nm { font-size: 11px; font-weight: 500; color: var(--text-2); }
+  .chip.selected { background: var(--accent-soft); }
+  .chip.selected .emo { filter: none; transform: scale(1.08); }
+  .chip.selected .nm { color: var(--accent); font-weight: 600; }
+  .chip.add { justify-content: center; }
+  .chip.add .plus { font-size: 22px; font-weight: 300; color: var(--text-3); }
+
+  .note-row { padding: 12px 30px 0; }
+  .note-input {
+    width: 100%; background: none; border: none; outline: none;
+    border-bottom: 1px solid var(--hairline); padding: 6px 0 10px;
+    font-size: 15px; color: var(--text); text-align: center;
+  }
+  .note-input::placeholder { color: var(--text-3); }
+
+  .log-btn {
+    margin: 18px 28px 0; height: 56px; border-radius: 28px;
+    background: var(--accent); border: none; cursor: pointer;
+    font-size: 17px; font-weight: 600; color: var(--pill-text); letter-spacing: 0.02em;
+    transition: transform .1s, opacity .2s;
+    font-family: inherit;
+  }
+  .log-btn:active { transform: scale(0.98); }
+  .log-btn:disabled { opacity: 0.35; cursor: default; }
+
+  .recent {
+    padding: 22px 28px 34px;
+  }
+  .recent-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 6px;
+  }
+  .recent-head .tt { font-size: 11px; font-weight: 600; letter-spacing: 0.09em; color: var(--text-3); }
+  .recent-head .see { font-size: 12px; color: var(--accent); background: none; border: none; cursor: pointer; font-family: inherit; }
+  .recent-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 9px 0; border-bottom: 1px solid var(--hairline);
+    background: none; border-left: none; border-right: none; border-top: none;
+    width: 100%; cursor: pointer; text-align: left;
+  }
+  .recent-row:last-child { border-bottom: none; }
+  .recent-row .emo { font-size: 20px; }
+  .recent-row .inf { flex: 1; min-width: 0; }
+  .recent-row .nm { font-size: 14px; font-weight: 500; color: var(--text); }
+  .recent-row .dt { font-size: 12px; color: var(--text-3); }
+  .recent-row .amt { font-size: 15px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+
+  /* ---------- HISTORY ---------- */
+  .hist-screen { padding-top: 96px; }
+  .hist-head { padding: 0 28px 18px; }
+  .hist-head .tt { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
+  .hist-head .tot { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+  .hist-list { flex: 1; overflow-y: auto; padding: 0 0 40px; }
+  .hist-group { padding: 0 28px; }
+  .hist-group .gt { font-size: 11px; font-weight: 600; letter-spacing: 0.09em; color: var(--text-3); padding: 14px 0 4px; }
+  .hist-row {
+    display: flex; align-items: center; gap: 12px; padding: 11px 0;
+    border-bottom: 1px solid var(--hairline);
+    background: none; border-left: none; border-right: none; border-top: none;
+    width: 100%; cursor: pointer; text-align: left;
+  }
+  .hist-row .emo { font-size: 22px; }
+  .hist-row .inf { flex: 1; min-width: 0; }
+  .hist-row .nm { font-size: 15px; font-weight: 500; }
+  .hist-row .nt { font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hist-row .amt { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .hist-row .swipe { opacity: 0; font-size: 13px; font-weight: 600; }
+  .hist-row:hover .swipe { opacity: 0.35; }
+
+  /* ---------- RECAP ---------- */
+  .recap-screen { padding-top: 96px; }
+  .recap-head { padding: 0 28px 20px; }
+  .recap-head .tt { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
+  .recap-head .delta { font-size: 13px; margin-top: 4px; color: var(--accent); font-weight: 500; }
+  .week-num { padding: 0 28px 4px; font-size: 44px; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+  .week-label { padding: 0 28px; font-size: 13px; color: var(--text-3); margin-bottom: 18px; }
+  .bars {
+    display: flex; gap: 8px; align-items: flex-end; padding: 0 28px 20px; height: 120px;
+  }
+  .bar { flex: 1; border-radius: 8px 8px 4px 4px; background: var(--surface-2); position: relative; transition: height .6s cubic-bezier(.2,.8,.2,1); }
+  .bar.today { background: var(--accent); }
+  .bar-days { display: flex; gap: 8px; padding: 0 28px 24px; }
+  .bar-days span { flex: 1; text-align: center; font-size: 11px; color: var(--text-3); }
+  .cat-break { padding: 0 28px; }
+  .cat-break .gt { font-size: 11px; font-weight: 600; letter-spacing: 0.09em; color: var(--text-3); padding-bottom: 8px; }
+  .cat-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--hairline); }
+  .cat-row:last-child { border-bottom: none; }
+  .cat-row .emo { font-size: 18px; }
+  .cat-row .nm { flex: 1; font-size: 14px; font-weight: 500; }
+  .cat-row .pct { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+  .cat-row .amt { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .export { margin: 20px 28px 0; height: 44px; border-radius: 22px; border: 1px solid var(--hairline); background: var(--surface); color: var(--text); font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; }
+
+  /* ---------- WELCOME ---------- */
+  .welcome-screen { align-items: center; justify-content: center; text-align: center; padding: 60px 44px; }
+  .welcome-screen .mark { font-size: 34px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 12px; }
+  .welcome-screen .tag { font-size: 16px; color: var(--text-2); line-height: 1.55; margin-bottom: 44px; max-width: 280px; }
+  .welcome-screen .primary {
+    width: 100%; height: 56px; border-radius: 28px; background: var(--accent); border: none;
+    color: var(--pill-text); font-size: 17px; font-weight: 600; cursor: pointer; font-family: inherit;
+    margin-bottom: 14px;
+  }
+  .welcome-screen .skip { background: none; border: none; color: var(--text-3); font-size: 14px; cursor: pointer; font-family: inherit; }
+
+  /* ---------- TAB BAR ---------- */
+  .tabbar {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 84px;
+    display: flex; align-items: flex-start; justify-content: space-around;
+    padding: 10px 20px 0; z-index: 40;
+    background: linear-gradient(to top, var(--bg) 65%, transparent);
+  }
+  .tab {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    background: none; border: none; cursor: pointer; font-family: inherit;
+    color: var(--text-3); font-size: 10px; font-weight: 500;
+    width: 64px; padding: 4px 0;
+    transition: color .2s;
+  }
+  .tab svg { width: 24px; height: 24px; }
+  .tab.active { color: var(--text); }
+  .tab.active svg { stroke: var(--accent); }
+  .tab svg { stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* toast */
+  .toast {
+    position: absolute; left: 20px; right: 20px; bottom: 100px;
+    background: var(--toast); color: var(--toast-text);
+    border-radius: 14px; padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 13.5px; opacity: 0; transform: translateY(12px);
+    transition: all .35s cubic-bezier(.2,.8,.2,1); z-index: 60; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+  .toast .undo { color: var(--accent); font-weight: 600; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 13.5px; }
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <h1>TapLog · Zen UI</h1>
+  <p>Capture-first home. History is one tab away, never the default. Tap the tabs and buttons inside the phone to explore.</p>
+  <div class="btn-row">
+    <button class="btn active" id="themeBtn" onclick="toggleTheme()">🌙 Dark</button>
+    <button class="btn" onclick="showWelcome()">Welcome screen</button>
+    <button class="btn" onclick="resetDemo()">Reset demo</button>
+  </div>
+  <p class="note">Mockup only — the Swift implementation will follow your approval. Both themes use the warm-neutral palette (sage accent).</p>
+</div>
+
+<div class="device" id="device" data-theme="light">
+  <div class="island"></div>
+  <div class="statusbar">
+    <span id="clock">9:41</span>
+    <span class="right">
+      <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="7" width="3" height="5" rx="1" fill="currentColor"/><rect x="5" y="4" width="3" height="8" rx="1" fill="currentColor"/><rect x="10" y="1.5" width="3" height="10.5" rx="1" fill="currentColor"/><rect x="14.5" y="0" width="3.5" height="12" rx="1" fill="currentColor" opacity=".35"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 9.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" fill="currentColor"/><path d="M8 3.2c1.6 0 3 .65 4.05 1.7M4.9 2.2A7.9 7.9 0 0 1 13.4 5" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>
+      <svg width="26" height="12" viewBox="0 0 26 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="15" height="8" rx="1.5" fill="currentColor"/><rect x="23" y="3.5" width="2" height="5" rx="1" fill="currentColor" opacity=".4"/></svg>
+    </span>
+  </div>
+
+  <!-- LOG / HOME -->
+  <div class="screen log-screen" id="screen-log">
+    <div class="log-status">
+      <span id="logDate">Tue, Aug 18</span>
+      <span class="today">Today · <span id="todayAmt">$32.50</span></span>
+    </div>
+    <div class="hero">
+      <div class="amount-wrap">
+        <span class="currency" id="curSymbol">$</span><span class="amount-line" id="amountDisplay">0</span><span class="amount-line blink">|</span>
+      </div>
+      <p class="hero-caption" id="heroCaption">Type the amount, tap Log. About 5 seconds.</p>
+    </div>
+    <div class="chips" id="chipRow"></div>
+    <div class="note-row"><input class="note-input" id="noteInput" placeholder="Note (optional)" maxlength="60"></div>
+    <button class="log-btn" id="logBtn" disabled>Log</button>
+    <div class="recent">
+      <div class="recent-head">
+        <span class="tt">RECENT</span>
+        <button class="see" onclick="goTab(1)">See all</button>
+      </div>
+      <div id="recentList"></div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="screen hist-screen hidden" id="screen-hist">
+    <div class="hist-head">
+      <div class="tt">History</div>
+      <div class="tot" id="histTot">This week · $86.40 · 12 entries</div>
+    </div>
+    <div class="hist-list" id="histList"></div>
+  </div>
+
+  <!-- RECAP -->
+  <div class="screen recap-screen hidden" id="screen-recap">
+    <div class="recap-head">
+      <div class="tt">Recap</div>
+      <div class="delta">▲ 12% vs. last week</div>
+    </div>
+    <div class="week-num" id="weekNum">$86.40</div>
+    <div class="week-label">This week · Aug 11 – 17</div>
+    <div class="bars" id="bars"></div>
+    <div class="bar-days" id="barDays"></div>
+    <div class="cat-break">
+      <div class="gt">BY CATEGORY</div>
+      <div id="catBreak"></div>
+    </div>
+    <button class="export" onclick="exportCsv()">Export CSV</button>
+  </div>
+
+  <!-- WELCOME -->
+  <div class="screen welcome-screen hidden" id="screen-welcome">
+    <div class="mark">TapLog</div>
+    <p class="tag">Track any expense in about 5 seconds.<br>Everything stays on your phone.</p>
+    <button class="primary" onclick="startLogging()">Log my first expense</button>
+    <button class="skip" onclick="skipWelcome()">Skip for now</button>
+  </div>
+
+  <div class="toast" id="toast"><span id="toastMsg">Logged</span><button class="undo" id="undoBtn">Undo</button></div>
+
+  <div class="tabbar">
+    <button class="tab active" data-tab="0" onclick="goTab(0)">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      Log
+    </button>
+    <button class="tab" data-tab="1" onclick="goTab(1)">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+      History
+    </button>
+    <button class="tab" data-tab="2" onclick="goTab(2)">
+      <svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+      Recap
+    </button>
+  </div>
+</div>
+
+<script>
+const CATS = [
+  { emoji: "☕️", name: "Coffee", key: "coffee" },
+  { emoji: "🍽️", name: "Food", key: "food" },
+  { emoji: "🚌", name: "Transport", key: "transport" },
+  { emoji: "🏠", name: "Rent", key: "rent" },
+  { emoji: "🛍️", name: "Shopping", key: "shopping" },
+  { emoji: "🧾", name: "Bills", key: "bills" },
+  { emoji: "🎉", name: "Fun", key: "fun" },
+  { emoji: "💊", name: "Health", key: "health" },
+  { emoji: "📦", name: "Other", key: "other" },
+];
+
+let entries = [
+  { emoji: "☕️", name: "Coffee", amt: 4.5, note: "Latte", day: "Today" },
+  { emoji: "🍽️", name: "Food", amt: 12.0, note: "Lunch — ramen", day: "Today" },
+  { emoji: "🚌", name: "Transport", amt: 3.25, note: "Metro", day: "Today" },
+  { emoji: "🛍️", name: "Shopping", amt: 48.9, note: "Groceries", day: "Yesterday" },
+  { emoji: "☕️", name: "Coffee", amt: 4.5, note: "Flat white", day: "Yesterday" },
+  { emoji: "🏠", name: "Rent", amt: 12.5, note: "Wifi bill", day: "Mon" },
+  { emoji: "🎉", name: "Fun", amt: 32.0, note: "Movie night", day: "Sun" },
+  { emoji: "💊", name: "Health", amt: 6.75, note: "Painkillers", day: "Sun" },
+  { emoji: "🍽️", name: "Food", amt: 18.4, note: "Dinner", day: "Sat" },
+  { emoji: "🚌", name: "Transport", amt: 3.25, note: "Metro", day: "Sat" },
+  { emoji: "🛍️", name: "Shopping", amt: 24.99, note: "Book", day: "Fri" },
+  { emoji: "☕️", name: "Coffee", amt: 4.2, note: "Americano", day: "Fri" },
+];
+
+let selectedCat = "coffee";
+let amount = "";
+let lastLogged = null;
+
+const $ = (id) => document.getElementById(id);
+
+function fmt(n) { return "$" + n.toFixed(2); }
+
+function renderChips() {
+  const row = $("chipRow");
+  row.innerHTML = "";
+  CATS.forEach(c => {
+    const b = document.createElement("button");
+    b.className = "chip" + (c.key === selectedCat ? " selected" : "");
+    b.innerHTML = `<span class="emo">${c.emoji}</span><span class="nm">${c.name}</span>`;
+    b.onclick = () => { selectedCat = c.key; renderChips(); };
+    row.appendChild(b);
+  });
+  const add = document.createElement("button");
+  add.className = "chip add";
+  add.innerHTML = `<span class="plus">+</span><span class="nm">Add</span>`;
+  add.onclick = () => toast("Category manager coming in build — mockup only");
+  row.appendChild(add);
+}
+
+function renderRecent() {
+  const list = $("recentList");
+  list.innerHTML = "";
+  entries.slice(0, 3).forEach(e => {
+    const r = document.createElement("button");
+    r.className = "recent-row";
+    r.innerHTML = `<span class="emo">${e.emoji}</span><span class="inf"><span class="nm">${e.name}</span><span class="dt">${e.day}</span></span><span class="amt">${fmt(e.amt)}</span>`;
+    list.appendChild(r);
+  });
+}
+
+function renderHist() {
+  const list = $("histList");
+  list.innerHTML = "";
+  const groups = {};
+  entries.forEach(e => { (groups[e.day] = groups[e.day] || []).push(e); });
+  const dayOrder = ["Today", "Yesterday", "Mon", "Sun", "Sat", "Fri"];
+  dayOrder.forEach(d => {
+    if (!groups[d]) return;
+    const g = document.createElement("div");
+    g.className = "hist-group";
+    g.innerHTML = `<div class="gt">${d.toUpperCase()}</div>`;
+    groups[d].forEach(e => {
+      const r = document.createElement("button");
+      r.className = "hist-row";
+      r.innerHTML = `<span class="emo">${e.emoji}</span><span class="inf"><span class="nm">${e.name}</span><span class="nt">${e.note || ""}</span></span><span class="amt">${fmt(e.amt)}</span><span class="swipe">⌫</span>`;
+      g.appendChild(r);
+    });
+    list.appendChild(g);
+  });
+}
+
+function renderRecap() {
+  const vals = [8.5, 12.4, 6.2, 15.8, 9.9, 14.2, 19.4];
+  const bars = $("bars");
+  bars.innerHTML = "";
+  const max = Math.max(...vals);
+  vals.forEach((v, i) => {
+    const b = document.createElement("div");
+    b.className = "bar" + (i === 6 ? " today" : "");
+    b.style.height = (v / max) * 100 + "%";
+    bars.appendChild(b);
+  });
+  $("barDays").innerHTML = ["M","T","W","T","F","S","S"].map(d => `<span>${d}</span>`).join("");
+  const cats = [
+    { e: "🍽️", n: "Food", a: 30.4, p: 35 },
+    { e: "☕️", n: "Coffee", a: 13.2, p: 15 },
+    { e: "🛍️", n: "Shopping", a: 24.9, p: 29 },
+    { e: "🏠", n: "Rent", a: 12.5, p: 14 },
+    { e: "🚌", n: "Transport", a: 6.5, p: 7 },
+  ];
+  $("catBreak").innerHTML = cats.map(c => `
+    <div class="cat-row"><span class="emo">${c.e}</span><span class="nm">${c.n}</span><span class="pct">${c.p}%</span><span class="amt">${fmt(c.a)}</span></div>
+  `).join("");
+}
+
+function updateAmount() {
+  const el = $("amountDisplay");
+  el.textContent = amount ? amount : "0";
+  $("logBtn").disabled = !(amount && parseFloat(amount) > 0);
+}
+
+function logExpense() {
+  if (!amount || parseFloat(amount) <= 0) return;
+  const cat = CATS.find(c => c.key === selectedCat);
+  const note = $("noteInput").value.trim();
+  entries.unshift({ emoji: cat.emoji, name: cat.name, amt: parseFloat(amount), note: note || "Note", day: "Today" });
+  const total = entries.filter(e => e.day === "Today").reduce((s, e) => s + e.amt, 0);
+  $("todayAmt").textContent = fmt(total);
+  lastLogged = { emoji: cat.emoji, name: cat.name, amt: parseFloat(amount) };
+  toast(`Logged ${fmt(parseFloat(amount))} · ${cat.name}`);
+  amount = "";
+  $("noteInput").value = "";
+  updateAmount();
+  renderRecent();
+  renderHist();
+  renderRecap();
+}
+
+let toastTimer = null;
+function toast(msg) {
+  $("toastMsg").textContent = msg;
+  $("toast").classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => $("toast").classList.remove("show"), 3500);
+}
+$("undoBtn").onclick = () => {
+  if (lastLogged) {
+    const idx = entries.findIndex(e => e.amt === lastLogged.amt && e.name === lastLogged.name && e.day === "Today");
+    if (idx >= 0) entries.splice(idx, 1);
+    lastLogged = null;
+    toast("Undone");
+    renderRecent(); renderHist();
+  }
+  $("toast").classList.remove("show");
+};
+
+function goTab(i) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.add("hidden"));
+  $("screen-log").classList.toggle("hidden", i !== 0);
+  $("screen-hist").classList.toggle("hidden", i !== 1);
+  $("screen-recap").classList.toggle("hidden", i !== 2);
+  $("screen-welcome").classList.add("hidden");
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", +t.dataset.tab === i));
+}
+
+function toggleTheme() {
+  const d = $("device");
+  const dark = d.dataset.theme !== "dark";
+  d.dataset.theme = dark ? "dark" : "light";
+  $("themeBtn").textContent = dark ? "☀️ Light" : "🌙 Dark";
+  $("themeBtn").classList.toggle("active", !dark);
+}
+
+function showWelcome() { goTab(-1); $("screen-welcome").classList.remove("hidden"); }
+function startLogging() { toast("Welcome — first log in a few taps"); goTab(0); }
+function skipWelcome() { goTab(0); }
+function exportCsv() { toast("CSV export comes in the real build"); }
+function resetDemo() { location.reload(); }
+
+// typing
+document.addEventListener("keydown", (e) => {
+  const screen = $("screen-log");
+  if (screen.classList.contains("hidden")) return;
+  if (/^[0-9.]$/.test(e.key)) {
+    if (e.key === "." && amount.includes(".")) return;
+    amount = (amount + e.key).slice(0, 8);
+    updateAmount();
+    e.preventDefault();
+  } else if (e.key === "Backspace") {
+    amount = amount.slice(0, -1);
+    updateAmount();
+    e.preventDefault();
+  } else if (e.key === "Enter") {
+    logExpense();
+  }
+});
+
+// wire the Log button (keyboard Enter already handled above)
+document.getElementById("logBtn").addEventListener("click", logExpense);
+
+// init clock
+function tick() {
+  const d = new Date();
+  $("clock").textContent = `${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+tick(); setInterval(tick, 30000);
+
+renderChips(); renderRecent(); renderHist(); renderRecap(); updateAmount();
+// keep the header total consistent with the demo data
+const initTotal = entries.filter(e => e.day === "Today").reduce((s, e) => s + e.amt, 0);
+$("todayAmt").textContent = fmt(initTotal);
+</script>
+</body>
+</html>

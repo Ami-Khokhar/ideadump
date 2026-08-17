@@ -8,8 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		03D459D8382BC1695FFB1F77 /* CSVExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F39BE7063CC4D232FC7DD8D1 /* CSVExporter.swift */; };
+		16E73425085637DCCF43CD1C /* OnboardingCategoriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FCAFA2601272F61B499A280 /* OnboardingCategoriesView.swift */; };
 		1932E41B91F45E46AA7B947E /* TapLogWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE6D869DDDC20393088C7D57 /* TapLogWidgetBundle.swift */; };
 		2344142B18619D974F6B8ECA /* SetupFrontDoorsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5ECFDD7A235B57950FEB84D8 /* SetupFrontDoorsView.swift */; };
+		26306C88F962BCC08D7F9FDD /* LogHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47FDDD9D72A53C355B60DEF /* LogHomeView.swift */; };
 		29A7E78D7E66C5C96DB5CC33 /* Money.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E288AE6E7A4297523866942 /* Money.swift */; };
 		2DFADCEFE987ACAA518EE64E /* SpendCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF3DE2DAA95012E652F3392 /* SpendCategory.swift */; };
 		301F07FA37534C328DC6AA6F /* DebugSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3ABAFEF33AB24EADE9F540E /* DebugSeeder.swift */; };
@@ -30,7 +32,9 @@
 		9305AA5EEDE873C20697A888 /* QuickLogIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CCFD7C9C1623952E799140E /* QuickLogIntent.swift */; };
 		935B66767E2C57C360E8072A /* StoreLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A781E9B64AAEA272FA487658 /* StoreLocator.swift */; };
 		96C8A026B355082E77E556A2 /* EntryListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE40F61B2DF72FE7EF9035AF /* EntryListView.swift */; };
+		9BF6F9DEACE1F4F15E33995B /* MoneyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB99B5662BD9B4C2793C718 /* MoneyTests.swift */; };
 		AC7E61336FFA39CD1A104DE6 /* Entry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E06859D8DD2DC20B4D96A32 /* Entry.swift */; };
+		AF5FAC9F8AF883608D9C5562 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7867E24E221AC6122BCDA234 /* WelcomeView.swift */; };
 		BAA215AEB6EB92DDBE543F6A /* Entry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E06859D8DD2DC20B4D96A32 /* Entry.swift */; };
 		BB76D8D3AB714C8081432CC6 /* CapturePrefill.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CBA4D4E213F6B83EB33639D /* CapturePrefill.swift */; };
 		BF76C176A18872D43DD7A917 /* ShareParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0364EBB65D36FBB3D9F2EC9D /* ShareParser.swift */; };
@@ -42,10 +46,18 @@
 		DABDD1131FE8B6E4541DC315 /* SpendCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF3DE2DAA95012E652F3392 /* SpendCategory.swift */; };
 		E37461D086CDA7EFB0634484 /* UndoStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52F262C9AE91426858ADB810 /* UndoStack.swift */; };
 		EBD36511DF423247C3455D83 /* TapLogShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F616AC66CBCE53CF8CAB9A65 /* TapLogShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		F050097AF5EEECD6B7266F2B /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FC516F728D48F203896905E /* Theme.swift */; };
 		F3CCA6BC2DACB7FBAAA1A68D /* Money.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E288AE6E7A4297523866942 /* Money.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		11D30F98EF3A7BB0DC92D613 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1C6644AA9CD3D222F4CB713D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C68C7FF68B45F0C5A1F99592;
+			remoteInfo = TapLog;
+		};
 		279455DC787698668F105AEE /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1C6644AA9CD3D222F4CB713D /* Project object */;
@@ -83,16 +95,20 @@
 		050E9E68352EA3E37605FE71 /* CategoryManageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryManageView.swift; sourceTree = "<group>"; };
 		05DE4D63F839A1FC98CE3CC4 /* EntryRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryRowView.swift; sourceTree = "<group>"; };
 		0B07A4859D752E1C04081F18 /* TapLogApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapLogApp.swift; sourceTree = "<group>"; };
+		0FC516F728D48F203896905E /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		2CAC674E8E824850DF01E0ED /* CaptureForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureForm.swift; sourceTree = "<group>"; };
 		3BF3DE2DAA95012E652F3392 /* SpendCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendCategory.swift; sourceTree = "<group>"; };
 		3D624420DCFD82FB945A607A /* LogExpenseIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogExpenseIntent.swift; sourceTree = "<group>"; };
 		3E288AE6E7A4297523866942 /* Money.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Money.swift; sourceTree = "<group>"; };
 		41FB7CC857B85AD2F6C016F5 /* UndoToast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoToast.swift; sourceTree = "<group>"; };
 		4CBA4D4E213F6B83EB33639D /* CapturePrefill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapturePrefill.swift; sourceTree = "<group>"; };
+		4EB99B5662BD9B4C2793C718 /* MoneyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoneyTests.swift; sourceTree = "<group>"; };
 		52F262C9AE91426858ADB810 /* UndoStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoStack.swift; sourceTree = "<group>"; };
 		549B39D3541189E897AF5D32 /* TapLog.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TapLog.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5E06859D8DD2DC20B4D96A32 /* Entry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Entry.swift; sourceTree = "<group>"; };
 		5ECFDD7A235B57950FEB84D8 /* SetupFrontDoorsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupFrontDoorsView.swift; sourceTree = "<group>"; };
+		6FCAFA2601272F61B499A280 /* OnboardingCategoriesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCategoriesView.swift; sourceTree = "<group>"; };
+		7867E24E221AC6122BCDA234 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		867EE56E324BE481266AE2DD /* ProLocked.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProLocked.swift; sourceTree = "<group>"; };
 		8AFDA712F13988B761C89CF1 /* SpendWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendWidget.swift; sourceTree = "<group>"; };
 		991D5BACEE57C2FC20B39564 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -103,6 +119,8 @@
 		C5F641E7F91BA446B4783A55 /* TapLogWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = TapLogWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE40F61B2DF72FE7EF9035AF /* EntryListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryListView.swift; sourceTree = "<group>"; };
 		D1313CBDF617D18A21F9F2E9 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
+		DE26898A296300C98D396FFB /* TapLogTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = TapLogTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E47FDDD9D72A53C355B60DEF /* LogHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogHomeView.swift; sourceTree = "<group>"; };
 		F39BE7063CC4D232FC7DD8D1 /* CSVExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVExporter.swift; sourceTree = "<group>"; };
 		F616AC66CBCE53CF8CAB9A65 /* TapLogShare.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = TapLogShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -113,6 +131,7 @@
 			children = (
 				549B39D3541189E897AF5D32 /* TapLog.app */,
 				F616AC66CBCE53CF8CAB9A65 /* TapLogShare.appex */,
+				DE26898A296300C98D396FFB /* TapLogTests.xctest */,
 				C5F641E7F91BA446B4783A55 /* TapLogWidget.appex */,
 			);
 			name = Products;
@@ -124,6 +143,14 @@
 				52F262C9AE91426858ADB810 /* UndoStack.swift */,
 			);
 			path = Undo;
+			sourceTree = "<group>";
+		};
+		1B281922AE3E2DBC3A1EE88A /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				4654B39150AE735AA50E660C /* TapLogTests */,
+			);
+			path = Tests;
 			sourceTree = "<group>";
 		};
 		377B4091CE0E241D73106BF9 /* Shared */ = {
@@ -152,6 +179,14 @@
 				BE6D869DDDC20393088C7D57 /* TapLogWidgetBundle.swift */,
 			);
 			path = TapLogWidget;
+			sourceTree = "<group>";
+		};
+		4654B39150AE735AA50E660C /* TapLogTests */ = {
+			isa = PBXGroup;
+			children = (
+				4EB99B5662BD9B4C2793C718 /* MoneyTests.swift */,
+			);
+			path = TapLogTests;
 			sourceTree = "<group>";
 		};
 		48A0F0DD26E15EF914B64A9D /* TapLogShare */ = {
@@ -190,6 +225,14 @@
 			path = List;
 			sourceTree = "<group>";
 		};
+		8928809563340000F6DB6FA4 /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				0FC516F728D48F203896905E /* Theme.swift */,
+			);
+			path = Theme;
+			sourceTree = "<group>";
+		};
 		9BE5902B46A636176A849DA2 /* AppIntents */ = {
 			isa = PBXGroup;
 			children = (
@@ -222,6 +265,7 @@
 				E5CAD5CE754A14CEB143C9BA /* Onboarding */,
 				EA7A8FEFEB3638FC13AA5ABB /* Recap */,
 				377B4091CE0E241D73106BF9 /* Shared */,
+				8928809563340000F6DB6FA4 /* Theme */,
 				101B4A14EB9C080DF4FC1EB3 /* Undo */,
 			);
 			path = TapLog;
@@ -230,7 +274,9 @@
 		E5CAD5CE754A14CEB143C9BA /* Onboarding */ = {
 			isa = PBXGroup;
 			children = (
+				6FCAFA2601272F61B499A280 /* OnboardingCategoriesView.swift */,
 				5ECFDD7A235B57950FEB84D8 /* SetupFrontDoorsView.swift */,
+				7867E24E221AC6122BCDA234 /* WelcomeView.swift */,
 			);
 			path = Onboarding;
 			sourceTree = "<group>";
@@ -257,6 +303,7 @@
 			children = (
 				2CAC674E8E824850DF01E0ED /* CaptureForm.swift */,
 				050E9E68352EA3E37605FE71 /* CategoryManageView.swift */,
+				E47FDDD9D72A53C355B60DEF /* LogHomeView.swift */,
 			);
 			path = Capture;
 			sourceTree = "<group>";
@@ -265,6 +312,7 @@
 			isa = PBXGroup;
 			children = (
 				4093F69C4B6BD21897921237 /* Sources */,
+				1B281922AE3E2DBC3A1EE88A /* Tests */,
 				02F8445422A8AF3C900ADC7C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -288,6 +336,24 @@
 			productName = TapLogWidget;
 			productReference = C5F641E7F91BA446B4783A55 /* TapLogWidget.appex */;
 			productType = "com.apple.product-type.app-extension";
+		};
+		4432B4AD069CDEABBA857446 /* TapLogTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F869C75E323A5CBC1192A694 /* Build configuration list for PBXNativeTarget "TapLogTests" */;
+			buildPhases = (
+				CBFA8760A58764A72515DE89 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				999B9580C5016CDCBB877640 /* PBXTargetDependency */,
+			);
+			name = TapLogTests;
+			packageProductDependencies = (
+			);
+			productName = TapLogTests;
+			productReference = DE26898A296300C98D396FFB /* TapLogTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		C68C7FF68B45F0C5A1F99592 /* TapLog */ = {
 			isa = PBXNativeTarget;
@@ -338,6 +404,9 @@
 					0ADA24EDFEDF80A58717CC5B = {
 						ProvisioningStyle = Automatic;
 					};
+					4432B4AD069CDEABBA857446 = {
+						ProvisioningStyle = Automatic;
+					};
 					C68C7FF68B45F0C5A1F99592 = {
 						ProvisioningStyle = Automatic;
 					};
@@ -363,6 +432,7 @@
 				C68C7FF68B45F0C5A1F99592 /* TapLog */,
 				0ADA24EDFEDF80A58717CC5B /* TapLogWidget */,
 				FBAE260331CEC4A7F670AE0F /* TapLogShare */,
+				4432B4AD069CDEABBA857446 /* TapLogTests */,
 			);
 		};
 /* End PBXProject section */
@@ -382,16 +452,20 @@
 				96C8A026B355082E77E556A2 /* EntryListView.swift in Sources */,
 				494EE6FABA03802CC3E6CDEA /* EntryRowView.swift in Sources */,
 				8FD6B5B53E4E7526850DD72D /* LogExpenseIntent.swift in Sources */,
+				26306C88F962BCC08D7F9FDD /* LogHomeView.swift in Sources */,
 				F3CCA6BC2DACB7FBAAA1A68D /* Money.swift in Sources */,
+				16E73425085637DCCF43CD1C /* OnboardingCategoriesView.swift in Sources */,
 				72B644339EF9A33BC1108162 /* ProLocked.swift in Sources */,
 				3DC3F135860710F724D5FEDE /* QuickLogIntent.swift in Sources */,
 				2344142B18619D974F6B8ECA /* SetupFrontDoorsView.swift in Sources */,
 				DABDD1131FE8B6E4541DC315 /* SpendCategory.swift in Sources */,
 				935B66767E2C57C360E8072A /* StoreLocator.swift in Sources */,
 				564D486201F2A0EC049A833D /* TapLogApp.swift in Sources */,
+				F050097AF5EEECD6B7266F2B /* Theme.swift in Sources */,
 				E37461D086CDA7EFB0634484 /* UndoStack.swift in Sources */,
 				D080D8C375310E1E3F7670C3 /* UndoToast.swift in Sources */,
 				CED590693197D171DAE1BEFD /* WeeklyRecapView.swift in Sources */,
+				AF5FAC9F8AF883608D9C5562 /* WelcomeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -407,6 +481,14 @@
 				8CEDFE125F57EF2D49C58BAB /* SpendWidget.swift in Sources */,
 				62EC609BE55A806E0181FD63 /* StoreLocator.swift in Sources */,
 				1932E41B91F45E46AA7B947E /* TapLogWidgetBundle.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CBFA8760A58764A72515DE89 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9BF6F9DEACE1F4F15E33995B /* MoneyTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -426,6 +508,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		999B9580C5016CDCBB877640 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C68C7FF68B45F0C5A1F99592 /* TapLog */;
+			targetProxy = 11D30F98EF3A7BB0DC92D613 /* PBXContainerItemProxy */;
+		};
 		ED82D98E1F9C79646A6112BE /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 0ADA24EDFEDF80A58717CC5B /* TapLogWidget */;
@@ -649,6 +736,40 @@
 			};
 			name = Release;
 		};
+		B045F55965028FF31A22783D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.taplog.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TapLog.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TapLog";
+			};
+			name = Release;
+		};
+		B457F61C51D97B674840F67E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.taplog.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TapLog.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TapLog";
+			};
+			name = Debug;
+		};
 		D584E0FC7B9524F1A5A90372 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -701,6 +822,15 @@
 			buildConfigurations = (
 				1453B5C06C869F33179EBE8B /* Debug */,
 				40D6D6FD51C38E55FB14A52A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F869C75E323A5CBC1192A694 /* Build configuration list for PBXNativeTarget "TapLogTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B457F61C51D97B674840F67E /* Debug */,
+				B045F55965028FF31A22783D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
