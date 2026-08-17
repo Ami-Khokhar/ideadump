@@ -42,6 +42,48 @@ xcrun simctl openurl booted "taplog://log?amount=12.50&note=coffee&category=Coff
 iOS 26.5 simulator.** Remaining before TestFlight: real-device code signing, Action
 Button / widget-on-lock-screen checks, and capture timing — see `build-plan.md`.
 
+## Test on your iPhone (10–15 min, free Apple ID works)
+
+1. **Pick a unique prefix.** In `project.yml`, replace every `com.example` with your own
+   reverse-domain, e.g. `dev.yourname.taplog` (bundle IDs must be unique to you). Do the
+   same for the App Group `group.dev.yourname.taplog`.
+2. **Free account? Remove App Groups** (they need a paid account): delete the two
+   `entitlements:` blocks from `project.yml` (app + widget + share), then run
+   `xcodegen generate`. The app falls back to on-device storage — the core app works;
+   only the widget/share-extension lose shared data. With a **paid** account, keep the
+   entitlements and also register the App Group in the developer portal.
+3. **Set your team.** Add your Apple Developer team ID to `project.yml` so it survives
+   regeneration:
+
+   ```yaml
+   settings:
+     base:
+       DEVELOPMENT_TEAM: YOUR_TEAM_ID   # find it at developer.apple.com → Membership
+   ```
+
+   Then `xcodegen generate` again.
+4. **Run from Xcode:** plug in the iPhone, unlock it, and trust the computer when
+   prompted. Select the **TapLog** scheme, set the destination to your iPhone, Run.
+5. **Trust the developer profile on the phone:** Settings → General → VPN & Device
+   Management → your Apple ID → Trust. (Free accounts re-sign every 7 days — rerun from
+   Xcode when the app stops opening.)
+6. **Test the front doors on the device:**
+   - **Deep link:** in Safari on the phone, type `taplog://log?amount=12.50&note=coffee`
+     and the capture form opens pre-filled.
+   - **Siri/Shortcuts:** open the Shortcuts app → TapLog → add “Log Expense”; run it
+     (amount 12, category coffee) — it logs without opening the app.
+   - **Action Button (iPhone 15 Pro+):** Settings → Action Button → Shortcut → choose
+     the “Log Expense” shortcut you just made.
+   - **Widget:** long-press the home screen → + → TapLog → add the medium widget; tap
+     ☕️/$12 to log instantly.
+   - **Share sheet:** share any text (e.g. a fake “You spent $12.50 at Starbucks” note)
+     → TapLog → confirm in the app.
+7. **Seed demo data** (optional): in the app, tap the hammer icon (top-left) → “Seed
+   sample data”.
+
+Paid-account-only later steps (not needed to test): TestFlight, App Groups with
+widget/sharing, App Store submission.
+
 ## Project layout
 
 | Path | What it is |
