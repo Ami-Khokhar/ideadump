@@ -32,14 +32,6 @@ struct ContentView: View {
 
     private var hasAnyEntry: Bool { !allEntries.isEmpty }
 
-    private var colorScheme: ColorScheme? {
-        switch appearanceMode {
-        case "light": .light
-        case "dark": .dark
-        default: nil
-        }
-    }
-
     var body: some View {
         NavigationStack {
             LogHomeView(
@@ -86,16 +78,26 @@ struct ContentView: View {
                 }
             }
         }
-        .preferredColorScheme(colorScheme)
+        .applyAppearanceOverride()
         .tint(Theme.accent)
         .onAppear {
             handleLaunchFlow()
-            // Dev/testing hook: `simctl launch ... -route history` opens a sheet.
+            // Dev/testing hooks:
+            //   `-route history` opens a sheet; `-appearance dark` flips the appearance
+            //   in-app shortly after launch (exercises the live-update path while a
+            //   sheet may be up, exactly like the user changing it in Settings).
             let args = ProcessInfo.processInfo.arguments
             if let index = args.lastIndex(of: "-route"),
                args.indices.contains(index + 1),
                let route = Route(rawValue: args[index + 1]) {
                 self.route = route
+            }
+            if let index = args.lastIndex(of: "-appearance"),
+               args.indices.contains(index + 1) {
+                let value = args[index + 1]
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    appearanceMode = value
+                }
             }
         }
         .onOpenURL { url in
@@ -103,22 +105,26 @@ struct ContentView: View {
             self.prefill = prefill
         }
         .sheet(item: $route) { route in
-            switch route {
-            case .history:
-                EntryListView()
-                    .environmentObject(undoStack)
-            case .recap:
-                WeeklyRecapView()
-            case .frontDoors:
-                SetupFrontDoorsView()
-            case .settings:
-                SettingsView()
+            Group {
+                switch route {
+                case .history:
+                    EntryListView()
+                        .environmentObject(undoStack)
+                case .recap:
+                    WeeklyRecapView()
+                case .frontDoors:
+                    SetupFrontDoorsView()
+                case .settings:
+                    SettingsView()
+                }
             }
+            .applyAppearanceOverride()
         }
         .fullScreenCover(item: $onboardingStep, onDismiss: {
             onboardingStep = nil
         }) { step in
             onboardingView(for: step)
+                .applyAppearanceOverride()
         }
         .overlay(alignment: .bottom) { UndoToast() }
     }

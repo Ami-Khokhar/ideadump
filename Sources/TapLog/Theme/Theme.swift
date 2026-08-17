@@ -56,3 +56,29 @@ enum Theme {
         .system(size: size, weight: weight, design: .rounded).monospacedDigit()
     }
 }
+
+/// Applies the user's appearance override (Settings → Appearance). Must be applied to
+/// the app root **and** to every presented sheet/cover: SwiftUI sheets capture the
+/// presenter's environment when they appear, so an override changed while a sheet is
+/// up would otherwise leave that sheet in the old scheme until it's reopened.
+struct AppearanceOverride: ViewModifier {
+    @AppStorage("appearanceMode") private var appearanceMode = "system"
+
+    private var scheme: ColorScheme? {
+        switch appearanceMode {
+        case "light": .light
+        case "dark": .dark
+        default: nil
+        }
+    }
+
+    func body(content: Content) -> some View {
+        content.preferredColorScheme(scheme)
+    }
+}
+
+extension View {
+    func applyAppearanceOverride() -> some View {
+        modifier(AppearanceOverride())
+    }
+}

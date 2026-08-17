@@ -78,8 +78,9 @@ Button / widget-on-lock-screen checks, and capture timing — see `build-plan.md
      ☕️/$12 to log instantly.
    - **Share sheet:** share any text (e.g. a fake “You spent $12.50 at Starbucks” note)
      → TapLog → confirm in the app.
-7. **Seed demo data** (optional): in the app, tap the hammer icon (top-left) → “Seed
-   sample data”.
+7. **Seed demo data + settings** (optional): in the app, tap **⋯** (top-right on the
+   home screen) → **Settings** → Seed sample data. The same menu holds History, Recap,
+   and the currency / appearance controls (16 currencies, System/Light/Dark).
 
 Paid-account-only later steps (not needed to test): TestFlight, App Groups with
 widget/sharing, App Store submission.
