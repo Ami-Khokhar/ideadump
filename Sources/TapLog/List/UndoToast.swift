@@ -8,6 +8,10 @@ struct UndoToast: View {
             Spacer()
             if let action = undoStack.current {
                 HStack(spacing: 12) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.accent)
+                        .symbolEffect(.bounce, options: .nonRepeating, value: undoStack.current?.id)
                     Text(action.message)
                         .lineLimit(1)
                         .font(.subheadline.weight(.medium))
@@ -28,7 +32,7 @@ struct UndoToast: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .animation(.easeOut(duration: 0.35), value: undoStack.current?.id)
+        .animation(Motion.gentle, value: undoStack.current?.id)
         .allowsHitTesting(undoStack.current != nil)
     }
 }

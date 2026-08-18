@@ -13,6 +13,9 @@ struct WeeklyRecapView: View {
     @Query(sort: \SpendCategory.sortOrder)
     private var categories: [SpendCategory]
 
+    /// Set true on first appear so the bars grow up from the baseline once.
+    @State private var barsGrown = false
+
     private var lookup: CategoryLookup { CategoryLookup(categories) }
 
     var body: some View {
@@ -37,6 +40,12 @@ struct WeeklyRecapView: View {
                         .fontWeight(.semibold)
                 }
             }
+            .onAppear {
+                // Let the sheet settle before the bars rise.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    barsGrown = true
+                }
+            }
         }
     }
 
@@ -55,9 +64,12 @@ struct WeeklyRecapView: View {
                     Text("This week")
                         .font(.footnote)
                         .foregroundStyle(Theme.textSecondary)
+                        .entrance()
                     Text(Money.format(thisTotal))
                         .font(Theme.amount(46))
                         .foregroundStyle(Theme.textPrimary)
+                        .contentTransition(.numericText())
+                        .entrance(delay: 0.08)
                     if lastTotal > 0 && thisTotal != lastTotal {
                         let pct = (thisTotal - lastTotal) / lastTotal
                         let up = thisTotal > lastTotal
@@ -73,6 +85,7 @@ struct WeeklyRecapView: View {
                 }
                 .padding(.horizontal, 28)
                 .padding(.top, 24)
+                .animation(Motion.stateChange, value: thisTotal)
 
                 // Bars
                 HStack(alignment: .bottom, spacing: 8) {
@@ -82,6 +95,11 @@ struct WeeklyRecapView: View {
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
                             .fill(index == todayIndex ? Theme.accent : Theme.surfaceStrong)
                             .frame(height: value == 0 ? 4 : max(10, CGFloat(NSDecimalNumber(decimal: value / maxDay).doubleValue) * 96))
+                            .scaleEffect(y: barsGrown ? 1 : 0.02, anchor: .bottom)
+                            .animation(
+                                Motion.gentleSlow.delay(0.08 * Double(index)),
+                                value: barsGrown
+                            )
                     }
                 }
                 .frame(height: 100)
@@ -183,6 +201,7 @@ struct WeeklyRecapView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(Theme.accentSoft)
+        .entrance()
     }
 
     // MARK: - Helpers

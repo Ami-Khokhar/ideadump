@@ -163,8 +163,10 @@ struct EntryListView: View {
     }
 
     private func confirmPending(_ entry: Entry) {
-        entry.isPending = false
-        try? modelContext.save()
+        withAnimation(Motion.stateChange) {
+            entry.isPending = false
+            try? modelContext.save()
+        }
         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
         undoStack.record("Added \(Money.format(entry.amount))") {
             entry.isPending = true
@@ -174,8 +176,10 @@ struct EntryListView: View {
 
     private func discardPending(_ entry: Entry) {
         let snapshot = (amount: entry.amount, category: entry.category, note: entry.note, date: entry.date)
-        modelContext.delete(entry)
-        try? modelContext.save()
+        withAnimation(Motion.stateChange) {
+            modelContext.delete(entry)
+            try? modelContext.save()
+        }
         undoStack.record("Discarded pending entry") {
             let restored = Entry(
                 amount: snapshot.amount,
@@ -192,8 +196,10 @@ struct EntryListView: View {
     // MARK: - Active / archived actions
 
     private func archive(_ entry: Entry) {
-        entry.isArchived = true
-        try? modelContext.save()
+        withAnimation(Motion.stateChange) {
+            entry.isArchived = true
+            try? modelContext.save()
+        }
         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
         undoStack.record("Archived \(Money.format(entry.amount))") {
             entry.isArchived = false
@@ -202,8 +208,10 @@ struct EntryListView: View {
     }
 
     private func unarchive(_ entry: Entry) {
-        entry.isArchived = false
-        try? modelContext.save()
+        withAnimation(Motion.stateChange) {
+            entry.isArchived = false
+            try? modelContext.save()
+        }
         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
         undoStack.record("Restored \(Money.format(entry.amount))") {
             entry.isArchived = true
@@ -219,8 +227,10 @@ struct EntryListView: View {
             date: entry.date,
             archived: entry.isArchived
         )
-        modelContext.delete(entry)
-        try? modelContext.save()
+        withAnimation(Motion.stateChange) {
+            modelContext.delete(entry)
+            try? modelContext.save()
+        }
         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
         undoStack.record("Deleted \(Money.format(snapshot.amount))") {
             let restored = Entry(

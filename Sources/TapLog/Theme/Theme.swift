@@ -57,6 +57,59 @@ enum Theme {
     }
 }
 
+// MARK: - Motion
+
+/// Zen motion language — soft fades and gentle slides, nothing springy or bouncy.
+/// The undo toast slides up and fades: a whisper, not an announcement.
+enum Motion {
+    /// Micro-interactions: presses, chip toggles.
+    static let fast: Double = 0.15
+    /// Standard entrances and state changes.
+    static let standard: Double = 0.38
+    /// Big entrances: welcome, recap, covers.
+    static let slow: Double = 0.5
+
+    /// The easing the whole app breathes with — a gentle settle, not a bounce.
+    static let gentle = Animation.timingCurve(0.25, 0.55, 0.3, 1.0, duration: standard)
+    static let gentleFast = Animation.timingCurve(0.25, 0.55, 0.3, 1.0, duration: fast)
+    static let gentleSlow = Animation.timingCurve(0.25, 0.55, 0.3, 1.0, duration: slow)
+    /// State changes that should feel neutral (totals ticking, list mutations).
+    static let stateChange = Animation.easeInOut(duration: standard)
+}
+
+/// Zen entrance: fades in and rises 14pt on a gentle curve. Pass `delay` to stagger
+/// siblings so the eye lands on the hero first, then drifts down the screen.
+struct Entrance: ViewModifier {
+    var delay: Double = 0
+    @State private var shown = false
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(shown ? 1 : 0)
+            .offset(y: shown ? 0 : 14)
+            .animation(Motion.gentle.delay(delay), value: shown)
+            .onAppear { shown = true }
+    }
+}
+
+extension View {
+    /// Fade-and-rise entrance on first appear, optionally staggered.
+    func entrance(delay: Double = 0) -> some View {
+        modifier(Entrance(delay: delay))
+    }
+}
+
+/// Press feedback: the label settles gently into the tap — a whisper, not a bounce.
+struct ZenPress: ButtonStyle {
+    var scale: CGFloat = 0.97
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? scale : 1)
+            .animation(Motion.gentleFast, value: configuration.isPressed)
+    }
+}
+
 /// Applies the user's appearance override (Settings → Appearance). Must be applied to
 /// the app root **and** to every presented sheet/cover: SwiftUI sheets capture the
 /// presenter's environment when they appear, so an override changed while a sheet is

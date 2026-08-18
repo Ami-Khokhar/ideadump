@@ -13,12 +13,14 @@ struct WelcomeView: View {
             Text("TapLog")
                 .font(.system(size: 40, weight: .bold, design: .rounded))
                 .foregroundStyle(Theme.textPrimary)
+                .entrance()
 
             Text("Track any expense in about 5 seconds.\nEverything stays on your phone.")
                 .font(.body)
                 .foregroundStyle(Theme.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.top, 14)
+                .entrance(delay: 0.12)
 
             Spacer()
 
@@ -32,7 +34,8 @@ struct WelcomeView: View {
                     .background(Theme.accent, in: Capsule())
                     .foregroundStyle(.white)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(ZenPress())
+            .entrance(delay: 0.22)
 
             Button("Skip for now") {
                 onSkip()
@@ -40,6 +43,7 @@ struct WelcomeView: View {
             .font(.subheadline)
             .foregroundStyle(Theme.textTertiary)
             .padding(.top, 14)
+            .entrance(delay: 0.3)
 
             Spacer()
         }

@@ -25,9 +25,11 @@ struct OnboardingCategoriesView: View {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Keep the ones you'll use.")
                     .font(.title3.bold())
+                    .entrance()
                 Text("You can change these anytime.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                    .entrance(delay: 0.08)
 
                 LazyVGrid(columns: columns, spacing: 10) {
                     ForEach(categories) { category in
@@ -35,6 +37,7 @@ struct OnboardingCategoriesView: View {
                     }
                     addChip
                 }
+                .entrance(delay: 0.16)
 
                 Spacer()
 
@@ -47,11 +50,13 @@ struct OnboardingCategoriesView: View {
                         .padding(.vertical, 6)
                 }
                 .buttonStyle(.borderedProminent)
+                .entrance(delay: 0.24)
 
                 Button("Skip") {
                     onContinue()
                 }
                 .frame(maxWidth: .infinity)
+                .entrance(delay: 0.3)
             }
             .padding(20)
             .navigationTitle("Your categories")
@@ -103,6 +108,8 @@ struct OnboardingCategoriesView: View {
                     .strokeBorder(isKept ? Theme.accent : .clear, lineWidth: 1.5)
             )
             .opacity(isKept || isInUse ? 1 : 0.55)
+            .scaleEffect(isKept ? 1 : 0.96)
+            .animation(Motion.gentleFast, value: isKept)
         }
         .buttonStyle(.plain)
         .disabled(isInUse)

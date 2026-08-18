@@ -27,6 +27,9 @@ struct LogHomeView: View {
     @State private var note = ""
     @State private var showingManageCategories = false
     @State private var hasFocused = false
+    /// Briefly true right after a log — the hero amount settles into the ledger
+    /// (a soft pulse) before the field clears.
+    @State private var isCommitting = false
     @FocusState private var amountFocused: Bool
 
     let isOnboarding: Bool
@@ -52,17 +55,18 @@ struct LogHomeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            statusLine
+            statusLine.entrance()
             Spacer(minLength: 10)
-            hero
-            categoryChips
-            noteField
+            hero.entrance(delay: 0.08)
+            categoryChips.entrance(delay: 0.16)
+            noteField.entrance(delay: 0.22)
         }
         // Pin the Log button in the bottom safe area so it always floats ABOVE the
         // keyboard. Without this, the button (the last element) is pushed underneath
         // the keyboard on a real device and logging becomes impossible.
         .safeAreaInset(edge: .bottom, spacing: 0) {
             logButton
+                .entrance(delay: 0.28)
                 .padding(.bottom, 12)
                 .padding(.top, 4)
         }
@@ -107,17 +111,19 @@ struct LogHomeView: View {
                         .foregroundStyle(Theme.textTertiary)
                 }
             }
-            Text("Today · ")
+            (Text("Today · ")
                 .font(.subheadline)
                 .foregroundStyle(Theme.textSecondary)
                 .monospacedDigit()
             + Text(Money.format(todayTotal))
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(Theme.textPrimary)
-                .monospacedDigit()
+                .monospacedDigit())
+                .contentTransition(.numericText())
         }
         .padding(.horizontal, 28)
         .padding(.top, 16)
+        .animation(Motion.stateChange, value: todayTotal)
     }
 
     private var hero: some View {
@@ -136,6 +142,7 @@ struct LogHomeView: View {
                     .tint(Theme.accent)
             }
             .frame(maxWidth: .infinity)
+            .scaleEffect(isCommitting ? 1.05 : 1)
 
             Text(isOnboarding
                 ? "Your first expense — type the amount, tap Log. About 5 seconds."
@@ -182,6 +189,8 @@ struct LogHomeView: View {
                 isSelected ? Theme.accentSoft : Theme.surface,
                 in: RoundedRectangle(cornerRadius: 16, style: .continuous)
             )
+            .scaleEffect(isSelected ? 1.05 : 1)
+            .animation(Motion.gentleFast, value: isSelected)
         }
         .buttonStyle(.plain)
     }
@@ -235,7 +244,7 @@ struct LogHomeView: View {
                 )
                 .foregroundStyle(canLog ? Color.white : Theme.textTertiary)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(ZenPress())
         .disabled(!canLog)
         .padding(.horizontal, 28)
         .padding(.top, 14)
@@ -289,9 +298,16 @@ struct LogHomeView: View {
         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
         UINotificationFeedbackGenerator().notificationOccurred(.success)
 
-        amountText = ""
-        note = ""
-        amountFocused = true
+        // The hero settles into the ledger: a soft pulse, then the field clears.
+        withAnimation(Motion.gentle) { isCommitting = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+            withAnimation(Motion.gentleFast) {
+                isCommitting = false
+                amountText = ""
+                note = ""
+            }
+            amountFocused = true
+        }
 
         onLogged?()
     }
