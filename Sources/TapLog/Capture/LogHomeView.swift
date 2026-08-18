@@ -9,6 +9,7 @@ import WidgetKit
 /// of the plain caption, and `onLogged` advances the flow instead of just clearing.
 struct LogHomeView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject private var undoStack: UndoStack
 
     @AppStorage("lastUsedCategory") private var lastUsedCategoryKey: String = SpendCategory.fallbackKey
@@ -30,6 +31,8 @@ struct LogHomeView: View {
     /// Briefly true right after a log — the hero amount settles into the ledger
     /// (a soft pulse) before the field clears.
     @State private var isCommitting = false
+    /// Triggers the on-log ripple burst.
+    @State private var rippleBurst = false
     @FocusState private var amountFocused: Bool
 
     let isOnboarding: Bool
@@ -56,17 +59,14 @@ struct LogHomeView: View {
     var body: some View {
         VStack(spacing: 0) {
             statusLine.entrance()
-            Spacer(minLength: 10)
-            hero.entrance(delay: 0.08)
-            categoryChips.entrance(delay: 0.16)
-            noteField.entrance(delay: 0.22)
+            Spacer(minLength: 16)
+            heroStone.entrance(delay: 0.08)
+            categoryChips.entrance(delay: 0.18)
+            noteField.entrance(delay: 0.24)
         }
-        // Pin the Log button in the bottom safe area so it always floats ABOVE the
-        // keyboard. Without this, the button (the last element) is pushed underneath
-        // the keyboard on a real device and logging becomes impossible.
         .safeAreaInset(edge: .bottom, spacing: 0) {
             logButton
-                .entrance(delay: 0.28)
+                .entrance(delay: 0.30)
                 .padding(.bottom, 12)
                 .padding(.top, 4)
         }
@@ -123,36 +123,79 @@ struct LogHomeView: View {
         }
         .padding(.horizontal, 28)
         .padding(.top, 16)
+        .padding(.trailing, 40)  // avoid overlap with the menu button
         .animation(Motion.stateChange, value: todayTotal)
     }
 
-    private var hero: some View {
-        VStack(spacing: 12) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(Money.currencySymbol)
-                    .font(Theme.amount(44, weight: .semibold))
-                    .foregroundStyle(Theme.textTertiary)
-                TextField("0", text: $amountText)
-                    .keyboardType(.decimalPad)
-                    .font(Theme.amount(84))
-                    .multilineTextAlignment(.center)
-                    .lineLimit(1)
-                    .focused($amountFocused)
-                    .fixedSize(horizontal: true, vertical: false)
-                    .tint(Theme.accent)
+    /// The hero amount inside a zen stone — a soft circle with ambient ripples.
+    private var heroStone: some View {
+        VStack(spacing: 16) {
+            ZStack {
+                // Ambient ripple rings behind the stone.
+                RippleView()
+                    .frame(width: 260, height: 260)
+                    .allowsHitTesting(false)
+                // On-log burst (fires once, then resets).
+                if rippleBurst {
+                    RippleView(burst: true)
+                        .frame(width: 260, height: 260)
+                        .allowsHitTesting(false)
+                        .transition(.opacity)
+                }
+                // The stone itself.
+                VStack(spacing: 4) {
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text(Money.currencySymbol)
+                            .font(Theme.amount(36, weight: .semibold))
+                            .foregroundStyle(Theme.textTertiary)
+                        TextField("0", text: $amountText)
+                            .keyboardType(.decimalPad)
+                            .font(Theme.amount(72))
+                            .multilineTextAlignment(.center)
+                            .lineLimit(1)
+                            .focused($amountFocused)
+                            .fixedSize(horizontal: true, vertical: false)
+                            .tint(Theme.accent)
+                    }
+                    .scaleEffect(isCommitting ? 1.06 : 1)
+                }
+                .frame(width: 240, height: 240)
+                .background {
+                    Circle()
+                        .fill(Theme.surface)
+                        .overlay {
+                            Circle()
+                                .fill(
+                                    RadialGradient(
+                                        colors: [
+                                            Color.white.opacity(colorScheme == .dark ? 0.03 : 0.06),
+                                            Color.clear
+                                        ],
+                                        center: .center,
+                                        startRadius: 0,
+                                        endRadius: 120
+                                    )
+                                )
+                        }
+                        .clipShape(Circle())
+                }
+                .clipShape(Circle())
+                .shadow(
+                    color: colorScheme == .dark
+                        ? Color.black.opacity(0.4)
+                        : Color.black.opacity(0.06),
+                    radius: 20, x: 0, y: 8
+                )
             }
-            .frame(maxWidth: .infinity)
-            .scaleEffect(isCommitting ? 1.05 : 1)
 
             Text(isOnboarding
-                ? "Your first expense — type the amount, tap Log. About 5 seconds."
-                : "Type the amount, tap Log. About 5 seconds.")
+                ? "Your first expense — type the amount, tap Log."
+                : "Type the amount, tap Log.")
                 .font(.subheadline)
                 .foregroundStyle(Theme.textTertiary)
                 .multilineTextAlignment(.center)
         }
         .padding(.horizontal, 24)
-        .padding(.bottom, 4)
     }
 
     private var categoryChips: some View {
@@ -298,8 +341,13 @@ struct LogHomeView: View {
         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
         UINotificationFeedbackGenerator().notificationOccurred(.success)
 
-        // The hero settles into the ledger: a soft pulse, then the field clears.
+        // The hero settles into the ledger: a soft pulse + ripple burst, then the field clears.
         withAnimation(Motion.gentle) { isCommitting = true }
+        // Fire the ripple burst — visible for one cycle then hidden.
+        rippleBurst = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
+            withAnimation(Motion.gentle) { rippleBurst = false }
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
             withAnimation(Motion.gentleFast) {
                 isCommitting = false
