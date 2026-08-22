@@ -10,6 +10,7 @@ import WidgetKit
 struct LogHomeView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(RetentionManager.self) private var retention
     @EnvironmentObject private var undoStack: UndoStack
 
     @AppStorage("lastUsedCategory") private var lastUsedCategoryKey: String = SpendCategory.fallbackKey
@@ -59,10 +60,11 @@ struct LogHomeView: View {
     var body: some View {
         VStack(spacing: 0) {
             statusLine.entrance()
-            Spacer(minLength: 16)
-            heroStone.entrance(delay: 0.08)
-            categoryChips.entrance(delay: 0.18)
-            noteField.entrance(delay: 0.24)
+            weeklyRingRow.entrance(delay: 0.04)
+            Spacer(minLength: 12)
+            heroStone.entrance(delay: 0.10)
+            categoryChips.entrance(delay: 0.20)
+            noteField.entrance(delay: 0.26)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             logButton
@@ -125,6 +127,34 @@ struct LogHomeView: View {
         .padding(.top, 16)
         .padding(.trailing, 40)  // avoid overlap with the menu button
         .animation(Motion.stateChange, value: todayTotal)
+    }
+
+    /// Weekly ring + streak — sits between the status line and the zen stone.
+    private var weeklyRingRow: some View {
+        HStack(spacing: 12) {
+            WeeklyRingView(
+                progress: retention.ringFraction,
+                daysLogged: retention.daysLoggedThisWeek,
+                target: retention.weeklyTarget,
+                freezesAvailable: retention.streakFreezes
+            )
+            VStack(alignment: .leading, spacing: 2) {
+                if let streak = retention.streakDescription {
+                    Text("🔥 \(streak)")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Theme.textPrimary)
+                } else {
+                    Text("Log this week")
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.textSecondary)
+                }
+                Text("\(retention.weeklyTarget) days/week target")
+                    .font(.caption)
+                    .foregroundStyle(Theme.textTertiary)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 28)
     }
 
     /// The hero amount inside a zen stone — a soft circle with ambient ripples.
@@ -339,6 +369,7 @@ struct LogHomeView: View {
         }
 
         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
+        retention.recordLogDay()
         UINotificationFeedbackGenerator().notificationOccurred(.success)
 
         // The hero settles into the ledger: a soft pulse + ripple burst, then the field clears.

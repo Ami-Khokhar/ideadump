@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TapLog — Retention System Design</title>
+<style>
+  :root {
+    --paper: #F7F5F2; --ink: #1C1B1A; --sage: #6B8F71;
+    --sage-soft: rgba(107,143,113,0.12); --surface: #EFECE7;
+    --muted: #6E6A64; --hairline: rgba(28,27,26,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, system-ui, sans-serif; background: var(--paper); color: var(--ink); line-height: 1.6; }
+
+  /* Header */
+  .hero { text-align: center; padding: 4rem 2rem 3rem; border-bottom: 1px solid var(--hairline); }
+  .hero h1 { font-size: 2.2rem; font-weight: 700; letter-spacing: -0.02em; }
+  .hero h1 span { color: var(--sage); }
+  .hero p { color: var(--muted); font-size: 1rem; margin-top: 0.5rem; max-width: 600px; margin-inline: auto; }
+  .badge { display: inline-block; background: var(--sage-soft); color: var(--sage); font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 99px; margin-top: 1rem; letter-spacing: 0.03em; }
+
+  /* Layout */
+  .content { max-width: 860px; margin: 0 auto; padding: 2rem; }
+  section { margin-bottom: 3rem; }
+  h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+  h2 .num { background: var(--sage); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; flex-shrink: 0; }
+  h3 { font-size: 1.1rem; font-weight: 600; margin: 1.5rem 0 0.5rem; color: var(--sage); }
+  p, li { color: var(--ink); font-size: 0.95rem; }
+  ul { padding-left: 1.5rem; margin: 0.5rem 0; }
+  li { margin-bottom: 0.4rem; }
+  .note { background: var(--surface); border-left: 3px solid var(--sage); padding: 1rem 1.25rem; border-radius: 0 8px 8px 0; margin: 1rem 0; font-size: 0.9rem; }
+  .note strong { color: var(--sage); }
+  .red { border-left-color: #c0392b; }
+  .red strong { color: #c0392b; }
+
+  /* Cards */
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin: 1rem 0; }
+  .card { background: white; border: 1px solid var(--hairline); border-radius: 12px; padding: 1.25rem; }
+  .card .tag { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sage); margin-bottom: 0.5rem; }
+  .card h4 { font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; }
+  .card p { font-size: 0.85rem; color: var(--muted); }
+
+  /* Ring mockup */
+  .ring-demo { display: flex; justify-content: center; gap: 2rem; margin: 1.5rem 0; flex-wrap: wrap; }
+  .ring-item { text-align: center; }
+  .ring-item svg { width: 100px; height: 100px; }
+  .ring-item .label { font-size: 0.8rem; color: var(--muted); margin-top: 0.4rem; }
+
+  /* Phase flow */
+  .flow { display: flex; gap: 0; margin: 1.5rem 0; align-items: stretch; }
+  .flow-step { flex: 1; background: white; border: 1px solid var(--hairline); padding: 1rem; text-align: center; position: relative; }
+  .flow-step:first-child { border-radius: 12px 0 0 12px; }
+  .flow-step:last-child { border-radius: 0 12px 12px 0; }
+  .flow-step .step-num { font-size: 0.7rem; font-weight: 700; color: var(--sage); text-transform: uppercase; letter-spacing: 0.05em; }
+  .flow-step h4 { font-size: 0.9rem; margin: 0.3rem 0; }
+  .flow-step p { font-size: 0.8rem; color: var(--muted); }
+  .flow-arrow { display: flex; align-items: center; font-size: 1.2rem; color: var(--sage); padding: 0 0.25rem; }
+
+  /* Phases */
+  .phase { border: 1px solid var(--hairline); border-radius: 12px; padding: 1.5rem; margin: 1rem 0; background: white; }
+  .phase-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+  .phase-tag { background: var(--sage); color: white; font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .phase h3 { margin: 0; }
+  .phase ul { margin-top: 0.5rem; }
+  .checklist { list-style: none; padding: 0; }
+  .checklist li { padding: 0.4rem 0; padding-left: 1.8rem; position: relative; font-size: 0.9rem; }
+  .checklist li::before { content: "○"; position: absolute; left: 0; color: var(--sage); font-weight: 700; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  th { text-align: left; padding: 0.6rem 0.8rem; border-bottom: 2px solid var(--ink); font-weight: 600; }
+  td { padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--hairline); }
+  tr:last-child td { border-bottom: none; }
+  .good { color: var(--sage); font-weight: 600; }
+  .bad { color: #c0392b; font-weight: 600; }
+  .mid { color: #d4a017; font-weight: 600; }
+
+  /* Footer */
+  footer { text-align: center; padding: 2rem; color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--hairline); margin-top: 2rem; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>TapLog <span>Retention System</span></h1>
+  <p>A full retention design mapped to the 7 proven mechanics — built for a zen expense tracker, not a game.</p>
+  <div class="badge">DESIGN DOCUMENT v1.0</div>
+</div>
+
+<div class="content">
+
+<!-- ─── PRINCIPLE ─── -->
+<section>
+  <h2>Guiding Principle</h2>
+  <p>TapLog is a <strong>tool</strong>, not a game. Every retention mechanic must pass the <strong>5% test</strong>: if the "game" layer takes more than 5% of the user's interaction time, it fails. The reward for tracking expenses is <em>financial awareness</em> — not points, badges, or虚拟 currencies.</p>
+  <div class="note">
+    <strong>Non-negotiable:</strong> The zen stone, the 5-second capture, and the clean UI come first. Retention mechanics live in the background — visible but never demanding.
+  </div>
+</section>
+
+<!-- ─── CURRENT STATE ─── -->
+<section>
+  <h2>Current State vs. Opportunity</h2>
+  <table>
+    <tr><th>Mechanic</th><th>TapLog Today</th><th>Opportunity</th></tr>
+    <tr><td>I. Winnable Arenas</td><td class="bad">None</td><td>Personal "beat your average" weekly challenge</td></tr>
+    <tr><td>II. Cognitive Load Caps</td><td class="good">Excellent (5s capture)</td><td>Keep it — never add inventory/RPG layers</td></tr>
+    <tr><td>III. Flexible Consistency</td><td class="bad">No streaks</td><td>Weekly log streak with freeze + customizable target</td></tr>
+    <tr><td>IV. Variable Rewards</td><td class="bad">None</td><td>Weekly Insight reveal after ring completion</td></tr>
+    <tr><td>V. Gestalt Closure</td><td class="mid">Ripples only</td><td>Weekly spending ring on home screen</td></tr>
+    <tr><td>VI. Competence Metrics</td><td class="bad">None</td><td>Real financial awareness metrics, not badges</td></tr>
+    <tr><td>VII. Micro Social</td><td class="bad">None</td><td>1-tap share monthly summary card</td></tr>
+  </table>
+</section>
+
+<!-- ─── MECHANIC I ─── -->
+<section>
+  <h2><span class="num">I</span> Winnable Arenas</h2>
+  <p>Global leaderboards don't work for expense tracking — nobody cares about being #482,912. The winning arena is <strong>you vs. your own average</strong>.</p>
+
+  <h3>Weekly Personal Challenge</h3>
+  <ul>
+    <li><strong>Mechanic:</strong> "Stay under $X this week" — auto-calculated from your 4-week rolling average + 10% buffer</li>
+    <li><strong>Why it's winnable:</strong> It's your own data, your own baseline. You're not competing with strangers — you're competing with last-you.</li>
+    <li><strong>Transient:</strong> Resets every Monday. No permanent rankings, no shame in losing.</li>
+    <li><strong>Visual:</strong> A subtle bar on the home screen: "This week: $187 / $220 target" with a sage fill that stops at the target line.</li>
+  </ul>
+  <div class="note"><strong>Design rule:</strong> The target is always achievable — calculated from YOUR history, not an arbitrary number. If you never spend more than $200/week, your target is ~$180, not $50.</div>
+</section>
+
+<!-- ─── MECHANIC II ─── -->
+<section>
+  <h2><span class="num">II</span> Cognitive Load Caps</h2>
+  <p>The existing 5-second capture is the foundation. Retention mechanics must be <strong>zero additional friction</strong>.</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="tag">✅ Already good</div>
+      <h4>5-Second Capture</h4>
+      <p>Amount → Category → Log. No setup, no onboarding tax, no inventory to manage.</p>
+    </div>
+    <div class="card">
+      <div class="tag">✅ Already good</div>
+      <h4>No Game Currency</h4>
+      <p>No coins, gems, XP, or virtual money. The "currency" is real dollars tracked in real life.</p>
+    </div>
+    <div class="card">
+      <div class="tag">🛡️ Protection rule</h4>
+      <h4>5% Budget</h4>
+      <p>Any new feature must take ≤5% of interaction time. If it requires a tutorial, it's too complex.</p>
+    </div>
+  </div>
+
+  <div class="note red">
+    <strong>Never add:</strong> Virtual pets, inventory management, daily quests, energy systems, or "check in to earn coins." These are the S-Curve traps that kill productivity tools.
+  </div>
+</section>
+
+<!-- ─── MECHANIC III ─── -->
+<section>
+  <h2><span class="num">III</span> Flexible Consistency</h2>
+  <p>Rigid daily streaks are anxiety engines. Expense tracking doesn't happen every day — you don't buy coffee on Sundays. A <strong>weekly rhythm</strong> with flexibility is the right model.</p>
+
+  <h3>Weekly Log Streak</h3>
+  <ul>
+    <li><strong>Target:</strong> User-customizable (default: log at least 5 days/week). Options: 3, 4, 5, 6, 7.</li>
+    <li><strong>Streak:</strong> Consecutive weeks where you hit your target. Displayed as "🔥 12-week streak"</li>
+    <li><strong>Streak Freeze:</strong> Earned every 10 logs (not purchased). Stored as a consumable — use one to skip a week without breaking the streak. Max stored: 3.</li>
+    <li><strong>Grace Period:</strong> If you miss a week, the next week starts at "1" (not "0") with a "Welcome back — log one expense to pick up momentum" nudge.</li>
+    <li><strong>No shame:</strong> Missed streaks are never displayed. The counter only shows the current positive streak.</li>
+  </ul>
+
+  <div class="note">
+    <strong>Why 5/week (not 7):</strong> People don't spend money every day. A 7-day target guarantees failure for most users. 5/week means weekends off, travel days off, "nothing to log" days off — and the streak still feels earned.
+  </div>
+
+  <h3>Streak UI</h3>
+  <p>The streak lives on the home screen, <strong>below the status line</strong>, as a subtle single line:</p>
+  <p style="font-size: 1.1rem; color: var(--sage); font-weight: 600; margin: 0.5rem 0;">🔥 12-week streak · 4/5 days this week</p>
+  <p style="font-size: 0.85rem; color: var(--muted);">Small, always visible, never demanding. The "4/5" creates the Zeigarnik itch — one more log to hit the target.</p>
+</section>
+
+<!-- ─── MECHANIC IV ─── -->
+<section>
+  <h2><span class="num">IV</span> Three-Phase Variable Rewards</h2>
+  <p>The reward for expense tracking is <strong>insight</strong>, not points. The three phases map to the weekly ring completion.</p>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="step-num">Phase 1</div>
+      <h4>Anticipation</h4>
+      <p>The weekly ring fills as you log. At 80%, a subtle glow appears — "almost there."</p>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="step-num">Phase 2</div>
+      <h4>Reveal</h4>
+      <p>Ring completes → a "Weekly Insight" card appears. Variable outcomes:</p>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="step-num">Phase 3</div>
+      <h4>Celebration</h4>
+      <p>Haptic + ripple burst + the insight card with a share button.</p>
+    </div>
+  </div>
+
+  <h3>Variable Insight Types (randomized)</h3>
+  <div class="card-grid">
+    <div class="card">
+      <div class="tag">Common (60%)</div>
+      <h4>Category Spotlight</h4>
+      <p>"Coffee was your top category this week — $34 across 8 logs."</p>
+    </div>
+    <div class="card">
+      <div class="tag">Common (60%)</div>
+      <h4>Week Comparison</h4>
+      <p>"You spent 12% less this week than your 4-week average."</p>
+    </div>
+    <div class="card">
+      <div class="tag">Uncommon (30%)</div>
+      <h4>Pattern Discovery</h4>
+      <p>"You spend most on weekdays — Tuesday is your biggest day."</p>
+    </div>
+    <div class="card">
+      <div class="tag">Rare (10%)</div>
+      <h4>Milestone</h4>
+      <p>"You've tracked $1,000 this month — your most detailed month yet."</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─── MECHANIC V ─── -->
+<section>
+  <h2><span class="num">V</span> Gestalt Closure</h2>
+  <p>The human brain hates incomplete circles. A 90% filled ring creates an intuitive itch to finish — no math required.</p>
+
+  <h3>Weekly Spending Ring</h3>
+  <p>A circular progress ring on the home screen, inspired by Apple Watch Activity Rings:</p>
+
+  <div class="ring-demo">
+    <div class="ring-item">
+      <svg viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="42" fill="none" stroke="#EFECE7" stroke-width="8"/>
+        <circle cx="50" cy="50" r="42" fill="none" stroke="#6B8F71" stroke-width="8"
+          stroke-dasharray="264" stroke-dashoffset="66" stroke-linecap="round"
+          transform="rotate(-90 50 50)"/>
+        <text x="50" y="48" text-anchor="middle" font-size="14" font-weight="700" fill="#1C1B1A">75%</text>
+        <text x="50" y="60" text-anchor="middle" font-size="7" fill="#6E6A64">logged</text>
+      </svg>
+      <div class="label">3 of 5 days</div>
+    </div>
+    <div class="ring-item">
+      <svg viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="42" fill="none" stroke="#EFECE7" stroke-width="8"/>
+        <circle cx="50" cy="50" r="42" fill="none" stroke="#6B8F71" stroke-width="8"
+          stroke-dasharray="264" stroke-dashoffset="0" stroke-linecap="round"
+          transform="rotate(-90 50 50)"/>
+        <text x="50" y="48" text-anchor="middle" font-size="14" font-weight="700" fill="#6B8F71">✓</text>
+        <text x="50" y="60" text-anchor="middle" font-size="7" fill="#6E6A64">complete</text>
+      </svg>
+      <div class="label">5 of 5 days</div>
+    </div>
+    <div class="ring-item">
+      <svg viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="42" fill="none" stroke="#EFECE7" stroke-width="8"/>
+        <circle cx="50" cy="50" r="42" fill="none" stroke="#d4a017" stroke-width="8"
+          stroke-dasharray="264" stroke-dashoffset="211" stroke-linecap="round"
+          transform="rotate(-90 50 50)"/>
+        <text x="50" y="48" text-anchor="middle" font-size="14" font-weight="700" fill="#1C1B1A">20%</text>
+        <text x="50" y="60" text-anchor="middle" font-size="7" fill="#6E6A64">freeze</text>
+      </svg>
+      <div class="label">Streak freeze used</div>
+    </div>
+  </div>
+
+  <ul>
+    <li><strong>Placement:</strong> Below the status line, above the zen stone. Small (60pt), always visible.</li>
+    <li><strong>Color:</strong> Sage green when progressing, gold when a freeze is active, paper grey when reset.</li>
+    <li><strong>80% threshold:</strong> Subtle glow animation appears — "almost there" visual tension.</li>
+    <li><strong>Completion:</strong> Ring pulses once, then fades to a static checkmark for the rest of the week.</li>
+  </ul>
+</section>
+
+<!-- ─── MECHANIC VI ─── -->
+<section>
+  <h2><span class="num">VI</span> Competence Metrics</h2>
+  <p>Not "you opened the app 5 times" — that's participation theater. Real competence is <strong>financial awareness</strong>.</p>
+
+  <h3>What We Celebrate</h3>
+  <div class="card-grid">
+    <div class="card">
+      <div class="tag">Awareness</div>
+      <h4>Spending Trend</h4>
+      <p>"You spent $1,247 this month — 8% less than last month." Real mastery: knowing where money goes.</p>
+    </div>
+    <div class="card">
+      <div class="tag">Consistency</div>
+      <h4>Tracking Streak</h4>
+      <p>"12-week streak" — earned by consistent behavior, not by clicking buttons.</p>
+    </div>
+    <div class="card">
+      <div class="tag">Insight</div>
+      <h4>Pattern Recognition</h4>
+      <p>"You've identified 3 recurring expenses this month." The reward is knowledge, not points.</p>
+    </div>
+    <div class="card">
+      <div class="tag">Milestone</div>
+      <h4>Volume Milestones</h4>
+      <p>"100th log" — celebrates real usage volume, not time-based attendance.</p>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>The key difference:</strong> A badge says "you clicked a button." A competence metric says "you became more financially aware." The latter is something users actually want to show people.
+  </div>
+</section>
+
+<!-- ─── MECHANIC VII ─── -->
+<section>
+  <h2><span class="num">VII</span> Micro Social Validation</h2>
+  <p>No friend lists, no feeds, no competitive rankings. Just <strong>one-tap sharing of genuine financial insight</strong>.</p>
+
+  <h3>Monthly Summary Card</h3>
+  <ul>
+    <li><strong>Trigger:</strong> At month end, a beautiful card appears (or from the Recap tab).</li>
+    <li><strong>Content:</strong> Total spent, top category, streak count, comparison to last month.</li>
+    <li><strong>Design:</strong> Clean, zen-styled card — looks like a financial report, not a game achievement.</li>
+    <li><strong>Share:</strong> 1-tap export to iMessage, Instagram Stories, or WhatsApp. No "Post to Facebook" dialogs.</li>
+    <li><strong>Privacy:</strong> The card shows <em>your</em> data only. No friend comparisons unless both opt in.</li>
+  </ul>
+
+  <div class="note">
+    <strong>The social signal:</strong> "I track my expenses" is a status signal in itself. The card validates financial discipline, not gaming achievement. That's the kind of thing people actually share.
+  </div>
+</section>
+
+<!-- ─── PHASED PLAN ─── -->
+<section>
+  <h2>Implementation Phases</h2>
+
+  <div class="phase">
+    <div class="phase-header">
+      <span class="phase-tag">Phase 1</span>
+      <h3>Foundation — Weeks 1-2</h3>
+    </div>
+    <p>The minimum viable retention layer. Zero new UI — just data collection and a single home screen element.</p>
+    <ul class="checklist">
+      <li>Weekly log count tracking (days with ≥1 log per week)</li>
+      <li>Weekly spending ring on home screen (60pt, below status line)</li>
+      <li>Customizable weekly target (Settings → 3/4/5/6/7 days)</li>
+      <li>Basic streak counter (consecutive weeks hitting target)</li>
+      <li>Streak freeze: earned every 10 logs, max stored 3</li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header">
+      <span class="phase-tag">Phase 2</span>
+      <h3>Rewards — Weeks 3-4</h3>
+    </div>
+    <p>The weekly insight reveal. Variable rewards that make ring completion feel like an event.</p>
+    <ul class="checklist">
+      <li>Weekly Insight card (appears when ring completes)</li>
+      <li>4 insight types: Category Spotlight, Week Comparison, Pattern Discovery, Milestone</li>
+      <li>Variable weighting: 60% common, 30% uncommon, 10% rare</li>
+      <li>Haptic + ripple burst on ring completion</li>
+      <li>"Almost there" glow at 80% ring fill</li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header">
+      <span class="phase-tag">Phase 3</span>
+      <h3>Competence — Weeks 5-6</h3>
+    </div>
+    <p>Real financial awareness metrics. The "you became better at this" layer.</p>
+    <ul class="checklist">
+      <li>Monthly spending trend (vs. previous month)</li>
+      <li>Category breakdown with trend arrows (↑↓)</li>
+      <li>"Recurring expense" detection (same category + similar amount, 3+ weeks)</li>
+      <li>Milestone notifications: 50th log, 100th log, first $1,000 tracked</li>
+      <li>Competence score (internal, drives insight quality — not displayed as points)</li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-header">
+      <span class="phase-tag">Phase 4</span>
+      <h3>Social — Weeks 7-8</h3>
+    </div>
+    <p>One-tap sharing of genuine financial insight. The kudos engine.</p>
+    <ul class="checklist">
+      <li>Monthly summary card (zen-styled, data-rich)</li>
+      <li>1-tap share to iMessage / Instagram Stories / WhatsApp</li>
+      <li>"Beat your average" personal challenge (weekly bar on home screen)</li>
+      <li>Optional: share your streak count (social proof of discipline)</li>
+      <li>No friend lists, no feeds, no competitive rankings — ever</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ─── GUARDRAILS ─── -->
+<section>
+  <h2>Guardrails — What We'll Never Do</h2>
+  <div class="card-grid">
+    <div class="card" style="border-color: #c0392b;">
+      <div class="tag" style="color: #c0392b;">🚫 Never</div>
+      <h4>Virtual Currency</h4>
+      <p>No coins, gems, XP, or "TapLog dollars." The currency is real money.</p>
+    </div>
+    <div class="card" style="border-color: #c0392b;">
+      <div class="tag" style="color: #c0392b;">🚫 Never</div>
+      <h4>Pay-to-Progress</h4>
+      <p>No streak freezes for purchase. Earned by usage, never by payment.</p>
+    </div>
+    <div class="card" style="border-color: #c0392b;">
+      <div class="tag" style="color: #c0392b;">🚫 Never</div>
+      <h4>Punitive Streaks</h4>
+      <p>No "you lost your 50-day streak!" shame. Grace periods and freezes only.</p>
+    </div>
+    <div class="card" style="border-color: #c0392b;">
+      <div class="tag" style="color: #c0392b;">🚫 Never</div>
+      <h4>Social Pressure</h4>
+      <p>No friend leaderboards, no "Sarah tracked more than you." Solo journey.</p>
+    </div>
+    <div class="card" style="border-color: #c0392b;">
+      <div class="tag" style="color: #c0392b;">🚫 Never</div>
+      <h4>Notification Spam</h4>
+      <p>Max 1 retention notification per week: "Your weekly insight is ready."</p>
+    </div>
+    <div class="card" style="badge: #c0392b;">
+      <div class="tag" style="color: #c0392b;">🚫 Never</div>
+      <h4>Engagement Theater</h4>
+      <p>No "You opened the app 3 days in a row!" participation stickers.</p>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<footer>
+  TapLog Retention System — Design Document v1.0<br>
+  Built on the Gamification & Retention Playbook mechanics
+</footer>
+
+</body>
+</html>

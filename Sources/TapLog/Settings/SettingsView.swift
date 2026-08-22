@@ -8,6 +8,7 @@ import WidgetKit
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(RetentionManager.self) private var retention
 
     @AppStorage("currencyCode", store: Money.sharedDefaults)
     private var currencyCode = Locale.current.currency?.identifier ?? "USD"
@@ -42,6 +43,21 @@ struct SettingsView: View {
                     Text("Appearance")
                 } footer: {
                     Text("Overrides the system setting. \"System\" follows your iPhone.")
+                }
+
+                Section {
+                    Stepper(
+                        "Log target: \(retention.weeklyTarget) days/week",
+                        value: Binding(
+                            get: { retention.weeklyTarget },
+                            set: { retention.weeklyTarget = $0 }
+                        ),
+                        in: 3...7
+                    )
+                } header: {
+                    Text("Consistency")
+                } footer: {
+                    Text("How many days per week you aim to log. The weekly ring and streak track this target.")
                 }
 
                 Section("Data") {

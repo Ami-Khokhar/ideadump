@@ -4,6 +4,7 @@ import SwiftData
 @main
 struct TapLogApp: App {
     @StateObject private var undoStack = UndoStack()
+    @State private var retention = RetentionManager()
     private let container: ModelContainer
 
     init() {
@@ -19,6 +20,7 @@ struct TapLogApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(undoStack)
+                .environment(retention)
         }
         .modelContainer(container)
     }
