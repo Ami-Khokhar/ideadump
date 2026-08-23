@@ -31,8 +31,8 @@ struct LogHomeView: View {
     @State private var isCommitting = false
     @State private var rippleBurst = false
     @State private var dropTriggerID = 0
-    /// Opening animation state
-    @State private var hasAppeared = false
+    /// Opening animation: 0 = logo visible, 1 = content visible
+    @State private var openingPhase: CGFloat = 0
     @FocusState private var amountFocused: Bool
 
     let isOnboarding: Bool
@@ -43,7 +43,6 @@ struct LogHomeView: View {
 
     private var lookup: CategoryLookup { CategoryLookup(categories) }
 
-    /// Top 4 categories by usage count (the tiles).
     private var topCategories: [SpendCategory] {
         categories
             .filter { $0.key != SpendCategory.fallbackKey }
@@ -64,52 +63,31 @@ struct LogHomeView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // 1. Status line with mini ring
-            statusBar
+        ZStack {
+            // Background
+            Theme.background.ignoresSafeArea()
 
-            Spacer()
+            // Logo (fades out as content fades in)
+            logoView
+                .opacity(1 - openingPhase)
+                .ignoresSafeArea()
 
-            // 2. Amount field (the hero)
-            amountArea
-                .opacity(hasAppeared ? 1 : 0)
-                .scaleEffect(hasAppeared ? 1 : 0.95)
-                .animation(.easeOut(duration: 0.5).delay(0.1), value: hasAppeared)
-
-            Spacer()
-
-            // 3. Category + planned line
-            categoryLine
-                .opacity(hasAppeared ? 1 : 0)
-                .animation(.easeOut(duration: 0.4).delay(0.25), value: hasAppeared)
-
-            // 4. Tile grid
-            tileRow
-                .opacity(hasAppeared ? 1 : 0)
-                .offset(y: hasAppeared ? 0 : 20)
-                .animation(.easeOut(duration: 0.5).delay(0.2), value: hasAppeared)
-
-            // 5. Note field
-            noteField
-                .opacity(hasAppeared ? 1 : 0)
-                .animation(.easeOut(duration: 0.4).delay(0.35), value: hasAppeared)
+            // Main content (fades in)
+            mainContent
+                .opacity(openingPhase)
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            // 6. Log button
-            logButton
-                .opacity(hasAppeared ? 1 : 0)
-                .animation(.easeOut(duration: 0.4).delay(0.3), value: hasAppeared)
-                .padding(.bottom, 12)
-                .padding(.top, 4)
-        }
-        .background(Theme.background)
         .onAppear {
             applyPrefill()
             if !hasFocused {
                 hasFocused = true
                 amountFocused = true
             }
-            withAnimation { hasAppeared = true }
+            // Fade transition: logo holds for 0.8s, then cross-fades to content over 0.6s
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                withAnimation(.easeInOut(duration: 0.6)) {
+                    openingPhase = 1
+                }
+            }
             let args = ProcessInfo.processInfo.arguments
             if let index = args.lastIndex(of: "-autolog"), args.indices.contains(index + 1) {
                 let value = args[index + 1]
@@ -125,11 +103,45 @@ struct LogHomeView: View {
         }
     }
 
-    // MARK: - 1. Status Bar (date + today total + mini ring)
+    // MARK: - Logo
+
+    private var logoView: some View {
+        VStack(spacing: 12) {
+            Image("Logo")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 80, height: 80)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+
+            Text("TapLog")
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(Theme.textPrimary)
+        }
+    }
+
+    // MARK: - Main Content
+
+    private var mainContent: some View {
+        VStack(spacing: 0) {
+            statusBar
+            Spacer()
+            amountArea
+            Spacer()
+            categoryLine
+            tileRow
+            noteField
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            logButton
+                .padding(.bottom, 12)
+                .padding(.top, 4)
+        }
+    }
+
+    // MARK: - 1. Status Bar
 
     private var statusBar: some View {
         HStack(spacing: 10) {
-            // Mini weekly ring
             miniRing
 
             Text(Date.now.formatted(.dateTime.weekday(.abbreviated)))
@@ -164,7 +176,6 @@ struct LogHomeView: View {
         .animation(Motion.stateChange, value: todayTotal)
     }
 
-    /// 16pt ring showing weekly progress,嵌入 status line.
     private var miniRing: some View {
         ZStack {
             Circle()
@@ -178,12 +189,11 @@ struct LogHomeView: View {
         }
     }
 
-    // MARK: - 2. Amount Area (compact, centered, with subtle ripples)
+    // MARK: - 2. Amount Area
 
     private var amountArea: some View {
         VStack(spacing: 8) {
             ZStack {
-                // Subtle ripple rings behind the amount (much smaller than before)
                 RippleView()
                     .frame(width: 120, height: 120)
                     .allowsHitTesting(false)
@@ -198,7 +208,6 @@ struct LogHomeView: View {
                         .transition(.opacity)
                 }
 
-                // Amount input
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(Money.currencySymbol)
                         .font(Theme.amount(28, weight: .semibold))
@@ -246,7 +255,7 @@ struct LogHomeView: View {
         .padding(.vertical, 4)
     }
 
-    // MARK: - 4. Tile Row (one row of tiles)
+    // MARK: - 4. Tile Row
 
     private var tileRow: some View {
         HStack(spacing: 10) {
