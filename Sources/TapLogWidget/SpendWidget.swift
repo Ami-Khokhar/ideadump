@@ -5,9 +5,10 @@ import SwiftData
 struct QuickButton: Identifiable {
     let amount: Double
     let categoryKey: String
+    let emoji: String
     let label: String
 
-    var id: String { categoryKey }
+    var id: String { "\(categoryKey)-\(amount)" }
 }
 
 struct SpendSnapshot: TimelineEntry {
@@ -38,45 +39,73 @@ private func loadTodaySnapshot() -> SpendSnapshot {
     )
 }
 
-/// The medium widget's two tap-to-log buttons. Prefers the classic Coffee/Food
-/// categories but falls back to whatever the user actually has — the labels must
-/// never point at deleted categories (onboarding encourages trimming them).
+/// Learns the user's top category+amount pairs from actual history.
+/// Groups all entries by (category, rounded amount), counts frequency,
+/// and returns the top 3 as one-tap buttons.
 @MainActor
 private func makeQuickButtons(context: ModelContext) -> [QuickButton] {
-    let categories = (try? context.fetch(FetchDescriptor<SpendCategory>())) ?? []
-    let amounts: [Double] = [4.5, 12]
+    // Fetch all non-archived entries (last 90 days is enough to learn patterns)
+    let ninetyDaysAgo = Calendar.current.date(byAdding: .day, value: -90, to: .now) ?? .now
+    let descriptor = FetchDescriptor<Entry>(
+        predicate: #Predicate<Entry> { $0.date >= ninetyDaysAgo && !$0.isArchived && !$0.isPending }
+    )
+    let entries: [Entry] = (try? context.fetch(descriptor)) ?? []
 
-    var chosen: [SpendCategory] = []
-    for preferred in ["coffee", "food"] {
-        if let category = categories.first(where: { $0.key == preferred }) {
-            chosen.append(category)
-        }
+    // Fetch categories for emoji/name lookup
+    let categories: [SpendCategory] = (try? context.fetch(FetchDescriptor<SpendCategory>())) ?? []
+    let lookup = Dictionary(uniqueKeysWithValues: categories.map { ($0.key, $0) })
+
+    // Group by (category, rounded amount) and count
+    struct Pattern: Hashable {
+        let categoryKey: String
+        let amount: Decimal
     }
-    for category in categories where !chosen.contains(where: { $0.key == category.key }) {
-        if chosen.count >= 2 { break }
-        chosen.append(category)
+    var counts: [Pattern: Int] = [:]
+    for entry in entries {
+        // Round to nearest common amount bucket
+        let rounded = roundAmount(entry.amount)
+        let key = Pattern(categoryKey: entry.category, amount: rounded)
+        counts[key, default: 0] += 1
     }
 
-    if chosen.isEmpty {
-        // No categories at all — fall back to the classic defaults; the intent
-        // itself resolves the key to the fallback category.
-        return amounts.enumerated().map { index, amount in
-            let key = ["coffee", "food"][index]
+    // Sort by frequency, take top 3
+    let top = counts
+        .sorted { $0.value > $1.value }
+        .prefix(3)
+        .map { (pattern, count) in
+            let cat = lookup[pattern.categoryKey]
+            let emoji = cat?.emoji ?? "🏷️"
+            let name = cat?.name ?? "Other"
+            let amountDouble = NSDecimalNumber(decimal: pattern.amount).doubleValue
             return QuickButton(
-                amount: amount,
-                categoryKey: key,
-                label: "\([ "☕️", "🍽️"][index]) \(Money.format(Money.fromAmount(amount)))"
+                amount: amountDouble,
+                categoryKey: pattern.categoryKey,
+                emoji: emoji,
+                label: "\(emoji) \(Money.format(pattern.amount))"
             )
         }
+
+    // If no history, show sensible defaults
+    if top.isEmpty {
+        return [
+            QuickButton(amount: 10, categoryKey: "chai", emoji: "☕️", label: "☕️ \(Money.format(10))"),
+            QuickButton(amount: 40, categoryKey: "transport", emoji: "🚌", label: "🚌 \(Money.format(40))"),
+            QuickButton(amount: 120, categoryKey: "food", emoji: "🍽️", label: "🍽️ \(Money.format(120))"),
+        ]
     }
 
-    return chosen.prefix(2).enumerated().map { index, category in
-        QuickButton(
-            amount: amounts[index],
-            categoryKey: category.key,
-            label: "\(category.emoji) \(Money.format(Money.fromAmount(amounts[index])))"
-        )
-    }
+    return Array(top)
+}
+
+/// Round amounts to common buckets to group similar purchases.
+/// ₹10.00 and ₹10.50 both become ₹10 — the user probably means the same thing.
+private func roundAmount(_ amount: Decimal) -> Decimal {
+    let double = NSDecimalNumber(decimal: amount).doubleValue
+    if double < 1 { return amount } // Keep exact for sub-1 amounts
+    if double < 10 { return Decimal(round(double)) } // Round to nearest 1
+    if double < 50 { return Decimal(round(double / 5) * 5) } // Round to nearest 5
+    if double < 200 { return Decimal(round(double / 10) * 10) } // Round to nearest 10
+    return Decimal(round(double / 50) * 50) // Round to nearest 50
 }
 
 struct SpendProvider: TimelineProvider {
@@ -86,8 +115,9 @@ struct SpendProvider: TimelineProvider {
             total: 0,
             count: 0,
             quickButtons: [
-                QuickButton(amount: 4.5, categoryKey: "coffee", label: "☕️ $4.50"),
-                QuickButton(amount: 12, categoryKey: "food", label: "🍽️ $12.00"),
+                QuickButton(amount: 10, categoryKey: "chai", emoji: "☕️", label: "☕️ \(Money.format(10))"),
+                QuickButton(amount: 40, categoryKey: "transport", emoji: "🚌", label: "🚌 \(Money.format(40))"),
+                QuickButton(amount: 120, categoryKey: "food", emoji: "🍽️", label: "🍽️ \(Money.format(120))"),
             ]
         )
     }
@@ -113,13 +143,50 @@ struct SpendWidgetEntryView: View {
     var entry: SpendSnapshot
 
     var body: some View {
+        switch family {
+        case .systemMedium:
+            mediumView
+        default:
+            smallView
+        }
+    }
+
+    // MARK: - Small Widget
+
+    private var smallView: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                Label("Today", systemImage: "creditcard")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+            Text(Money.format(entry.total))
+                .font(.title2.bold())
+                .monospacedDigit()
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
+            Spacer(minLength: 0)
+            Link(destination: URL(string: "taplog://log")!) {
+                Text("Log expense →")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.tint)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .containerBackground(for: .widget) { Color(.systemBackground) }
+    }
+
+    // MARK: - Medium Widget
+
+    private var mediumView: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
                 Label("Today", systemImage: "creditcard")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text("\(entry.count)")
+                Text("\(entry.count) logged")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
@@ -129,21 +196,26 @@ struct SpendWidgetEntryView: View {
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
             Spacer(minLength: 0)
-            if family == .systemMedium {
-                HStack(spacing: 8) {
-                    ForEach(entry.quickButtons) { button in
-                        quickLogButton(
-                            amount: button.amount,
-                            category: button.categoryKey,
-                            label: button.label
-                        )
-                    }
+            HStack(spacing: 6) {
+                ForEach(entry.quickButtons) { button in
+                    quickLogButton(
+                        amount: button.amount,
+                        category: button.categoryKey,
+                        label: button.label
+                    )
                 }
-            } else {
+                // Custom amount button — opens the app
                 Link(destination: URL(string: "taplog://log")!) {
-                    Text("Tap to log")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.tint)
+                    VStack(spacing: 2) {
+                        Image(systemName: "number")
+                            .font(.caption)
+                        Text("₹?")
+                            .font(.caption2.weight(.semibold))
+                    }
+                    .foregroundStyle(.tint)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
+                    .background(Color.accentColor.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
                 }
             }
         }
@@ -155,6 +227,7 @@ struct SpendWidgetEntryView: View {
         Button(intent: QuickLogIntent(amount: amount, category: category)) {
             Text(label)
                 .font(.caption.weight(.semibold))
+                .lineLimit(1)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 6)
                 .background(Color.accentColor.opacity(0.15), in: RoundedRectangle(cornerRadius: 8))
@@ -170,8 +243,8 @@ struct SpendWidget: Widget {
         StaticConfiguration(kind: kind, provider: SpendProvider()) { entry in
             SpendWidgetEntryView(entry: entry)
         }
-        .configurationDisplayName("Today's Spend")
-        .description("Your total spending today, at a glance. Tap to log.")
+        .configurationDisplayName("TapLog")
+        .description("Quick-log expenses from your home screen.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

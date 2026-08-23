@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TapLog Widget — Smart Tiles</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    background: #0a0a0a;
+    color: #e8e4df;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+    min-height: 100vh;
+  }
+  h1 { font-size: 22px; font-weight: 600; color: #c8c2b8; }
+  .subtitle { font-size: 13px; color: #7a756e; margin-top: -20px; }
+  .content { display: flex; gap: 40px; flex-wrap: wrap; justify-content: center; max-width: 900px; }
+  .col { display: flex; flex-direction: column; gap: 16px; }
+  .card {
+    background: #161412;
+    border: 1px solid #2a2622;
+    border-radius: 14px;
+    padding: 20px;
+    max-width: 400px;
+  }
+  .card h3 { font-size: 14px; font-weight: 600; color: #c8c2b8; margin-bottom: 8px; }
+  .card p { font-size: 12px; line-height: 1.6; color: #a8a29e; }
+  .phone {
+    width: 280px;
+    border-radius: 28px;
+    overflow: hidden;
+    border: 2px solid #2a2622;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+  }
+  .phone img { width: 100%; display: block; }
+  .widget-mock {
+    background: #1c1a17;
+    border-radius: 20px;
+    padding: 16px;
+    border: 1px solid #2a2622;
+    width: 340px;
+  }
+  .widget-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px;
+  }
+  .widget-header .label { font-size: 11px; color: #7a756e; }
+  .widget-header .count { font-size: 11px; color: #7a756e; }
+  .widget-total { font-size: 28px; font-weight: 700; color: #e8e4df; margin-bottom: 12px; }
+  .widget-buttons { display: flex; gap: 6px; }
+  .widget-btn {
+    flex: 1;
+    background: rgba(122, 184, 122, 0.15);
+    border-radius: 10px;
+    padding: 10px 6px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #c8c2b8;
+  }
+  .widget-btn.custom {
+    background: rgba(122, 184, 122, 0.08);
+    color: #7ab87a;
+    font-size: 12px;
+  }
+  .widget-btn .emoji { font-size: 16px; display: block; margin-bottom: 2px; }
+  .steps { list-style: none; padding: 0; }
+  .steps li {
+    font-size: 12px;
+    color: #a8a29e;
+    padding: 6px 0;
+    border-bottom: 1px solid #1e1c18;
+    display: flex;
+    gap: 8px;
+  }
+  .steps li:last-child { border-bottom: none; }
+  .steps .num {
+    background: #2a2622;
+    color: #c8c2b8;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  code {
+    background: #1e1c18;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: #a39e94;
+  }
+</style>
+</head>
+<body>
+  <h1>📱 Smart Widget Tiles</h1>
+  <p class="subtitle">Learned from your history, not hardcoded</p>
+
+  <div class="content">
+    <div class="col">
+      <div class="widget-mock">
+        <div class="widget-header">
+          <span class="label">💳 Today</span>
+          <span class="count">3 logged</span>
+        </div>
+        <div class="widget-total">₹170</div>
+        <div class="widget-buttons">
+          <div class="widget-btn">
+            <span class="emoji">☕️</span>
+            ₹10
+          </div>
+          <div class="widget-btn">
+            <span class="emoji">🚌</span>
+            ₹40
+          </div>
+          <div class="widget-btn">
+            <span class="emoji">🍽️</span>
+            ₹120
+          </div>
+          <div class="widget-btn custom">
+            <span class="emoji">🔢</span>
+            ₹?
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>How it learns</h3>
+        <p>
+          The widget queries your last 90 days of entries and groups them by
+          <code>(category, amount)</code> pairs. ₹10 and ₹10.50 are bucketed together.
+          The top 3 most frequent pairs become one-tap tiles. The ₹? button deep-links
+          into the app with the amount field focused.
+        </p>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="card">
+        <h3>What changed</h3>
+        <p>
+          <strong>Before:</strong> Two hardcoded buttons (☕️ $4.50, 🍽️ $12.00).<br>
+          <strong>After:</strong> Three learned tiles + custom amount button.<br><br>
+          Tiles update every 15 minutes (widget refresh cycle). New patterns emerge
+          as you log. The ₹? button opens the app via <code>taplog://log</code> deep link.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3>How to add the widget</h3>
+        <ol class="steps">
+          <li><span class="num">1</span> Go to the Simulator home screen (Hardware → Home)</li>
+          <li><span class="num">2</span> Long-press on an empty area (or right-click)</li>
+          <li><span class="num">3</span> Tap the <strong>+</strong> button in the top-left</li>
+          <li><span class="num">4</span> Search for "TapLog"</li>
+          <li><span class="num">5</span> Select the <strong>medium</strong> widget (shows tiles)</li>
+          <li><span class="num">6</span> Tap "Add Widget"</li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <h3>Amount rounding</h3>
+        <p>
+          Groups similar purchases:<br>
+          • Under ₹10 → exact match<br>
+          • ₹10–50 → round to nearest ₹5<br>
+          • ₹50–200 → round to nearest ₹10<br>
+          • Over ₹200 → round to nearest ₹50<br><br>
+          So ₹10.00 and ₹10.50 both map to ₹10 — same habit, same tile.
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
