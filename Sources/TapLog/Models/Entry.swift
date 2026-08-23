@@ -9,6 +9,7 @@ final class Entry {
     var date: Date
     var isArchived: Bool
     var isPending: Bool
+    var isPlanned: Bool
     var createdAt: Date
 
     init(
@@ -17,7 +18,8 @@ final class Entry {
         note: String? = nil,
         date: Date = .now,
         isArchived: Bool = false,
-        isPending: Bool = false
+        isPending: Bool = false,
+        isPlanned: Bool = false
     ) {
         self.amount = amount
         self.category = category
@@ -25,6 +27,7 @@ final class Entry {
         self.date = date
         self.isArchived = isArchived
         self.isPending = isPending
+        self.isPlanned = isPlanned
         self.createdAt = .now
     }
 }

@@ -2,11 +2,10 @@ import SwiftUI
 import SwiftData
 import WidgetKit
 
-/// The capture-first home screen. This is the default tab — the amount field is the
-/// hero and logging happens in place, never behind a "+" tap. History is one tab away.
+/// The capture-first home screen. Two modes of logging:
 ///
-/// Also serves as onboarding Step 1 (`isOnboarding`): shows a coaching header instead
-/// of the plain caption, and `onLogged` advances the flow instead of just clearing.
+/// 1. **Tile tap** — tap a category tile, type amount, Log. Covers ~80% of daily logs.
+/// 2. **Amount first** — type amount, pick category (or leave uncategorised), Log.
 struct LogHomeView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
@@ -21,20 +20,16 @@ struct LogHomeView: View {
         filter: #Predicate<Entry> { !$0.isArchived && !$0.isPending },
         sort: \Entry.date,
         order: .reverse
-    )
-    private var activeEntries: [Entry]
+    ) private var activeEntries: [Entry]
 
     @State private var amountText = ""
     @State private var selectedCategoryKey = ""
     @State private var note = ""
+    @State private var isPlanned = false
     @State private var showingManageCategories = false
     @State private var hasFocused = false
-    /// Briefly true right after a log — the hero amount settles into the ledger
-    /// (a soft pulse) before the field clears.
     @State private var isCommitting = false
-    /// Triggers the on-log ripple burst.
     @State private var rippleBurst = false
-    /// Fires a new drop on each increment.
     @State private var dropTriggerID = 0
     @FocusState private var amountFocused: Bool
 
@@ -42,11 +37,14 @@ struct LogHomeView: View {
     let prefill: CapturePrefill?
     let onLogged: (() -> Void)?
     let onCancelOnboarding: (() -> Void)?
-    /// Lets the owner clear the consumed deep-link prefill so it isn't re-injected
-    /// the next time the home view reappears (e.g. after closing a sheet).
     let onPrefillConsumed: (() -> Void)?
 
     private var lookup: CategoryLookup { CategoryLookup(categories) }
+
+    /// Categories sorted by usage frequency (most-used first).
+    private var sortedCategories: [SpendCategory] {
+        categories.sorted { $0.logCount > $1.logCount }
+    }
 
     private var todayEntries: [Entry] {
         activeEntries.filter { Calendar.current.isDateInToday($0.date) }
@@ -63,9 +61,12 @@ struct LogHomeView: View {
         VStack(spacing: 0) {
             statusLine.entrance()
             weeklyRingRow.entrance(delay: 0.04)
-            Spacer(minLength: 12)
-            heroStone.entrance(delay: 0.10)
-            categoryChips.entrance(delay: 0.20)
+            Spacer(minLength: 8)
+            tileGrid.entrance(delay: 0.08)
+            Spacer(minLength: 8)
+            heroStone.entrance(delay: 0.14)
+            plannedToggle.entrance(delay: 0.18)
+            categoryChips.entrance(delay: 0.22)
             noteField.entrance(delay: 0.26)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -81,8 +82,6 @@ struct LogHomeView: View {
                 hasFocused = true
                 amountFocused = true
             }
-            // Dev/testing hook: `simctl launch ... -autolog 12.50` logs an expense
-            // shortly after launch, exercising the exact save path headlessly.
             let args = ProcessInfo.processInfo.arguments
             if let index = args.lastIndex(of: "-autolog"), args.indices.contains(index + 1) {
                 let value = args[index + 1]
@@ -98,7 +97,7 @@ struct LogHomeView: View {
         }
     }
 
-    // MARK: - Sections
+    // MARK: - Status Line
 
     private var statusLine: some View {
         HStack {
@@ -127,11 +126,12 @@ struct LogHomeView: View {
         }
         .padding(.horizontal, 28)
         .padding(.top, 16)
-        .padding(.trailing, 40)  // avoid overlap with the menu button
+        .padding(.trailing, 40)
         .animation(Motion.stateChange, value: todayTotal)
     }
 
-    /// Weekly ring + streak — sits between the status line and the zen stone.
+    // MARK: - Weekly Ring
+
     private var weeklyRingRow: some View {
         HStack(spacing: 12) {
             WeeklyRingView(
@@ -159,36 +159,43 @@ struct LogHomeView: View {
         .padding(.horizontal, 28)
     }
 
-    /// The hero amount inside a zen stone — a soft circle with ambient ripples.
+    // MARK: - Tile Grid
+
+    private var tileGrid: some View {
+        TileGrid(
+            selectedCategoryKey: $selectedCategoryKey,
+            amountText: $amountText,
+            amountFocused: $amountFocused,
+            onAddTile: { showingManageCategories = true }
+        )
+    }
+
+    // MARK: - Hero Stone
+
     private var heroStone: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 12) {
             ZStack {
-                // Ambient ripple rings behind the stone.
                 RippleView()
-                    .frame(width: 260, height: 260)
+                    .frame(width: 220, height: 220)
                     .allowsHitTesting(false)
-                // Ambient droplet — drips every ~5s like a zen water feature.
                 DropletView(ambient: true)
-                    .frame(width: 260, height: 260)
-                // On-log droplet — fires a single drop on save.
+                    .frame(width: 220, height: 220)
                 DropletView(ambient: false, triggerID: dropTriggerID)
-                    .frame(width: 260, height: 260)
-                // On-log burst (fires once, then resets).
+                    .frame(width: 220, height: 220)
                 if rippleBurst {
                     RippleView(burst: true)
-                        .frame(width: 260, height: 260)
+                        .frame(width: 220, height: 220)
                         .allowsHitTesting(false)
                         .transition(.opacity)
                 }
-                // The stone itself.
                 VStack(spacing: 4) {
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
                         Text(Money.currencySymbol)
-                            .font(Theme.amount(36, weight: .semibold))
+                            .font(Theme.amount(32, weight: .semibold))
                             .foregroundStyle(Theme.textTertiary)
                         TextField("0", text: $amountText)
                             .keyboardType(.decimalPad)
-                            .font(Theme.amount(72))
+                            .font(Theme.amount(64))
                             .multilineTextAlignment(.center)
                             .lineLimit(1)
                             .focused($amountFocused)
@@ -197,7 +204,7 @@ struct LogHomeView: View {
                     }
                     .scaleEffect(isCommitting ? 1.06 : 1)
                 }
-                .frame(width: 240, height: 240)
+                .frame(width: 200, height: 200)
                 .background {
                     Circle()
                         .fill(Theme.surface)
@@ -211,7 +218,7 @@ struct LogHomeView: View {
                                         ],
                                         center: .center,
                                         startRadius: 0,
-                                        endRadius: 120
+                                        endRadius: 100
                                     )
                                 )
                         }
@@ -222,30 +229,60 @@ struct LogHomeView: View {
                     color: colorScheme == .dark
                         ? Color.black.opacity(0.4)
                         : Color.black.opacity(0.06),
-                    radius: 20, x: 0, y: 8
+                    radius: 16, x: 0, y: 6
                 )
             }
 
-            Text(isOnboarding
-                ? "Your first expense — type the amount, tap Log."
-                : "Type the amount, tap Log.")
-                .font(.subheadline)
-                .foregroundStyle(Theme.textTertiary)
-                .multilineTextAlignment(.center)
+            if selectedCategoryKey.isEmpty {
+                Text("Tap a tile or type the amount")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.textTertiary)
+                    .multilineTextAlignment(.center)
+            } else {
+                Text("\(lookup.emoji(for: selectedCategoryKey)) \(lookup.name(for: selectedCategoryKey))")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(Theme.accent)
+                    .multilineTextAlignment(.center)
+            }
         }
         .padding(.horizontal, 24)
     }
 
+    // MARK: - Planned / Impulse Toggle
+
+    private var plannedToggle: some View {
+        Button {
+            withAnimation(Motion.gentleFast) { isPlanned.toggle() }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: isPlanned ? "checkmark.circle.fill" : "circle")
+                    .font(.caption)
+                Text(isPlanned ? "Planned" : "Impulse?")
+                    .font(.caption)
+            }
+            .foregroundStyle(isPlanned ? Theme.accent : Theme.textTertiary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                isPlanned ? Theme.accentSoft : Theme.surface,
+                in: Capsule()
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Category Chips (frequency-sorted)
+
     private var categoryChips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
-                ForEach(categories) { category in
+                ForEach(sortedCategories) { category in
                     chip(category)
                 }
                 addChip
             }
             .padding(.horizontal, 28)
-            .padding(.vertical, 6)
+            .padding(.vertical, 4)
         }
     }
 
@@ -254,21 +291,21 @@ struct LogHomeView: View {
         return Button {
             selectedCategoryKey = category.key
         } label: {
-            VStack(spacing: 4) {
+            VStack(spacing: 3) {
                 Text(category.emoji)
-                    .font(.title3)
+                    .font(.caption)
                     .grayscale(isSelected ? 0 : 0.15)
                 Text(category.name)
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundStyle(isSelected ? Theme.accent : Theme.textSecondary)
                     .fontWeight(isSelected ? .semibold : .medium)
             }
-            .frame(minWidth: 62)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 12)
+            .frame(minWidth: 54)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 8)
             .background(
                 isSelected ? Theme.accentSoft : Theme.surface,
-                in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                in: RoundedRectangle(cornerRadius: 12, style: .continuous)
             )
             .scaleEffect(isSelected ? 1.05 : 1)
             .animation(Motion.gentleFast, value: isSelected)
@@ -280,28 +317,30 @@ struct LogHomeView: View {
         Button {
             showingManageCategories = true
         } label: {
-            VStack(spacing: 4) {
+            VStack(spacing: 3) {
                 Image(systemName: "plus")
-                    .font(.title3)
+                    .font(.caption)
                     .fontWeight(.light)
                     .foregroundStyle(Theme.textTertiary)
                 Text("Add")
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundStyle(Theme.textTertiary)
             }
-            .frame(minWidth: 62)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 12)
-            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .frame(minWidth: 54)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 8)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(.plain)
     }
+
+    // MARK: - Note Field
 
     private var noteField: some View {
         TextField("Note (optional)", text: $note)
             .multilineTextAlignment(.center)
             .font(.body)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
             .padding(.horizontal, 30)
             .overlay(alignment: .bottom) {
                 Rectangle()
@@ -310,6 +349,8 @@ struct LogHomeView: View {
                     .padding(.horizontal, 30)
             }
     }
+
+    // MARK: - Log Button
 
     private var logButton: some View {
         Button {
@@ -328,7 +369,7 @@ struct LogHomeView: View {
         .buttonStyle(ZenPress())
         .disabled(!canLog)
         .padding(.horizontal, 28)
-        .padding(.top, 14)
+        .padding(.top, 10)
     }
 
     // MARK: - Actions
@@ -352,7 +393,6 @@ struct LogHomeView: View {
         if prefill.amountText != nil || prefill.note != nil {
             amountFocused = true
         }
-        // Consumed: the owner clears it so it never re-applies on a later appear.
         onPrefillConsumed?()
     }
 
@@ -365,10 +405,18 @@ struct LogHomeView: View {
         let entry = Entry(
             amount: amount,
             category: categoryKey,
-            note: trimmedNote.isEmpty ? nil : trimmedNote
+            note: trimmedNote.isEmpty ? nil : trimmedNote,
+            isPlanned: isPlanned
         )
         modelContext.insert(entry)
         try? modelContext.save()
+
+        // Update category log count for tile frequency sorting.
+        if let cat = categories.first(where: { $0.key == categoryKey }) {
+            cat.logCount += 1
+            try? modelContext.save()
+        }
+
         lastUsedCategoryKey = categoryKey
         logsLogged += 1
         undoStack.record("Logged \(Money.format(amount)) · \(lookup.name(for: categoryKey))") {
@@ -380,9 +428,7 @@ struct LogHomeView: View {
         retention.recordLogDay()
         UINotificationFeedbackGenerator().notificationOccurred(.success)
 
-        // The hero settles into the ledger: a soft pulse + ripple burst, then the field clears.
         withAnimation(Motion.gentle) { isCommitting = true }
-        // Fire the drop + ripple burst — drop falls, then splash.
         dropTriggerID += 1
         rippleBurst = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
@@ -393,6 +439,7 @@ struct LogHomeView: View {
                 isCommitting = false
                 amountText = ""
                 note = ""
+                isPlanned = false
             }
             amountFocused = true
         }

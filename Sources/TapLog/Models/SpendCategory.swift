@@ -10,12 +10,15 @@ final class SpendCategory {
     var name: String
     var emoji: String
     var sortOrder: Int
+    /// Number of times this category has been used — drives chip sort order and tile suggestions.
+    var logCount: Int = 0
 
-    init(key: String, name: String, emoji: String, sortOrder: Int = 0) {
+    init(key: String, name: String, emoji: String, sortOrder: Int = 0, logCount: Int = 0) {
         self.key = key
         self.name = name
         self.emoji = emoji
         self.sortOrder = sortOrder
+        self.logCount = logCount
     }
 }
 
@@ -25,15 +28,21 @@ extension SpendCategory {
 
     /// The basic set seeded on first launch, so a new user isn't staring at an empty
     /// picker. The user can delete all of these and go fully custom.
+    /// The basic set seeded on first launch. India-friendly defaults — the user can
+    /// delete all of these and go fully custom.
     static let defaultSeeds: [(key: String, name: String, emoji: String)] = [
+        ("chai", "Chai", "☕️"),
         ("food", "Food", "🍽️"),
         ("transport", "Transport", "🚌"),
-        ("rent", "Rent", "🏠"),
-        ("coffee", "Coffee", "☕️"),
+        ("metro", "Metro", "🚇"),
+        ("lunch", "Lunch", "🍱"),
+        ("groceries", "Groceries", "🛒"),
         ("shopping", "Shopping", "🛍️"),
         ("bills", "Bills", "🧾"),
-        ("fun", "Fun", "🎉"),
+        ("snacks", "Snacks", "🍿"),
         ("health", "Health", "💊"),
+        ("fun", "Fun", "🎉"),
+        ("rent", "Rent", "🏠"),
         ("other", "Other", "📦"),
     ]
 
