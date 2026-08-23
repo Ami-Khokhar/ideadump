@@ -7,12 +7,12 @@ struct AnimatedLogoView: View {
     @State private var ripplePhase: Double = 0
 
     var body: some View {
-        ZStack {
-            // Ripple rings expanding from behind the logo
-            rippleRings
+        VStack(spacing: 14) {
+            // Logo with ripples expanding from its center
+            ZStack {
+                rippleRings
+                    .allowsHitTesting(false)
 
-            // Logo + text
-            VStack(spacing: 14) {
                 Image("Logo")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
@@ -21,29 +21,30 @@ struct AnimatedLogoView: View {
                     .scaleEffect(breathe ? 1.0 : 0.92)
                     .opacity(breathe ? 1 : 0)
                     .animation(.easeOut(duration: 0.5), value: breathe)
-
-                Text("TapLog")
-                    .font(.title2.weight(.semibold))
-                    .foregroundStyle(Theme.textPrimary)
-                    .opacity(showText ? 1 : 0)
-                    .animation(.easeOut(duration: 0.4), value: showText)
             }
+            // Let the ripples extend beyond the logo frame
+            .frame(width: 200, height: 200)
+
+            Text("TapLog")
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(Theme.textPrimary)
+                .opacity(showText ? 1 : 0)
+                .animation(.easeOut(duration: 0.4), value: showText)
         }
         .onAppear {
             withAnimation(.easeOut(duration: 0.5)) { breathe = true }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { showText = true }
-            // Continuous ripple animation
             startRipples()
         }
     }
 
-    /// 3 concentric ripple rings that expand outward.
+    /// 3 concentric ripple rings expanding outward from the logo center.
     private var rippleRings: some View {
         ZStack {
             ForEach(0..<3, id: \.self) { i in
                 let delay = Double(i) * 1.0
                 Circle()
-                    .stroke(Theme.accent.opacity(0.10))
+                    .stroke(Theme.accent.opacity(0.12))
                     .frame(width: 80 + ripplePhase * 120, height: 80 + ripplePhase * 120)
                     .opacity(max(0, 1 - ripplePhase))
                     .animation(
@@ -52,11 +53,9 @@ struct AnimatedLogoView: View {
                     )
             }
         }
-        .frame(width: 300, height: 300)
     }
 
     private func startRipples() {
-        // Kick the ripple animation
         withAnimation { ripplePhase = 1.0 }
     }
 }
