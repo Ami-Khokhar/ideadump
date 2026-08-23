@@ -34,6 +34,8 @@ struct LogHomeView: View {
     @State private var isCommitting = false
     /// Triggers the on-log ripple burst.
     @State private var rippleBurst = false
+    /// Fires a new drop on each increment.
+    @State private var dropTriggerID = 0
     @FocusState private var amountFocused: Bool
 
     let isOnboarding: Bool
@@ -165,6 +167,12 @@ struct LogHomeView: View {
                 RippleView()
                     .frame(width: 260, height: 260)
                     .allowsHitTesting(false)
+                // Ambient droplet — drips every ~5s like a zen water feature.
+                DropletView(ambient: true)
+                    .frame(width: 260, height: 260)
+                // On-log droplet — fires a single drop on save.
+                DropletView(ambient: false, triggerID: dropTriggerID)
+                    .frame(width: 260, height: 260)
                 // On-log burst (fires once, then resets).
                 if rippleBurst {
                     RippleView(burst: true)
@@ -374,7 +382,8 @@ struct LogHomeView: View {
 
         // The hero settles into the ledger: a soft pulse + ripple burst, then the field clears.
         withAnimation(Motion.gentle) { isCommitting = true }
-        // Fire the ripple burst — visible for one cycle then hidden.
+        // Fire the drop + ripple burst — drop falls, then splash.
+        dropTriggerID += 1
         rippleBurst = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
             withAnimation(Motion.gentle) { rippleBurst = false }
