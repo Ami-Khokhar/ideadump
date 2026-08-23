@@ -373,7 +373,13 @@ struct LogHomeView: View {
             isPlanned: isPlanned
         )
         modelContext.insert(entry)
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            print("TapLog: Failed to save entry: \(error)")
+            modelContext.delete(entry)
+            return
+        }
 
         if let cat = categories.first(where: { $0.key == categoryKey }) {
             cat.logCount += 1

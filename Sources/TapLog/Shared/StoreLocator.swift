@@ -6,7 +6,7 @@ import SwiftData
 /// group container isn't available (e.g. free Apple ID without the entitlement), it falls
 /// back to on-device Application Support storage so the app always runs.
 enum StoreLocator {
-    static let appGroupID = "group.com.example.taplog"
+    static let appGroupID = "group.dev.amteshwar.taplog"
     static let storeFileName = "TapLog.store"
 
     static func makeContainer() -> ModelContainer {

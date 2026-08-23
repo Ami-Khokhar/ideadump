@@ -221,7 +221,13 @@ struct CaptureForm: View {
                 note: trimmedNote.isEmpty ? nil : trimmedNote
             )
             modelContext.insert(entry)
-            try? modelContext.save()
+            do {
+                try modelContext.save()
+            } catch {
+                print("TapLog: Failed to save entry: \(error)")
+                modelContext.delete(entry)
+                return
+            }
             lastUsedCategoryKey = categoryKey
             logsLogged += 1
             undoStack.record("Logged \(Money.format(amount)) · \(lookup.name(for: categoryKey))") {

@@ -36,7 +36,22 @@ struct LogExpenseIntent: AppIntent {
 
         let entry = Entry(amount: Money.fromAmount(amount), category: categoryKey, note: note)
         context.insert(entry)
-        try context.save()
+        do {
+            try context.save()
+        } catch {
+            print("TapLog: Failed to save entry from Siri: \(error)")
+            return .result()
+        }
+
+        // Update category learning (same as home screen)
+        if let cat = categories.first(where: { $0.key == categoryKey }) {
+            cat.logCount += 1
+            try? context.save()
+        }
+
+        // Update retention streaks + total logs
+        let defaults = UserDefaults.standard
+        defaults.set(defaults.integer(forKey: "logsLogged") + 1, forKey: "logsLogged")
 
         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
         return .result()

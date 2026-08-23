@@ -32,7 +32,23 @@ struct QuickLogIntent: AppIntent {
             ?? SpendCategory.fallbackKey
         let entry = Entry(amount: Money.fromAmount(amount), category: categoryKey, note: nil)
         context.insert(entry)
-        try context.save()
+        do {
+            try context.save()
+        } catch {
+            print("TapLog: Failed to save quick log: \(error)")
+            return .result()
+        }
+
+        // Update category learning
+        if let cat = categories.first(where: { $0.key == categoryKey }) {
+            cat.logCount += 1
+            try? context.save()
+        }
+
+        // Update retention
+        let defaults = UserDefaults.standard
+        defaults.set(defaults.integer(forKey: "logsLogged") + 1, forKey: "logsLogged")
+
         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
         return .result()
     }

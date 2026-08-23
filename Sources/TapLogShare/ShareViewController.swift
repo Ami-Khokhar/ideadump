@@ -9,16 +9,7 @@ final class ShareViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
 
-        let text = extractTextFromContext()
-        let parsed = ShareParser.parse(text)
-        savePendingEntry(amount: parsed.amount, note: parsed.note)
-
-        let message = parsed.amount.map {
-            "Saved \(Money.format($0)) to TapLog — confirm it in the app."
-        } ?? "No amount found. A pending entry was saved — check TapLog."
-
         let label = UILabel()
-        label.text = message
         label.textAlignment = .center
         label.numberOfLines = 0
         label.font = .preferredFont(forTextStyle: .body)
@@ -28,6 +19,7 @@ final class ShareViewController: UIViewController {
         doneButton.setTitle("Done", for: .normal)
         doneButton.addTarget(self, action: #selector(doneTapped), for: .touchUpInside)
         doneButton.translatesAutoresizingMaskIntoConstraints = false
+        doneButton.isHidden = true
 
         view.addSubview(label)
         view.addSubview(doneButton)
@@ -40,43 +32,85 @@ final class ShareViewController: UIViewController {
             doneButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             doneButton.topAnchor.constraint(equalTo: label.bottomAnchor, constant: 20),
         ])
+
+        // Load text asynchronously — never block the UI thread
+        extractTextFromContext { [weak self] text in
+            guard let self else { return }
+            let parsed = ShareParser.parse(text)
+
+            guard let amount = parsed.amount, amount > 0 else {
+                DispatchQueue.main.async {
+                    label.text = "Couldn't find an amount to log. Open TapLog to enter it manually."
+                    doneButton.isHidden = false
+                }
+                return
+            }
+
+            let saved = self.savePendingEntry(amount: amount, note: parsed.note)
+            DispatchQueue.main.async {
+                if saved {
+                    label.text = "Saved \(Money.format(amount)) to TapLog — confirm it in the app."
+                } else {
+                    label.text = "Failed to save. Open TapLog and log \(Money.format(amount)) manually."
+                }
+                doneButton.isHidden = false
+            }
+        }
     }
 
     @objc private func doneTapped() {
         extensionContext?.completeRequest(returningItems: nil, completionHandler: nil)
     }
 
-    private func savePendingEntry(amount: Decimal?, note: String?) {
+    @discardableResult
+    private func savePendingEntry(amount: Decimal, note: String?) -> Bool {
         let container = StoreLocator.makeContainer()
         let context = container.mainContext
         let categories = (try? context.fetch(FetchDescriptor<SpendCategory>())) ?? []
         let entry = Entry(
-            amount: amount ?? 0,
+            amount: amount,
             category: categories.first?.key ?? SpendCategory.fallbackKey,
             note: note,
             isPending: true
         )
         context.insert(entry)
-        try? context.save()
+        do {
+            try context.save()
+            return true
+        } catch {
+            print("TapLog Share: Failed to save pending entry: \(error)")
+            // Remove the orphaned in-memory object
+            context.delete(entry)
+            return false
+        }
     }
 
-    private func extractTextFromContext() -> String {
-        guard let items = extensionContext?.inputItems as? [NSExtensionItem] else { return "" }
-        var text = ""
+    /// Loads shared text asynchronously via completion handler instead of a blocking semaphore.
+    private func extractTextFromContext(completion: @escaping (String) -> Void) {
+        guard let items = extensionContext?.inputItems as? [NSExtensionItem] else {
+            completion("")
+            return
+        }
+
+        var allText = ""
+        let group = DispatchGroup()
+
         for item in items {
             guard let attachments = item.attachments else { continue }
             for provider in attachments {
                 guard provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) else { continue }
-                let semaphore = DispatchSemaphore(value: 0)
+                group.enter()
                 provider.loadItem(forTypeIdentifier: UTType.plainText.identifier, options: nil) { result, _ in
                     if let string = result as? String {
-                        text = string
+                        allText += string + " "
                     }
-                    semaphore.signal()
+                    group.leave()
                 }
-                semaphore.wait()
             }
         }
-        return text
+
+        group.notify(queue: .main) {
+            completion(allText.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
     }
 }
