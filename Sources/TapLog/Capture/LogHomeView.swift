@@ -103,20 +103,10 @@ struct LogHomeView: View {
         }
     }
 
-    // MARK: - Logo
+    // MARK: - Logo (animated)
 
     private var logoView: some View {
-        VStack(spacing: 12) {
-            Image("Logo")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 80, height: 80)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-
-            Text("TapLog")
-                .font(.title2.weight(.semibold))
-                .foregroundStyle(Theme.textPrimary)
-        }
+        AnimatedLogoView()
     }
 
     // MARK: - Main Content
