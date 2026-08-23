@@ -31,6 +31,8 @@ struct LogHomeView: View {
     @State private var isCommitting = false
     @State private var rippleBurst = false
     @State private var dropTriggerID = 0
+    @State private var homeLogoVisible = false
+    @State private var homeLogoRipple = false
     /// Opening animation: 0 = logo visible, 1 = content visible
     @State private var openingPhase: CGFloat = 0
     @FocusState private var amountFocused: Bool
@@ -86,6 +88,16 @@ struct LogHomeView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                 withAnimation(.spring(response: 0.8, dampingFraction: 1.0)) {
                     openingPhase = 1
+                }
+                // Logo lands on home screen after cross-fade
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                    withAnimation(.spring(response: 0.7, dampingFraction: 0.75)) {
+                        homeLogoVisible = true
+                    }
+                    homeLogoRipple = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        withAnimation(.easeOut(duration: 0.5)) { homeLogoRipple = false }
+                    }
                 }
             }
             let args = ProcessInfo.processInfo.arguments
@@ -196,6 +208,28 @@ struct LogHomeView: View {
                         .frame(width: 120, height: 120)
                         .allowsHitTesting(false)
                         .transition(.opacity)
+                }
+
+                // Logo that fades in when home screen appears
+                Image("Logo")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 48, height: 48)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .opacity(homeLogoVisible ? 0.15 : 0)
+                    .scaleEffect(homeLogoVisible ? 1.0 : 0.6)
+                    .blur(radius: homeLogoVisible ? 0 : 4)
+                    .animation(.spring(response: 0.7, dampingFraction: 0.75), value: homeLogoVisible)
+
+                // Ripple burst when logo lands
+                if homeLogoRipple {
+                    ForEach(0..<3, id: \.self) { i in
+                        Circle()
+                            .stroke(Theme.accent.opacity(0.08))
+                            .frame(width: 48 + Double(i) * 20, height: 48 + Double(i) * 20)
+                    }
+                    .transition(.opacity)
+                    .allowsHitTesting(false)
                 }
 
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
