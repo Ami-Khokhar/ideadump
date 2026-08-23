@@ -82,9 +82,9 @@ struct LogHomeView: View {
                 hasFocused = true
                 amountFocused = true
             }
-            // Fade transition: logo holds for 0.8s, then cross-fades to content over 0.6s
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                withAnimation(.easeInOut(duration: 0.6)) {
+            // Fade transition: logo holds for 1.0s, then smoothly dissolves to content over 0.8s
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                withAnimation(.spring(response: 0.8, dampingFraction: 1.0)) {
                     openingPhase = 1
                 }
             }
