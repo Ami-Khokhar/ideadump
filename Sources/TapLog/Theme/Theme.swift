@@ -135,3 +135,51 @@ extension View {
         modifier(AppearanceOverride())
     }
 }
+
+// MARK: - Responsive Amount Font
+
+/// Computes an adaptive font size that shrinks gracefully as the amount string grows,
+/// keeping the text within screen bounds while remaining comfortably readable.
+enum AmountFont {
+
+    /// Base font size for short amounts (1–6 digits).
+    static let baseFontSize: CGFloat = 56
+
+    /// Minimum font size — never shrinks below this.
+    static let minFontSize: CGFloat = 34
+
+    /// Returns the font for the given display text, using a monospaced rounded design.
+    static func font(for text: String) -> Font {
+        let size = fontSize(for: text)
+        return Theme.amount(size)
+    }
+
+    /// Returns the matching currency symbol font size.
+    static func symbolFont(for text: String) -> Font {
+        let size = fontSize(for: text)
+        return Theme.amount(size * 0.5, weight: .semibold)
+    }
+
+    /// Computes the adaptive font size based on character count.
+    ///
+    /// The curve is piecewise-linear:
+    /// - 1–6 chars:  baseFontSize (56pt)
+    /// - 7–9 chars:  linearly interpolate from 56 → 44pt
+    /// - 10–12 chars: linearly interpolate from 44 → 38pt
+    /// - 13+ chars:  minFontSize (34pt)
+    static func fontSize(for text: String) -> CGFloat {
+        let count = text.count
+        switch count {
+        case 0...6:
+            return baseFontSize
+        case 7...9:
+            let t = CGFloat(count - 6) / 3.0
+            return baseFontSize - t * (baseFontSize - 44)
+        case 10...12:
+            let t = CGFloat(count - 9) / 3.0
+            return 44 - t * (44 - 38)
+        default:
+            return minFontSize
+        }
+    }
+}

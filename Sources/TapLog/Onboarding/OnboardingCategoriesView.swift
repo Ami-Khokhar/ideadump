@@ -136,7 +136,11 @@ struct OnboardingCategoriesView: View {
         for category in categories where !keepKeys.contains(category.key) {
             modelContext.delete(category)
         }
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            print("TapLog: Failed to save category selection: \(error)")
+        }
         onContinue()
     }
 }

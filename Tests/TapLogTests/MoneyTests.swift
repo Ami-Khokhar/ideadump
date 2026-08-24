@@ -88,6 +88,25 @@ final class MoneyTests: XCTestCase {
         XCTAssertEqual(Money.fromAmount(2.344), Decimal(string: "2.34"))
     }
 
+    // MARK: - AppIntent amount validation
+
+    func testIntentAmountValidatorRejectsInvalidAmounts() {
+        for amount in [0.0, -1.0, Double.nan, Double.infinity, -Double.infinity, 1_000_000_000.0] {
+            XCTAssertThrowsError(try TapLogIntentAmountValidator.validate(amount))
+        }
+    }
+
+    func testIntentAmountValidatorRoundsValidAmounts() throws {
+        XCTAssertEqual(
+            try TapLogIntentAmountValidator.validate(12.99),
+            Decimal(string: "12.99")
+        )
+        XCTAssertEqual(
+            try TapLogIntentAmountValidator.validate(999_999_999.99),
+            Decimal(string: "999999999.99")
+        )
+    }
+
     // MARK: - plainString round-trips back through parse
 
     func testPlainStringRoundTrips() {

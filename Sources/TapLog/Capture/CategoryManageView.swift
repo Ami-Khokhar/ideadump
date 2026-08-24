@@ -61,7 +61,55 @@ struct CategoryManageView: View {
         for index in offsets {
             modelContext.delete(categories[index])
         }
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            print("TapLog: Failed to delete categories: \(error)")
+        }
+    }
+}
+
+/// Selects any category from the compact capture screen while keeping category
+/// creation and deletion available behind Manage.
+struct CategoryPickerView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    @Query(sort: \SpendCategory.sortOrder) private var categories: [SpendCategory]
+
+    let onSelect: (String) -> Void
+    let onManage: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(categories) { category in
+                    Button {
+                        onSelect(category.key)
+                    } label: {
+                        HStack(spacing: 12) {
+                            Text(category.emoji)
+                                .font(.title3)
+                            Text(category.name)
+                                .foregroundStyle(.primary)
+                            Spacer()
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Choose Category")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Manage") {
+                        dismiss()
+                        onManage()
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -133,8 +181,13 @@ struct AddCategorySheet: View {
         guard !trimmedName.isEmpty else { return }
         let trimmedEmoji = emoji.trimmingCharacters(in: .whitespacesAndNewlines)
         let nextOrder = (existing.map(\.sortOrder).max() ?? 0) + 1
+        // Keys still referenced by entries count as taken, so recreating a deleted
+        // category name can't silently reattach that history to the new category.
+        let takenByEntries = Set(
+            ((try? modelContext.fetch(FetchDescriptor<Entry>())) ?? []).map(\.category)
+        )
         let category = SpendCategory(
-            key: SpendCategory.makeKey(forName: trimmedName, existing: existing),
+            key: SpendCategory.makeKey(forName: trimmedName, existing: existing, takenKeys: takenByEntries),
             name: trimmedName,
             emoji: trimmedEmoji.isEmpty ? "🏷️" : trimmedEmoji,
             sortOrder: nextOrder

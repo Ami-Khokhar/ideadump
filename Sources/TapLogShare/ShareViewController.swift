@@ -66,10 +66,11 @@ final class ShareViewController: UIViewController {
     private func savePendingEntry(amount: Decimal, note: String?) -> Bool {
         let container = StoreLocator.makeContainer()
         let context = container.mainContext
-        let categories = (try? context.fetch(FetchDescriptor<SpendCategory>())) ?? []
+        // Pending entries land in the neutral "Other" bucket — attribution is the
+        // user's decision when they confirm it in the app.
         let entry = Entry(
             amount: amount,
-            category: categories.first?.key ?? SpendCategory.fallbackKey,
+            category: SpendCategory.fallbackKey,
             note: note,
             isPending: true
         )
@@ -92,7 +93,8 @@ final class ShareViewController: UIViewController {
             return
         }
 
-        var allText = ""
+        var textParts: [String] = []
+        let accumulationQueue = DispatchQueue(label: "dev.amteshwar.taplog.share-text-accumulation")
         let group = DispatchGroup()
 
         for item in items {
@@ -102,15 +104,20 @@ final class ShareViewController: UIViewController {
                 group.enter()
                 provider.loadItem(forTypeIdentifier: UTType.plainText.identifier, options: nil) { result, _ in
                     if let string = result as? String {
-                        allText += string + " "
+                        accumulationQueue.sync {
+                            textParts.append(string)
+                        }
                     }
                     group.leave()
                 }
             }
         }
 
-        group.notify(queue: .main) {
-            completion(allText.trimmingCharacters(in: .whitespacesAndNewlines))
+        group.notify(queue: accumulationQueue) {
+            let allText = textParts.joined(separator: " ")
+            DispatchQueue.main.async {
+                completion(allText.trimmingCharacters(in: .whitespacesAndNewlines))
+            }
         }
     }
 }

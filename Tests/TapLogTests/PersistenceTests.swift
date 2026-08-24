@@ -1,0 +1,119 @@
+import XCTest
+import SwiftData
+@testable import TapLog
+
+/// SwiftData round trips, seeding, and the category system entries reference
+/// by stable key.
+@MainActor
+final class PersistenceTests: XCTestCase {
+    private func makeContainer() throws -> ModelContainer {
+        try ModelContainer(
+            for: Entry.self, SpendCategory.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+    }
+
+    // MARK: - Entry round trip
+
+    func testEntryRoundTripsAllFields() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let date = Date(timeIntervalSince1970: 1_750_000_000)
+        let entry = Entry(
+            amount: Decimal(string: "12.99")!,
+            category: "chai",
+            note: "morning",
+            date: date,
+            isPending: true,
+            isPlanned: true
+        )
+        context.insert(entry)
+        try context.save()
+
+        let fetched = try context.fetch(FetchDescriptor<Entry>()).first!
+        XCTAssertEqual(fetched.amount, Decimal(string: "12.99")!, "cent precision must survive persistence")
+        XCTAssertEqual(fetched.category, "chai")
+        XCTAssertEqual(fetched.note, "morning")
+        XCTAssertEqual(fetched.date, date)
+        XCTAssertTrue(fetched.isPending)
+        XCTAssertTrue(fetched.isPlanned)
+    }
+
+    // MARK: - Visibility predicates (what each screen shows)
+
+    func testActivePredicateExcludesArchivedAndPending() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        context.insert(Entry(amount: 10, category: "chai"))
+        context.insert(Entry(amount: 20, category: "chai", isArchived: true))
+        context.insert(Entry(amount: 30, category: "chai", isPending: true))
+        try context.save()
+
+        var descriptor = FetchDescriptor<Entry>(
+            predicate: #Predicate { !$0.isArchived && !$0.isPending }
+        )
+        XCTAssertEqual(try context.fetchCount(descriptor), 1)
+
+        descriptor.predicate = #Predicate { $0.isPending }
+        XCTAssertEqual(try context.fetchCount(descriptor), 1, "pending share entries must be findable for confirmation")
+
+        descriptor.predicate = #Predicate { $0.isArchived }
+        XCTAssertEqual(try context.fetchCount(descriptor), 1)
+    }
+
+    // MARK: - Seeding
+
+    func testSeedingRunsOnceAndMatchesDefaultSet() throws {
+        let container = try makeContainer()
+        DebugSeeder.seedCategoriesIfNeeded(container: container)
+        DebugSeeder.seedCategoriesIfNeeded(container: container) // second call is a no-op
+
+        let categories = try container.mainContext.fetch(FetchDescriptor<SpendCategory>())
+        XCTAssertEqual(categories.count, SpendCategory.defaultSeeds.count)
+        XCTAssertEqual(Set(categories.map(\.key)), Set(SpendCategory.defaultSeeds.map(\.key)))
+    }
+
+    // MARK: - Custom category keys
+
+    func testMakeKeySlugsAndDeduplicates() {
+        let existing = [
+            SpendCategory(key: "chai", name: "Chai", emoji: "☕️"),
+        ]
+        XCTAssertEqual(SpendCategory.makeKey(forName: "Café Latte", existing: []), "cafe-latte")
+        XCTAssertEqual(SpendCategory.makeKey(forName: "Chai", existing: existing), "chai-2")
+        XCTAssertEqual(SpendCategory.makeKey(forName: "!!!", existing: []), "custom")
+        XCTAssertEqual(
+            SpendCategory.makeKey(forName: "Chai", existing: existing + [SpendCategory(key: "chai-2", name: "x", emoji: "x")]),
+            "chai-3"
+        )
+    }
+
+    func testMakeKeyAvoidsKeysStillReferencedByEntries() {
+        // The category was deleted but its key lives on in history — a new category
+        // with the same name must not reclaim that key, or old entries would
+        // silently reattach to it.
+        XCTAssertEqual(
+            SpendCategory.makeKey(forName: "Chai", existing: [], takenKeys: ["chai"]),
+            "chai-2"
+        )
+        XCTAssertEqual(
+            SpendCategory.makeKey(forName: "Chai", existing: [], takenKeys: ["chai", "chai-2"]),
+            "chai-3"
+        )
+        // Keys nobody references remain free.
+        XCTAssertEqual(
+            SpendCategory.makeKey(forName: "Chai", existing: [], takenKeys: ["food"]),
+            "chai"
+        )
+    }
+
+    // MARK: - Lookup fallback (deleted categories must never break display)
+
+    func testLookupFallsBackForDeletedCategory() {
+        let lookup = CategoryLookup([SpendCategory(key: "chai", name: "Chai", emoji: "☕️")])
+        XCTAssertEqual(lookup.name(for: "chai"), "Chai")
+        XCTAssertEqual(lookup.name(for: "deleted-key"), "Other")
+        XCTAssertEqual(lookup.emoji(for: "deleted-key"), "🏷️")
+        XCTAssertNil(lookup.category(for: "deleted-key"))
+    }
+}

@@ -17,7 +17,11 @@ enum DebugSeeder {
                 key: seed.key, name: seed.name, emoji: seed.emoji, sortOrder: index
             ))
         }
-        try? context.save()
+        do {
+            try context.save()
+        } catch {
+            print("TapLog: Failed to seed categories: \(error)")
+        }
     }
 
     @MainActor
@@ -52,7 +56,11 @@ enum DebugSeeder {
         for (amount, category, note, date) in samples {
             context.insert(Entry(amount: amount, category: category, note: note, date: date))
         }
-        try? context.save()
+        do {
+            try context.save()
+        } catch {
+            print("TapLog: Failed to save sample data: \(error)")
+        }
         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
     }
 }

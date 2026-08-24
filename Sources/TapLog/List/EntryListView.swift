@@ -20,6 +20,7 @@ struct EntryListView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var undoStack: UndoStack
     @Environment(\.dismiss) private var dismiss
+    @Environment(RetentionManager.self) private var retention
 
     @AppStorage("isProDemo") private var isPro = false
 
@@ -38,6 +39,7 @@ struct EntryListView: View {
     @State private var showingArchived = false
     @State private var showingSetupSheet = false
     @State private var editingEntry: Entry?
+    @State private var showingClearConfirmation = false
 
     private var displayedEntries: [Entry] {
         showingArchived ? archivedEntries : activeEntries
@@ -94,9 +96,11 @@ struct EntryListView: View {
             .navigationTitle("History")
             .background(Theme.background)
             .toolbar {
+#if DEBUG
                 ToolbarItem(placement: .topBarLeading) {
                     debugMenu
                 }
+#endif
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
                         .fontWeight(.semibold)
@@ -126,18 +130,32 @@ struct EntryListView: View {
                 CaptureForm(mode: .edit(entry))
                     .environmentObject(undoStack)
             }
+            .confirmationDialog(
+                "Delete all entries?",
+                isPresented: $showingClearConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Delete All", role: .destructive) {
+                    clearAll()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This permanently removes your history and resets your consistency progress.")
+            }
         }
     }
 
+#if DEBUG
     private var debugMenu: some View {
         Menu {
             Button("Seed sample data") { DebugSeeder.seed(context: modelContext) }
             Button(isPro ? "Turn Pro off (demo)" : "Turn Pro on (demo)") { isPro.toggle() }
-            Button("Delete all entries", role: .destructive) { clearAll() }
+            Button("Delete all entries", role: .destructive) { showingClearConfirmation = true }
         } label: {
             Image(systemName: "hammer")
         }
     }
+#endif
 
     // MARK: - Pending (share sheet) actions
 
@@ -165,12 +183,26 @@ struct EntryListView: View {
     private func confirmPending(_ entry: Entry) {
         withAnimation(Motion.stateChange) {
             entry.isPending = false
-            try? modelContext.save()
         }
-        WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
+        do {
+            try modelContext.save()
+        } catch {
+            print("TapLog: Failed to confirm pending entry: \(error)")
+            // Nothing was persisted — keep the row pending and don't count it.
+            entry.isPending = true
+            return
+        }
+        CaptureBookkeeping.apply(modelContext: modelContext, categories: categories, categoryKey: entry.category)
         undoStack.record("Added \(Money.format(entry.amount))") {
             entry.isPending = true
-            try? modelContext.save()
+            do {
+                try modelContext.save()
+            } catch {
+                // The confirmation is still persisted — counters must stay as they are.
+                print("TapLog: Failed to persist undo of confirmation: \(error)")
+                return
+            }
+            CaptureBookkeeping.revert(modelContext: modelContext, categories: categories, categoryKey: entry.category, entryDate: entry.date)
         }
     }
 
@@ -178,7 +210,20 @@ struct EntryListView: View {
         let snapshot = (amount: entry.amount, category: entry.category, note: entry.note, date: entry.date)
         withAnimation(Motion.stateChange) {
             modelContext.delete(entry)
-            try? modelContext.save()
+        }
+        do {
+            try modelContext.save()
+        } catch {
+            print("TapLog: Failed to discard pending entry: \(error)")
+            // The store is untouched — re-insert an equivalent so the row survives.
+            modelContext.insert(Entry(
+                amount: snapshot.amount,
+                category: snapshot.category,
+                note: snapshot.note,
+                date: snapshot.date,
+                isPending: true
+            ))
+            return
         }
         undoStack.record("Discarded pending entry") {
             let restored = Entry(
@@ -189,7 +234,11 @@ struct EntryListView: View {
                 isPending: true
             )
             modelContext.insert(restored)
-            try? modelContext.save()
+            do {
+                try modelContext.save()
+            } catch {
+                print("TapLog: Failed to persist undo of discard: \(error)")
+            }
         }
     }
 
@@ -198,24 +247,44 @@ struct EntryListView: View {
     private func archive(_ entry: Entry) {
         withAnimation(Motion.stateChange) {
             entry.isArchived = true
-            try? modelContext.save()
+        }
+        do {
+            try modelContext.save()
+        } catch {
+            print("TapLog: Failed to archive entry: \(error)")
+            entry.isArchived = false
+            return
         }
         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
         undoStack.record("Archived \(Money.format(entry.amount))") {
             entry.isArchived = false
-            try? modelContext.save()
+            do {
+                try modelContext.save()
+            } catch {
+                print("TapLog: Failed to persist undo of archive: \(error)")
+            }
         }
     }
 
     private func unarchive(_ entry: Entry) {
         withAnimation(Motion.stateChange) {
             entry.isArchived = false
-            try? modelContext.save()
+        }
+        do {
+            try modelContext.save()
+        } catch {
+            print("TapLog: Failed to unarchive entry: \(error)")
+            entry.isArchived = true
+            return
         }
         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
         undoStack.record("Restored \(Money.format(entry.amount))") {
             entry.isArchived = true
-            try? modelContext.save()
+            do {
+                try modelContext.save()
+            } catch {
+                print("TapLog: Failed to persist undo of restore: \(error)")
+            }
         }
     }
 
@@ -225,11 +294,26 @@ struct EntryListView: View {
             category: entry.category,
             note: entry.note,
             date: entry.date,
-            archived: entry.isArchived
+            archived: entry.isArchived,
+            planned: entry.isPlanned
         )
         withAnimation(Motion.stateChange) {
             modelContext.delete(entry)
-            try? modelContext.save()
+        }
+        do {
+            try modelContext.save()
+        } catch {
+            print("TapLog: Failed to delete entry: \(error)")
+            // The store is untouched — re-insert an equivalent so nothing is lost.
+            modelContext.insert(Entry(
+                amount: snapshot.amount,
+                category: snapshot.category,
+                note: snapshot.note,
+                date: snapshot.date,
+                isArchived: snapshot.archived,
+                isPlanned: snapshot.planned
+            ))
+            return
         }
         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
         undoStack.record("Deleted \(Money.format(snapshot.amount))") {
@@ -238,21 +322,37 @@ struct EntryListView: View {
                 category: snapshot.category,
                 note: snapshot.note,
                 date: snapshot.date,
-                isArchived: snapshot.archived
+                isArchived: snapshot.archived,
+                isPlanned: snapshot.planned
             )
             modelContext.insert(restored)
-            try? modelContext.save()
+            do {
+                try modelContext.save()
+            } catch {
+                print("TapLog: Failed to persist undo of delete: \(error)")
+            }
+            WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
         }
     }
 
     // MARK: - Debug
 
     private func clearAll() {
-        let all = try? modelContext.fetch(FetchDescriptor<Entry>())
-        for entry in all ?? [] {
+        let all = (try? modelContext.fetch(FetchDescriptor<Entry>())) ?? []
+        for entry in all {
             modelContext.delete(entry)
         }
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            print("TapLog: Failed to clear entries: \(error)")
+            return
+        }
+        // A wiped history should also be a clean slate: counters, streaks,
+        // and category usage all reset together.
+        CaptureBookkeeping.resetCategoryUsage(modelContext: modelContext)
+        StoreLocator.sharedDefaults.removeObject(forKey: "logsLogged")
+        retention.resetAll()
         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
     }
 }

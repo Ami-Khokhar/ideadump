@@ -9,6 +9,14 @@ enum StoreLocator {
     static let appGroupID = "group.dev.amteshwar.taplog"
     static let storeFileName = "TapLog.store"
 
+    /// Defaults shared between the app and its extensions, so counters recorded by
+    /// the widget or Siri are visible to the app (and vice versa). Falls back to
+    /// the per-process standard defaults when the App Group isn't provisioned,
+    /// matching the store's own fallback behavior.
+    static var sharedDefaults: UserDefaults {
+        UserDefaults(suiteName: appGroupID) ?? .standard
+    }
+
     static func makeContainer() -> ModelContainer {
         let configuration = ModelConfiguration(url: storeURL)
         do {

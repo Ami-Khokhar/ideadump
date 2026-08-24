@@ -37,17 +37,24 @@ extension CSVFile: Transferable {
 enum CSVExporter {
     static func makeCSV(entries: [Entry], lookup: CategoryLookup) -> String {
         var csv = "Date,Amount,Category,Note,Archived\n"
-        for entry in entries {
-            let note = (entry.note ?? "").replacingOccurrences(of: "\"", with: "\"\"")
+        // Pending share-sheet captures are provisional and must not appear in a
+        // user export. Archived entries remain historical records and are included.
+        for entry in entries where !entry.isPending {
             let fields = [
                 entry.date.formatted(.iso8601),
                 Money.plainString(entry.amount),
-                lookup.name(for: entry.category),
-                "\"\(note)\"",
+                quote(lookup.name(for: entry.category)),
+                quote(entry.note ?? ""),
                 entry.isArchived ? "yes" : "no",
             ]
             csv += fields.joined(separator: ",") + "\n"
         }
         return csv
+    }
+
+    /// RFC 4180 quoting so commas, quotes, and newlines in notes or custom
+    /// category names can never shift columns.
+    private static func quote(_ field: String) -> String {
+        "\"\(field.replacingOccurrences(of: "\"", with: "\"\""))\""
     }
 }

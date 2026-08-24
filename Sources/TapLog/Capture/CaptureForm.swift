@@ -16,7 +16,6 @@ struct CaptureForm: View {
     @EnvironmentObject private var undoStack: UndoStack
 
     @AppStorage("lastUsedCategory") private var lastUsedCategoryKey: String = SpendCategory.fallbackKey
-    @AppStorage("logsLogged") private var logsLogged = 0
     @Query(sort: \SpendCategory.sortOrder) private var categories: [SpendCategory]
 
     let mode: Mode
@@ -30,6 +29,7 @@ struct CaptureForm: View {
     @State private var prefillCategoryQuery: String
     @State private var note: String
     @State private var showAmountError = false
+    @State private var amountFilterError: String?
     @State private var showingManageCategories = false
     @FocusState private var amountFocused: Bool
 
@@ -69,9 +69,13 @@ struct CaptureForm: View {
                 Section {
                     TextField("0.00", text: $amountText)
                         .keyboardType(.decimalPad)
-                        .font(.system(.title, design: .rounded, weight: .semibold))
+                        .font(AmountFont.font(for: amountText))
                         .focused($amountFocused)
-                    if showAmountError {
+                    if let error = amountFilterError {
+                        Text(error)
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                    } else if showAmountError {
                         Text("Enter a valid amount greater than zero.")
                             .font(.footnote)
                             .foregroundStyle(.red)
@@ -115,6 +119,23 @@ struct CaptureForm: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(isEditing ? "Save" : "Log") { save() }
                         .fontWeight(.semibold)
+                }
+            }
+            .onChange(of: amountText) { oldValue, newValue in
+                let result = AmountInputFilter.filter(newValue, current: oldValue)
+                switch result {
+                case .accepted(let filtered):
+                    if filtered != newValue {
+                        amountText = filtered
+                    }
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        amountFilterError = nil
+                        showAmountError = false
+                    }
+                case .rejected(let error):
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        amountFilterError = error
+                    }
                 }
             }
             .onAppear {
@@ -205,7 +226,7 @@ struct CaptureForm: View {
     }
 
     private func save() {
-        guard let amount = Money.parse(amountText), amount > 0 else {
+        guard let amount = AmountInputFilter.parsedAmount(amountText) else {
             showAmountError = true
             return
         }
@@ -229,10 +250,17 @@ struct CaptureForm: View {
                 return
             }
             lastUsedCategoryKey = categoryKey
-            logsLogged += 1
+            CaptureBookkeeping.apply(modelContext: modelContext, categories: categories, categoryKey: categoryKey)
             undoStack.record("Logged \(Money.format(amount)) · \(lookup.name(for: categoryKey))") {
                 modelContext.delete(entry)
-                try? modelContext.save()
+                do {
+                    try modelContext.save()
+                } catch {
+                    // The entry is still persisted — counters must stay as they are.
+                    print("TapLog: Failed to persist undo of entry: \(error)")
+                    return
+                }
+                CaptureBookkeeping.revert(modelContext: modelContext, categories: categories, categoryKey: categoryKey, entryDate: entry.date)
             }
         case .edit(let entry):
             let previous = (
@@ -245,13 +273,38 @@ struct CaptureForm: View {
             entry.category = categoryKey
             entry.note = trimmedNote.isEmpty ? nil : trimmedNote
             entry.isPending = false
-            try? modelContext.save()
+            do {
+                try modelContext.save()
+            } catch {
+                print("TapLog: Failed to save edited entry: \(error)")
+                // Restore the in-memory state — nothing was persisted.
+                entry.amount = previous.amount
+                entry.category = previous.category
+                entry.note = previous.note
+                entry.isPending = previous.isPending
+                return
+            }
+            // Confirming a pending share-sheet entry is that expense's "log moment" —
+            // count it exactly like any other capture (only once the save succeeded).
+            if previous.isPending {
+                lastUsedCategoryKey = categoryKey
+                CaptureBookkeeping.apply(modelContext: modelContext, categories: categories, categoryKey: categoryKey)
+            }
             undoStack.record("Edited \(Money.format(amount)) · \(lookup.name(for: categoryKey))") {
                 entry.amount = previous.amount
                 entry.category = previous.category
                 entry.note = previous.note
                 entry.isPending = previous.isPending
-                try? modelContext.save()
+                do {
+                    try modelContext.save()
+                } catch {
+                    // The edit is still persisted — counters must stay as they are.
+                    print("TapLog: Failed to persist undo of edit: \(error)")
+                    return
+                }
+                if previous.isPending {
+                    CaptureBookkeeping.revert(modelContext: modelContext, categories: categories, categoryKey: categoryKey, entryDate: entry.date)
+                }
             }
         }
 

@@ -75,7 +75,6 @@ private func makeQuickButtons(context: ModelContext) -> [QuickButton] {
         .map { (pattern, count) in
             let cat = lookup[pattern.categoryKey]
             let emoji = cat?.emoji ?? "🏷️"
-            let name = cat?.name ?? "Other"
             let amountDouble = NSDecimalNumber(decimal: pattern.amount).doubleValue
             return QuickButton(
                 amount: amountDouble,

@@ -1,6 +1,5 @@
 import AppIntents
 import SwiftData
-import WidgetKit
 
 /// One-tap logging from the interactive widget. Runs in the widget's own process with
 /// `openAppWhenRun = false`, so the app never appears on screen.
@@ -24,32 +23,24 @@ struct QuickLogIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
+        let validatedAmount = try TapLogIntentAmountValidator.validate(amount)
         let container = StoreLocator.makeContainer()
         let context = container.mainContext
         let categories = (try? context.fetch(FetchDescriptor<SpendCategory>())) ?? []
         let categoryKey = categories.first { $0.key == category }?.key
             ?? categories.first?.key
             ?? SpendCategory.fallbackKey
-        let entry = Entry(amount: Money.fromAmount(amount), category: categoryKey, note: nil)
+        let entry = Entry(amount: validatedAmount, category: categoryKey, note: nil)
         context.insert(entry)
         do {
             try context.save()
         } catch {
             print("TapLog: Failed to save quick log: \(error)")
-            return .result()
+            throw TapLogIntentError.saveFailed
         }
 
-        // Update category learning
-        if let cat = categories.first(where: { $0.key == categoryKey }) {
-            cat.logCount += 1
-            try? context.save()
-        }
-
-        // Update retention
-        let defaults = UserDefaults.standard
-        defaults.set(defaults.integer(forKey: "logsLogged") + 1, forKey: "logsLogged")
-
-        WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
+        // Same bookkeeping as the home screen: category learning, log totals, streaks.
+        CaptureBookkeeping.apply(modelContext: context, categories: categories, categoryKey: categoryKey)
         return .result()
     }
 }

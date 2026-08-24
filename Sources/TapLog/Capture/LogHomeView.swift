@@ -1,6 +1,5 @@
 import SwiftUI
 import SwiftData
-import WidgetKit
 
 /// The capture-first home screen. Minimal — 6 elements, zero clutter.
 ///
@@ -13,7 +12,6 @@ struct LogHomeView: View {
     @EnvironmentObject private var undoStack: UndoStack
 
     @AppStorage("lastUsedCategory") private var lastUsedCategoryKey: String = SpendCategory.fallbackKey
-    @AppStorage("logsLogged") private var logsLogged = 0
 
     @Query(sort: \SpendCategory.sortOrder) private var categories: [SpendCategory]
     @Query(
@@ -26,11 +24,13 @@ struct LogHomeView: View {
     @State private var selectedCategoryKey = ""
     @State private var note = ""
     @State private var isPlanned = false
+    @State private var showingCategoryPicker = false
     @State private var showingManageCategories = false
     @State private var hasFocused = false
     @State private var isCommitting = false
     @State private var rippleBurst = false
     @State private var dropTriggerID = 0
+    @State private var amountError: String?
     /// Opening animation: 0 = logo visible, 1 = content visible
     @State private var openingPhase: CGFloat = 0
     @FocusState private var amountFocused: Bool
@@ -40,6 +40,8 @@ struct LogHomeView: View {
     let onLogged: (() -> Void)?
     let onCancelOnboarding: (() -> Void)?
     let onPrefillConsumed: (() -> Void)?
+    /// When true the logo splash is skipped — used by OpenCaptureIntent.
+    let skipSplash: Bool
 
     private var lookup: CategoryLookup { CategoryLookup(categories) }
 
@@ -58,8 +60,7 @@ struct LogHomeView: View {
         todayEntries.reduce(Decimal(0)) { $0 + $1.amount }
     }
     private var canLog: Bool {
-        guard let amount = Money.parse(amountText) else { return false }
-        return amount > 0
+        AmountInputFilter.isValid(amountText)
     }
 
     var body: some View {
@@ -82,12 +83,16 @@ struct LogHomeView: View {
                 hasFocused = true
                 amountFocused = true
             }
-            // Fade transition: logo holds for 1.0s, then smoothly dissolves to content over 0.8s
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                withAnimation(.spring(response: 0.8, dampingFraction: 1.0)) {
-                    openingPhase = 1
+            if skipSplash {
+                // Intent launch — skip straight to capture, no logo delay.
+                openingPhase = 1
+            } else {
+                // Fade transition: logo holds for 1.0s, then smoothly dissolves to content over 0.8s
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    withAnimation(.spring(response: 0.8, dampingFraction: 1.0)) {
+                        openingPhase = 1
+                    }
                 }
-
             }
             let args = ProcessInfo.processInfo.arguments
             if let index = args.lastIndex(of: "-autolog"), args.indices.contains(index + 1) {
@@ -98,9 +103,48 @@ struct LogHomeView: View {
                 }
             }
         }
+        .onChange(of: skipSplash) { _, newValue in
+            // Handle intent activation received after onAppear — e.g. the app
+            // was already visible when OpenCaptureIntent fired.
+            if newValue && openingPhase < 1 {
+                withAnimation(.spring(response: 0.4, dampingFraction: 1.0)) {
+                    openingPhase = 1
+                }
+                amountFocused = true
+            }
+        }
         .onChange(of: prefill) { applyPrefill() }
+        .onChange(of: amountText) { oldValue, newValue in
+            let result = AmountInputFilter.filter(newValue, current: oldValue)
+            switch result {
+            case .accepted(let filtered):
+                if filtered != newValue {
+                    amountText = filtered
+                }
+                withAnimation(.easeInOut(duration: 0.2)) { amountError = nil }
+            case .rejected(let error):
+                // Keep the text as-is (user sees what they typed) but show error.
+                withAnimation(.easeInOut(duration: 0.2)) { amountError = error }
+            }
+        }
+        .onChange(of: categories.count) { resolveLastUsedCategoryIfNeeded() }
         .sheet(isPresented: $showingManageCategories) {
             CategoryManageView()
+        }
+        .sheet(isPresented: $showingCategoryPicker) {
+            CategoryPickerView(
+                onSelect: { categoryKey in
+                    selectedCategoryKey = categoryKey
+                    showingCategoryPicker = false
+                    amountFocused = true
+                },
+                onManage: {
+                    showingCategoryPicker = false
+                    DispatchQueue.main.async {
+                        showingManageCategories = true
+                    }
+                }
+            )
         }
     }
 
@@ -201,18 +245,26 @@ struct LogHomeView: View {
 
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(Money.currencySymbol)
-                        .font(Theme.amount(28, weight: .semibold))
+                        .font(AmountFont.symbolFont(for: amountText))
                         .foregroundStyle(Theme.textTertiary)
                     TextField("0", text: $amountText)
                         .keyboardType(.decimalPad)
-                        .font(Theme.amount(56))
+                        .font(AmountFont.font(for: amountText))
                         .multilineTextAlignment(.center)
                         .lineLimit(1)
                         .focused($amountFocused)
-                        .fixedSize(horizontal: true, vertical: false)
                         .tint(Theme.accent)
                 }
                 .scaleEffect(isCommitting ? 1.06 : 1)
+            }
+            .frame(maxWidth: .infinity)
+
+            if let error = amountError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
+                    .transition(.opacity)
             }
         }
     }
@@ -286,7 +338,7 @@ struct LogHomeView: View {
 
     private var otherTile: some View {
         Button {
-            showingManageCategories = true
+            showingCategoryPicker = true
         } label: {
             VStack(spacing: 4) {
                 Image(systemName: "plus")
@@ -339,7 +391,10 @@ struct LogHomeView: View {
     // MARK: - Actions
 
     private func applyPrefill() {
-        guard let prefill else { return }
+        guard let prefill else {
+            resolveLastUsedCategoryIfNeeded()
+            return
+        }
         if let amountText = prefill.amountText {
             self.amountText = amountText
         }
@@ -352,12 +407,26 @@ struct LogHomeView: View {
                 $0.key.lowercased() == lowered || $0.name.lowercased() == lowered
             }) {
                 selectedCategoryKey = match.key
+            } else {
+                resolveLastUsedCategoryIfNeeded()
             }
+        } else {
+            resolveLastUsedCategoryIfNeeded()
         }
         if prefill.amountText != nil || prefill.note != nil {
             amountFocused = true
         }
         onPrefillConsumed?()
+    }
+
+    /// A valid deep-link category takes precedence; otherwise preserve the user's
+    /// last choice when this screen is opened again.
+    private func resolveLastUsedCategoryIfNeeded() {
+        guard selectedCategoryKey.isEmpty else { return }
+        selectedCategoryKey = categories.first(where: { $0.key == lastUsedCategoryKey })?.key
+            ?? categories.first(where: { $0.key == SpendCategory.fallbackKey })?.key
+            ?? categories.first?.key
+            ?? ""
     }
 
     private func save() {
@@ -381,20 +450,20 @@ struct LogHomeView: View {
             return
         }
 
-        if let cat = categories.first(where: { $0.key == categoryKey }) {
-            cat.logCount += 1
-            try? modelContext.save()
-        }
-
         lastUsedCategoryKey = categoryKey
-        logsLogged += 1
         undoStack.record("Logged \(Money.format(amount)) · \(lookup.name(for: categoryKey))") {
             modelContext.delete(entry)
-            try? modelContext.save()
+            do {
+                try modelContext.save()
+            } catch {
+                // The entry is still persisted — counters must stay as they are.
+                print("TapLog: Failed to persist undo of entry: \(error)")
+                return
+            }
+            CaptureBookkeeping.revert(modelContext: modelContext, categories: categories, categoryKey: categoryKey, entryDate: entry.date)
         }
 
-        WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
-        retention.recordLogDay()
+        CaptureBookkeeping.apply(modelContext: modelContext, categories: categories, categoryKey: categoryKey)
         UINotificationFeedbackGenerator().notificationOccurred(.success)
 
         withAnimation(Motion.gentle) { isCommitting = true }
@@ -413,6 +482,7 @@ struct LogHomeView: View {
             amountFocused = true
         }
 
+        amountError = nil
         onLogged?()
     }
 }

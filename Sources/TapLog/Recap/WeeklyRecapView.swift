@@ -3,11 +3,15 @@ import SwiftData
 
 struct WeeklyRecapView: View {
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("logsLogged") private var logsLogged = 0
+    @Environment(RetentionManager.self) private var retention
+    @AppStorage("logsLogged", store: StoreLocator.sharedDefaults) private var logsLogged = 0
     @AppStorage("recapTeaseDismissed") private var recapTeaseDismissed = false
 
     @Query(filter: #Predicate<Entry> { !$0.isArchived && !$0.isPending }, sort: \Entry.date)
     private var entries: [Entry]
+
+    @Query(filter: #Predicate<Entry> { !$0.isPending }, sort: \Entry.date)
+    private var exportEntries: [Entry]
 
     @Query(sort: \SpendCategory.sortOrder)
     private var categories: [SpendCategory]
@@ -111,6 +115,11 @@ struct WeeklyRecapView: View {
                 .padding(.horizontal, 28)
                 .padding(.top, 6)
 
+                // Consistency: weekly target ring, streak, freezes.
+                consistencyCard
+                    .padding(.horizontal, 28)
+                    .padding(.top, 24)
+
                 // By category
                 VStack(alignment: .leading, spacing: 0) {
                     Text("BY CATEGORY")
@@ -121,7 +130,7 @@ struct WeeklyRecapView: View {
 
                     ForEach(thisTotals.sorted { $0.value > $1.value }, id: \.key) { item in
                         let pct = thisTotal > 0
-                            ? (item.value / thisTotal) * 100
+                            ? item.value / thisTotal
                             : 0
                         HStack(spacing: 12) {
                             Text(lookup.emoji(for: item.key))
@@ -151,7 +160,7 @@ struct WeeklyRecapView: View {
                 .padding(.top, 28)
 
                 ShareLink(
-                    item: CSVFile(text: CSVExporter.makeCSV(entries: entries, lookup: lookup)),
+                    item: CSVFile(text: CSVExporter.makeCSV(entries: exportEntries, lookup: lookup)),
                     preview: SharePreview("TapLog Export")
                 ) {
                     Text("Export CSV")
@@ -199,8 +208,49 @@ struct WeeklyRecapView: View {
 
     // MARK: - Helpers
 
+    /// Weekly-target ring plus streak and freeze status — the retention loop's
+    /// payoff surface, so progress is visible and a freeze can be spent.
+    private var consistencyCard: some View {
+        HStack(alignment: .top, spacing: 14) {
+            WeeklyRingView(
+                progress: retention.ringFraction,
+                daysLogged: retention.daysLoggedThisWeek,
+                target: retention.weeklyTarget,
+                freezesAvailable: retention.streakFreezes
+            )
+            VStack(alignment: .leading, spacing: 4) {
+                Text(retention.streakDescription ?? "No streak yet")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.textPrimary)
+                Text(consistencyFootnote)
+                    .font(.caption)
+                    .foregroundStyle(Theme.textSecondary)
+                if !retention.targetMet && retention.streakFreezes > 0 {
+                    Button {
+                        _ = retention.useStreakFreeze()
+                    } label: {
+                        Label("Use a freeze", systemImage: "snowflake")
+                            .font(.footnote.weight(.medium))
+                            .foregroundStyle(Theme.accent)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 2)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private var consistencyFootnote: String {
+        guard !retention.targetMet else { return "Target met — nice week." }
+        let remaining = retention.weeklyTarget - retention.daysLoggedThisWeek
+        return "\(remaining) more day\(remaining == 1 ? "" : "s") to hit your \(retention.weeklyTarget)-day target."
+    }
+
     private var todayIndex: Int {
-        (Calendar.current.component(.weekday, from: .now) + 5) % 7 // Mon = 0
+        RecapMath.todayIndex()
     }
 
     private func dayLetter(_ index: Int) -> String {
@@ -208,32 +258,16 @@ struct WeeklyRecapView: View {
     }
 
     private func dailyTotals(_ week: [Entry]) -> [Decimal] {
-        let calendar = Calendar.current
-        let start = calendar.dateInterval(of: .weekOfYear, for: .now)!.start
-        var result = Array(repeating: Decimal(0), count: 7)
-        for entry in week {
-            let day = calendar.dateComponents([.day], from: start, to: entry.date).day ?? 0
-            guard day >= 0 && day < 7 else { continue }
-            result[day] += entry.amount
-        }
-        return result
+        RecapMath.dailyTotals(week)
     }
 
     private func splitWeeks() -> (this: [Entry], last: [Entry]) {
-        let calendar = Calendar.current
-        let thisStart = calendar.dateInterval(of: .weekOfYear, for: .now)!.start
-        let lastStart = calendar.date(byAdding: .day, value: -7, to: thisStart)!
-        let this = entries.filter { $0.date >= thisStart }
-        let last = entries.filter { $0.date >= lastStart && $0.date < thisStart }
-        return (this, last)
+        let split = RecapMath.splitWeeks(entries)
+        return (split.thisWeek, split.lastWeek)
     }
 
     private func totals(byCategory entries: [Entry]) -> [String: Decimal] {
-        var result: [String: Decimal] = [:]
-        for entry in entries {
-            result[entry.category, default: 0] += entry.amount
-        }
-        return result
+        RecapMath.totals(byCategory: entries)
     }
 }
 

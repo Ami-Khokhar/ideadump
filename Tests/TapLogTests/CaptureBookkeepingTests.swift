@@ -1,0 +1,201 @@
+import XCTest
+import SwiftData
+@testable import TapLog
+
+/// Verifies every capture front door produces identical product state:
+/// category learning, log totals, and streaks — the parity contract between
+/// the home screen, capture form, Siri/Shortcuts, and widget quick-log.
+@MainActor
+final class CaptureBookkeepingTests: XCTestCase {
+    private var container: ModelContainer!
+    private var context: ModelContext!
+    private var categories: [SpendCategory] = []
+    private let suiteName = "test.CaptureBookkeeping"
+    private var defaults: UserDefaults!
+
+    override func setUp() {
+        super.setUp()
+        UserDefaults.standard.removePersistentDomain(forName: suiteName)
+        defaults = UserDefaults(suiteName: suiteName)
+        // Mark the isolated suite as already migrated so apply()'s one-time
+        // legacy-state import can't pull this machine's real counters into tests.
+        defaults.set(true, forKey: "retention.legacyMigrated")
+
+        container = try! ModelContainer(
+            for: Entry.self, SpendCategory.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        context = container.mainContext
+        let chai = SpendCategory(key: "chai", name: "Chai", emoji: "☕️")
+        context.insert(chai)
+        try? context.save()
+        categories = [chai]
+    }
+
+    override func tearDown() {
+        container.deleteAllData()
+        UserDefaults.standard.removePersistentDomain(forName: suiteName)
+        super.tearDown()
+    }
+
+    /// Simulates one completed log from any front door.
+    private func logOne(categoryKey: String = "chai") {
+        let entry = Entry(amount: 10, category: categoryKey)
+        context.insert(entry)
+        try? context.save()
+        CaptureBookkeeping.apply(
+            modelContext: context,
+            categories: (try? context.fetch(FetchDescriptor<SpendCategory>())) ?? [],
+            categoryKey: categoryKey,
+            defaults: defaults
+        )
+    }
+
+    private func currentCategories() -> [SpendCategory] {
+        (try? context.fetch(FetchDescriptor<SpendCategory>())) ?? []
+    }
+
+    // MARK: - Undo (revert)
+
+    func testRevertRestoresCountersWhenDayEmpties() {
+        logOne()
+        // An undo deletes the entry first, then reverts bookkeeping.
+        for entry in try! context.fetch(FetchDescriptor<Entry>()) {
+            context.delete(entry)
+        }
+        try? context.save()
+
+        CaptureBookkeeping.revert(modelContext: context, categories: currentCategories(), categoryKey: "chai", defaults: defaults)
+
+        XCTAssertEqual(currentCategories().first?.logCount, 0)
+        XCTAssertEqual(defaults.integer(forKey: "logsLogged"), 0)
+        let retention = RetentionManager(defaults: defaults)
+        XCTAssertEqual(retention.totalLogs, 0)
+        XCTAssertEqual(retention.daysLoggedThisWeek, 0, "undoing the day's only log clears its weekly bit")
+    }
+
+    func testRevertKeepsDayActiveWhileAnotherLogRemains() {
+        logOne()
+        logOne()
+        let entries = try! context.fetch(FetchDescriptor<Entry>())
+        context.delete(entries[0])
+        try? context.save()
+
+        CaptureBookkeeping.revert(modelContext: context, categories: currentCategories(), categoryKey: "chai", defaults: defaults)
+
+        XCTAssertEqual(currentCategories().first?.logCount, 1)
+        XCTAssertEqual(defaults.integer(forKey: "logsLogged"), 1)
+        let retention = RetentionManager(defaults: defaults)
+        XCTAssertEqual(retention.totalLogs, 1)
+        XCTAssertEqual(retention.daysLoggedThisWeek, 1, "another log today keeps the day active")
+    }
+
+    // MARK: - Reset
+
+    func testResetAllClearsTrackingButKeepsTargetPreference() {
+        logOne()
+        let retention = RetentionManager(defaults: defaults)
+        retention.weeklyTarget = 6
+
+        retention.resetAll()
+
+        XCTAssertEqual(retention.totalLogs, 0)
+        XCTAssertEqual(retention.currentStreak, 0)
+        XCTAssertEqual(retention.longestStreak, 0)
+        XCTAssertEqual(retention.streakFreezes, 0)
+        XCTAssertEqual(retention.daysLoggedThisWeek, 0)
+        XCTAssertEqual(retention.weeklyTarget, 6, "the target is a preference, not progress")
+    }
+
+    func testApplyCountsCategoryLearningTotalsAndStreak() {
+        logOne()
+
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<SpendCategory>()), 1)
+        let chai = try! context.fetch(FetchDescriptor<SpendCategory>()).first!
+        XCTAssertEqual(chai.logCount, 1)
+
+        XCTAssertEqual(defaults.integer(forKey: "logsLogged"), 1)
+
+        let retention = RetentionManager(defaults: defaults)
+        XCTAssertEqual(retention.totalLogs, 1)
+        XCTAssertEqual(retention.daysLoggedThisWeek, 1)
+    }
+
+    func testTwoLogsSameDayCountOnceTowardWeeklyTargetButBothAsTotal() {
+        logOne()
+        logOne()
+
+        XCTAssertEqual(defaults.integer(forKey: "logsLogged"), 2)
+        let retention = RetentionManager(defaults: defaults)
+        XCTAssertEqual(retention.totalLogs, 2)
+        XCTAssertEqual(retention.daysLoggedThisWeek, 1, "two logs on one day are still one active day")
+    }
+
+    func testUnknownCategoryStillCountsTheLog() {
+        logOne(categoryKey: "ghost")
+
+        XCTAssertEqual(defaults.integer(forKey: "logsLogged"), 1)
+        XCTAssertEqual(RetentionManager(defaults: defaults).totalLogs, 1)
+    }
+
+    func testFallbackCategoryWorksWhenNothingSeeded() {
+        // Fresh store with no categories at all — first-ever log path.
+        for category in try! context.fetch(FetchDescriptor<SpendCategory>()) {
+            context.delete(category)
+        }
+        try? context.save()
+
+        logOne(categoryKey: SpendCategory.fallbackKey)
+
+        XCTAssertEqual(defaults.integer(forKey: "logsLogged"), 1)
+    }
+
+    func testTenLogsAwardAStreakFreeze() {
+        for _ in 0..<10 { logOne() }
+        XCTAssertEqual(RetentionManager(defaults: defaults).streakFreezes, 1)
+    }
+
+    // MARK: - Day-exact undo
+
+    func testRevertClearsTheRecordedDayNotTodayAfterMidnight() {
+        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: .now)!
+        let yesterdayEntry = Entry(amount: 10, category: "chai", date: yesterday)
+        context.insert(yesterdayEntry)
+        context.insert(Entry(amount: 10, category: "chai"))
+        try? context.save()
+        for _ in 0..<2 {
+            CaptureBookkeeping.apply(modelContext: context, categories: currentCategories(), categoryKey: "chai", defaults: defaults)
+        }
+
+        context.delete(yesterdayEntry)
+        try? context.save()
+
+        CaptureBookkeeping.revert(
+            modelContext: context,
+            categories: currentCategories(),
+            categoryKey: "chai",
+            entryDate: yesterday,
+            defaults: defaults
+        )
+
+        XCTAssertEqual(currentCategories().first?.logCount, 1)
+        XCTAssertEqual(defaults.integer(forKey: "logsLogged"), 1)
+        let retention = RetentionManager(defaults: defaults)
+        XCTAssertEqual(retention.totalLogs, 1)
+        // Exactly one active day remains: today's. Yesterday's bit was cleared
+        // if it belonged to this week, or left to the resolved prior week.
+        XCTAssertEqual(retention.daysLoggedThisWeek, 1)
+    }
+
+    // MARK: - Clean-slate helper
+
+    func testResetCategoryUsageZeroesAllCounters() {
+        let chai = currentCategories().first!
+        chai.logCount = 5
+        try? context.save()
+
+        CaptureBookkeeping.resetCategoryUsage(modelContext: context)
+
+        XCTAssertEqual(currentCategories().first?.logCount, 0)
+    }
+}

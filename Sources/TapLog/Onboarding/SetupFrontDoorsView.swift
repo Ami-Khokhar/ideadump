@@ -33,9 +33,9 @@ struct SetupFrontDoorsView: View {
                     frontDoorCard(
                         icon: "mic.fill",
                         tint: .purple,
-                        title: "Siri & Shortcuts",
-                        body: "Say “Hey Siri, log twelve on coffee” — no app, no unlock needed. Or add the “Log Expense” action to any Shortcut.",
-                        footnote: "Works on every iPhone."
+                        title: "Siri",
+                        body: "Just say one of these — no setup needed:\n• \"Hey Siri, log an expense in TapLog\"\n• \"Hey Siri, open capture in TapLog\"",
+                        footnote: "TapLog opens directly into the capture screen."
                     ) {
                         Button {
                             openShortcuts()
@@ -49,9 +49,13 @@ struct SetupFrontDoorsView: View {
                         icon: "button.programmable",
                         tint: .orange,
                         title: "Action Button (iPhone 15 Pro+)",
-                        body: "In Settings → Action Button → Shortcut, pick the “Log Expense” shortcut. One press on a locked phone logs the expense.",
+                        body: "In Settings → Action Button → Shortcut, pick \"Open Expense Capture\". One press opens TapLog directly into the focused capture keypad.",
                         footnote: "The closest thing to a dedicated capture button."
-                    )
+                    ) {
+                        Link("Open Settings", destination: URL(string: UIApplication.openSettingsURLString)!)
+                            .font(.footnote)
+                            .foregroundStyle(Theme.accent)
+                    }
 
                     Button {
                         onDone?()

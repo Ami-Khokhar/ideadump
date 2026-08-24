@@ -7,49 +7,81 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		017FD19376E0BADA218A3604 /* CapturePrefill.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CBA4D4E213F6B83EB33639D /* CapturePrefill.swift */; };
 		02757F7C23442471CBA41280 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B3F20CAA7F3778A486477A5 /* SettingsView.swift */; };
 		03D459D8382BC1695FFB1F77 /* CSVExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F39BE7063CC4D232FC7DD8D1 /* CSVExporter.swift */; };
+		07F07FAE13CACDFD7F4246B3 /* PersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B981E1CD86D1D49E1B89DAAA /* PersistenceTests.swift */; };
+		10D68A923A8E2E9C9AD3B4D2 /* ShareParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D80F4F776E0564FC7F8201 /* ShareParser.swift */; };
+		10FC99EA0CD361A92052B43D /* OpenCaptureIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81FFDEB986BB922DED4CE884 /* OpenCaptureIntent.swift */; };
 		16E73425085637DCCF43CD1C /* OnboardingCategoriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FCAFA2601272F61B499A280 /* OnboardingCategoriesView.swift */; };
 		1932E41B91F45E46AA7B947E /* TapLogWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE6D869DDDC20393088C7D57 /* TapLogWidgetBundle.swift */; };
 		2344142B18619D974F6B8ECA /* SetupFrontDoorsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5ECFDD7A235B57950FEB84D8 /* SetupFrontDoorsView.swift */; };
 		26306C88F962BCC08D7F9FDD /* LogHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47FDDD9D72A53C355B60DEF /* LogHomeView.swift */; };
 		29A7E78D7E66C5C96DB5CC33 /* Money.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E288AE6E7A4297523866942 /* Money.swift */; };
 		2DFADCEFE987ACAA518EE64E /* SpendCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF3DE2DAA95012E652F3392 /* SpendCategory.swift */; };
+		2E6F2D97FFCD86F90748A66C /* ShareParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D80F4F776E0564FC7F8201 /* ShareParser.swift */; };
 		301F07FA37534C328DC6AA6F /* DebugSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3ABAFEF33AB24EADE9F540E /* DebugSeeder.swift */; };
+		3250540CB941724ECD3D95A8 /* CapturePrefillTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F60213EFF64EA4A3F5924AED /* CapturePrefillTests.swift */; };
 		32F0EE12DA061219B09071DA /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1313CBDF617D18A21F9F2E9 /* ShareViewController.swift */; };
+		3476CB7E522C20EE9E793A5B /* TapLogShortcutsProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACC67EF1B129BAF3036316D7 /* TapLogShortcutsProvider.swift */; };
+		3A393233E9F5D522AA1232FD /* RippleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5203E77E895C44AC7F1D6B0D /* RippleView.swift */; };
 		3DC3F135860710F724D5FEDE /* QuickLogIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CCFD7C9C1623952E799140E /* QuickLogIntent.swift */; };
 		458C5F0772D39EB04AC604D9 /* TapLogWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C5F641E7F91BA446B4783A55 /* TapLogWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		494EE6FABA03802CC3E6CDEA /* EntryRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DE4D63F839A1FC98CE3CC4 /* EntryRowView.swift */; };
+		4BA53740A22BDA4BE58BB8A8 /* CaptureBookkeepingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61FEEF255C865D34F51F7B91 /* CaptureBookkeepingTests.swift */; };
+		517CA2752492795FF822A77F /* UndoStackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE5755275B1B7EDCCE0DC33B /* UndoStackTests.swift */; };
 		564D486201F2A0EC049A833D /* TapLogApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B07A4859D752E1C04081F18 /* TapLogApp.swift */; };
 		57D04FC2A52051890047230F /* CategoryManageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 050E9E68352EA3E37605FE71 /* CategoryManageView.swift */; };
 		58044425907448C520D7A63D /* StoreLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A781E9B64AAEA272FA487658 /* StoreLocator.swift */; };
 		5B5B4E010F25507C430EA1AE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F865E8F6018E54552CFB9CC1 /* Assets.xcassets */; };
+		5B92ECAC89AD9816F7A5A444 /* CaptureBookkeeping.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3F7C64942F6820DBC00A43F /* CaptureBookkeeping.swift */; };
 		5F671BC0FCCA7E9800A2A044 /* CaptureForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CAC674E8E824850DF01E0ED /* CaptureForm.swift */; };
 		62EC609BE55A806E0181FD63 /* StoreLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A781E9B64AAEA272FA487658 /* StoreLocator.swift */; };
 		654FE0290D434A453699DD27 /* Money.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E288AE6E7A4297523866942 /* Money.swift */; };
-		72B644339EF9A33BC1108162 /* ProLocked.swift in Sources */ = {isa = PBXBuildFile; fileRef = 867EE56E324BE481266AE2DD /* ProLocked.swift */; };
+		6EAE93A9D17930A34279BBA0 /* CSVExporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40526EBEDA350B87189991D6 /* CSVExporterTests.swift */; };
+		6F0F50E8824E78BC1D7F8C7F /* OpenCaptureIntentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CDF629996C6BC1B1C2D0187 /* OpenCaptureIntentTests.swift */; };
+		70186E15E278587B332A0229 /* WeeklyRingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2983E22129651C0755248959 /* WeeklyRingView.swift */; };
+		7CF118853A08588EC1E210DD /* AmountInputFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EBEBC7026B1A2D05767961 /* AmountInputFilter.swift */; };
 		8CE70B98B9C3944E1BF4634D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991D5BACEE57C2FC20B39564 /* ContentView.swift */; };
 		8CEDFE125F57EF2D49C58BAB /* SpendWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AFDA712F13988B761C89CF1 /* SpendWidget.swift */; };
 		8FD6B5B53E4E7526850DD72D /* LogExpenseIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D624420DCFD82FB945A607A /* LogExpenseIntent.swift */; };
+		918FC202598E02AC6F1027B9 /* StoreLocatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49755A7016E44B7F1042415C /* StoreLocatorTests.swift */; };
 		9305AA5EEDE873C20697A888 /* QuickLogIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CCFD7C9C1623952E799140E /* QuickLogIntent.swift */; };
+		934E3242625C35BED0B96BD7 /* AnimatedLogoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BA74CF6D87B3967129B30B2 /* AnimatedLogoView.swift */; };
 		935B66767E2C57C360E8072A /* StoreLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A781E9B64AAEA272FA487658 /* StoreLocator.swift */; };
+		93620DDAD2EB03F6DD778785 /* ShareParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D80F4F776E0564FC7F8201 /* ShareParser.swift */; };
+		9558C11C50C4E575BB31B135 /* TapLogShortcutsProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACC67EF1B129BAF3036316D7 /* TapLogShortcutsProvider.swift */; };
+		964B42C5BDDB3315C60A46E9 /* RetentionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC4A8904E421B41AB3B22AD0 /* RetentionManager.swift */; };
 		96C8A026B355082E77E556A2 /* EntryListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE40F61B2DF72FE7EF9035AF /* EntryListView.swift */; };
 		9BF6F9DEACE1F4F15E33995B /* MoneyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB99B5662BD9B4C2793C718 /* MoneyTests.swift */; };
+		9C7CF920476DCA622A0ADAD0 /* CaptureBookkeeping.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3F7C64942F6820DBC00A43F /* CaptureBookkeeping.swift */; };
+		A053856F440889544F06D2C1 /* RecapMathTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5A6873766A3AAC068A5CF04 /* RecapMathTests.swift */; };
+		A9F4C4A2646DC185EAB4F8B2 /* AmountInputFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EBEBC7026B1A2D05767961 /* AmountInputFilter.swift */; };
 		AC7E61336FFA39CD1A104DE6 /* Entry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E06859D8DD2DC20B4D96A32 /* Entry.swift */; };
 		AF5FAC9F8AF883608D9C5562 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7867E24E221AC6122BCDA234 /* WelcomeView.swift */; };
 		BAA215AEB6EB92DDBE543F6A /* Entry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E06859D8DD2DC20B4D96A32 /* Entry.swift */; };
 		BB76D8D3AB714C8081432CC6 /* CapturePrefill.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CBA4D4E213F6B83EB33639D /* CapturePrefill.swift */; };
-		BF76C176A18872D43DD7A917 /* ShareParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0364EBB65D36FBB3D9F2EC9D /* ShareParser.swift */; };
+		BC03B66F68FF35216B8F2FB4 /* OpenCaptureIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81FFDEB986BB922DED4CE884 /* OpenCaptureIntent.swift */; };
+		C2737376F33598D3B3021A62 /* RetentionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC4A8904E421B41AB3B22AD0 /* RetentionManager.swift */; };
 		C29BBE49E35376276946DC98 /* LogExpenseIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D624420DCFD82FB945A607A /* LogExpenseIntent.swift */; };
+		C36F23736DBB27A19B89D13E /* CaptureBookkeeping.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3F7C64942F6820DBC00A43F /* CaptureBookkeeping.swift */; };
+		C43E0B895B64A75176F53DAE /* RetentionManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9380549822DEC6CE9FCD846D /* RetentionManagerTests.swift */; };
+		C53A160B200FB33F5DA734FA /* TileGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC0D0E240357C5BA43AC290 /* TileGrid.swift */; };
 		C54D8C953287D1116C24A803 /* SpendCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF3DE2DAA95012E652F3392 /* SpendCategory.swift */; };
+		C915094ED8B0CF14FE7C068C /* RetentionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC4A8904E421B41AB3B22AD0 /* RetentionManager.swift */; };
 		CEADB6C297B760768476F0C7 /* Entry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E06859D8DD2DC20B4D96A32 /* Entry.swift */; };
 		CED590693197D171DAE1BEFD /* WeeklyRecapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02C8CB826A1268661AB0A657 /* WeeklyRecapView.swift */; };
 		D080D8C375310E1E3F7670C3 /* UndoToast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41FB7CC857B85AD2F6C016F5 /* UndoToast.swift */; };
+		D1DE78D00B84982DF1793F30 /* DropletView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744014FA5CA34F73EFDEEA90 /* DropletView.swift */; };
+		DAB5FB1B828F5A7F628C6DC9 /* AmountInputFilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E6D105128814FF5976611B2 /* AmountInputFilterTests.swift */; };
 		DABDD1131FE8B6E4541DC315 /* SpendCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF3DE2DAA95012E652F3392 /* SpendCategory.swift */; };
 		E37461D086CDA7EFB0634484 /* UndoStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52F262C9AE91426858ADB810 /* UndoStack.swift */; };
+		EAB42C3D2592A69E61F4D393 /* AmountInputFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EBEBC7026B1A2D05767961 /* AmountInputFilter.swift */; };
 		EBD36511DF423247C3455D83 /* TapLogShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F616AC66CBCE53CF8CAB9A65 /* TapLogShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		EF1BFBF97F6335E1AC0423E5 /* RecapMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C56A65200B9807EE40FEC45 /* RecapMath.swift */; };
 		F050097AF5EEECD6B7266F2B /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FC516F728D48F203896905E /* Theme.swift */; };
 		F3CCA6BC2DACB7FBAAA1A68D /* Money.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E288AE6E7A4297523866942 /* Money.swift */; };
+		FE0C41BD1EA95880437984EB /* ShareParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13A258162CA563136B4721E8 /* ShareParserTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -93,38 +125,59 @@
 
 /* Begin PBXFileReference section */
 		02C8CB826A1268661AB0A657 /* WeeklyRecapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRecapView.swift; sourceTree = "<group>"; };
-		0364EBB65D36FBB3D9F2EC9D /* ShareParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareParser.swift; sourceTree = "<group>"; };
 		050E9E68352EA3E37605FE71 /* CategoryManageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryManageView.swift; sourceTree = "<group>"; };
 		05DE4D63F839A1FC98CE3CC4 /* EntryRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryRowView.swift; sourceTree = "<group>"; };
 		0B07A4859D752E1C04081F18 /* TapLogApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapLogApp.swift; sourceTree = "<group>"; };
+		0DC0D0E240357C5BA43AC290 /* TileGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TileGrid.swift; sourceTree = "<group>"; };
+		0E6D105128814FF5976611B2 /* AmountInputFilterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmountInputFilterTests.swift; sourceTree = "<group>"; };
 		0FC516F728D48F203896905E /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		13A258162CA563136B4721E8 /* ShareParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareParserTests.swift; sourceTree = "<group>"; };
+		2983E22129651C0755248959 /* WeeklyRingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRingView.swift; sourceTree = "<group>"; };
 		2CAC674E8E824850DF01E0ED /* CaptureForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureForm.swift; sourceTree = "<group>"; };
+		37EBEBC7026B1A2D05767961 /* AmountInputFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmountInputFilter.swift; sourceTree = "<group>"; };
 		3BF3DE2DAA95012E652F3392 /* SpendCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendCategory.swift; sourceTree = "<group>"; };
 		3D624420DCFD82FB945A607A /* LogExpenseIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogExpenseIntent.swift; sourceTree = "<group>"; };
 		3E288AE6E7A4297523866942 /* Money.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Money.swift; sourceTree = "<group>"; };
+		40526EBEDA350B87189991D6 /* CSVExporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVExporterTests.swift; sourceTree = "<group>"; };
 		41FB7CC857B85AD2F6C016F5 /* UndoToast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoToast.swift; sourceTree = "<group>"; };
+		49755A7016E44B7F1042415C /* StoreLocatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreLocatorTests.swift; sourceTree = "<group>"; };
 		4B3F20CAA7F3778A486477A5 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		4BA74CF6D87B3967129B30B2 /* AnimatedLogoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedLogoView.swift; sourceTree = "<group>"; };
 		4CBA4D4E213F6B83EB33639D /* CapturePrefill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapturePrefill.swift; sourceTree = "<group>"; };
 		4EB99B5662BD9B4C2793C718 /* MoneyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoneyTests.swift; sourceTree = "<group>"; };
+		5203E77E895C44AC7F1D6B0D /* RippleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RippleView.swift; sourceTree = "<group>"; };
 		52F262C9AE91426858ADB810 /* UndoStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoStack.swift; sourceTree = "<group>"; };
 		549B39D3541189E897AF5D32 /* TapLog.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TapLog.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5E06859D8DD2DC20B4D96A32 /* Entry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Entry.swift; sourceTree = "<group>"; };
 		5ECFDD7A235B57950FEB84D8 /* SetupFrontDoorsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupFrontDoorsView.swift; sourceTree = "<group>"; };
+		61FEEF255C865D34F51F7B91 /* CaptureBookkeepingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureBookkeepingTests.swift; sourceTree = "<group>"; };
+		6C56A65200B9807EE40FEC45 /* RecapMath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecapMath.swift; sourceTree = "<group>"; };
 		6FCAFA2601272F61B499A280 /* OnboardingCategoriesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCategoriesView.swift; sourceTree = "<group>"; };
+		744014FA5CA34F73EFDEEA90 /* DropletView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DropletView.swift; sourceTree = "<group>"; };
 		7867E24E221AC6122BCDA234 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
-		867EE56E324BE481266AE2DD /* ProLocked.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProLocked.swift; sourceTree = "<group>"; };
+		81FFDEB986BB922DED4CE884 /* OpenCaptureIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenCaptureIntent.swift; sourceTree = "<group>"; };
 		8AFDA712F13988B761C89CF1 /* SpendWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendWidget.swift; sourceTree = "<group>"; };
+		8CDF629996C6BC1B1C2D0187 /* OpenCaptureIntentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenCaptureIntentTests.swift; sourceTree = "<group>"; };
+		9380549822DEC6CE9FCD846D /* RetentionManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetentionManagerTests.swift; sourceTree = "<group>"; };
 		991D5BACEE57C2FC20B39564 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		9CCFD7C9C1623952E799140E /* QuickLogIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickLogIntent.swift; sourceTree = "<group>"; };
 		A781E9B64AAEA272FA487658 /* StoreLocator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreLocator.swift; sourceTree = "<group>"; };
+		AC4A8904E421B41AB3B22AD0 /* RetentionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetentionManager.swift; sourceTree = "<group>"; };
+		ACC67EF1B129BAF3036316D7 /* TapLogShortcutsProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapLogShortcutsProvider.swift; sourceTree = "<group>"; };
 		B3ABAFEF33AB24EADE9F540E /* DebugSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugSeeder.swift; sourceTree = "<group>"; };
+		B981E1CD86D1D49E1B89DAAA /* PersistenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceTests.swift; sourceTree = "<group>"; };
 		BE6D869DDDC20393088C7D57 /* TapLogWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapLogWidgetBundle.swift; sourceTree = "<group>"; };
+		C3F7C64942F6820DBC00A43F /* CaptureBookkeeping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureBookkeeping.swift; sourceTree = "<group>"; };
 		C5F641E7F91BA446B4783A55 /* TapLogWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = TapLogWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE40F61B2DF72FE7EF9035AF /* EntryListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryListView.swift; sourceTree = "<group>"; };
 		D1313CBDF617D18A21F9F2E9 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		DE26898A296300C98D396FFB /* TapLogTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = TapLogTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E47FDDD9D72A53C355B60DEF /* LogHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogHomeView.swift; sourceTree = "<group>"; };
+		EE5755275B1B7EDCCE0DC33B /* UndoStackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoStackTests.swift; sourceTree = "<group>"; };
 		F39BE7063CC4D232FC7DD8D1 /* CSVExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVExporter.swift; sourceTree = "<group>"; };
+		F5A6873766A3AAC068A5CF04 /* RecapMathTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecapMathTests.swift; sourceTree = "<group>"; };
+		F5D80F4F776E0564FC7F8201 /* ShareParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareParser.swift; sourceTree = "<group>"; };
+		F60213EFF64EA4A3F5924AED /* CapturePrefillTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapturePrefillTests.swift; sourceTree = "<group>"; };
 		F616AC66CBCE53CF8CAB9A65 /* TapLogShare.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = TapLogShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		F865E8F6018E54552CFB9CC1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -139,6 +192,14 @@
 				C5F641E7F91BA446B4783A55 /* TapLogWidget.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		05F3ECDC45ED95C9C0E5F69A /* Retention */ = {
+			isa = PBXGroup;
+			children = (
+				2983E22129651C0755248959 /* WeeklyRingView.swift */,
+			);
+			path = Retention;
 			sourceTree = "<group>";
 		};
 		101B4A14EB9C080DF4FC1EB3 /* Undo */ = {
@@ -160,7 +221,11 @@
 		377B4091CE0E241D73106BF9 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				37EBEBC7026B1A2D05767961 /* AmountInputFilter.swift */,
+				C3F7C64942F6820DBC00A43F /* CaptureBookkeeping.swift */,
 				3E288AE6E7A4297523866942 /* Money.swift */,
+				AC4A8904E421B41AB3B22AD0 /* RetentionManager.swift */,
+				F5D80F4F776E0564FC7F8201 /* ShareParser.swift */,
 				A781E9B64AAEA272FA487658 /* StoreLocator.swift */,
 			);
 			path = Shared;
@@ -188,7 +253,18 @@
 		4654B39150AE735AA50E660C /* TapLogTests */ = {
 			isa = PBXGroup;
 			children = (
+				0E6D105128814FF5976611B2 /* AmountInputFilterTests.swift */,
+				61FEEF255C865D34F51F7B91 /* CaptureBookkeepingTests.swift */,
+				F60213EFF64EA4A3F5924AED /* CapturePrefillTests.swift */,
+				40526EBEDA350B87189991D6 /* CSVExporterTests.swift */,
 				4EB99B5662BD9B4C2793C718 /* MoneyTests.swift */,
+				8CDF629996C6BC1B1C2D0187 /* OpenCaptureIntentTests.swift */,
+				B981E1CD86D1D49E1B89DAAA /* PersistenceTests.swift */,
+				F5A6873766A3AAC068A5CF04 /* RecapMathTests.swift */,
+				9380549822DEC6CE9FCD846D /* RetentionManagerTests.swift */,
+				13A258162CA563136B4721E8 /* ShareParserTests.swift */,
+				49755A7016E44B7F1042415C /* StoreLocatorTests.swift */,
+				EE5755275B1B7EDCCE0DC33B /* UndoStackTests.swift */,
 			);
 			path = TapLogTests;
 			sourceTree = "<group>";
@@ -196,7 +272,6 @@
 		48A0F0DD26E15EF914B64A9D /* TapLogShare */ = {
 			isa = PBXGroup;
 			children = (
-				0364EBB65D36FBB3D9F2EC9D /* ShareParser.swift */,
 				D1313CBDF617D18A21F9F2E9 /* ShareViewController.swift */,
 			);
 			path = TapLogShare;
@@ -240,6 +315,9 @@
 		8928809563340000F6DB6FA4 /* Theme */ = {
 			isa = PBXGroup;
 			children = (
+				4BA74CF6D87B3967129B30B2 /* AnimatedLogoView.swift */,
+				744014FA5CA34F73EFDEEA90 /* DropletView.swift */,
+				5203E77E895C44AC7F1D6B0D /* RippleView.swift */,
 				0FC516F728D48F203896905E /* Theme.swift */,
 			);
 			path = Theme;
@@ -249,7 +327,9 @@
 			isa = PBXGroup;
 			children = (
 				3D624420DCFD82FB945A607A /* LogExpenseIntent.swift */,
+				81FFDEB986BB922DED4CE884 /* OpenCaptureIntent.swift */,
 				9CCFD7C9C1623952E799140E /* QuickLogIntent.swift */,
+				ACC67EF1B129BAF3036316D7 /* TapLogShortcutsProvider.swift */,
 			);
 			path = AppIntents;
 			sourceTree = "<group>";
@@ -277,6 +357,7 @@
 				535EFC3F4E05F3208924FF99 /* Models */,
 				E5CAD5CE754A14CEB143C9BA /* Onboarding */,
 				EA7A8FEFEB3638FC13AA5ABB /* Recap */,
+				05F3ECDC45ED95C9C0E5F69A /* Retention */,
 				6A03652C1F6AD5B67CB56754 /* Settings */,
 				377B4091CE0E241D73106BF9 /* Shared */,
 				8928809563340000F6DB6FA4 /* Theme */,
@@ -298,7 +379,7 @@
 		EA7A8FEFEB3638FC13AA5ABB /* Recap */ = {
 			isa = PBXGroup;
 			children = (
-				867EE56E324BE481266AE2DD /* ProLocked.swift */,
+				6C56A65200B9807EE40FEC45 /* RecapMath.swift */,
 				02C8CB826A1268661AB0A657 /* WeeklyRecapView.swift */,
 			);
 			path = Recap;
@@ -318,6 +399,7 @@
 				2CAC674E8E824850DF01E0ED /* CaptureForm.swift */,
 				050E9E68352EA3E37605FE71 /* CategoryManageView.swift */,
 				E47FDDD9D72A53C355B60DEF /* LogHomeView.swift */,
+				0DC0D0E240357C5BA43AC290 /* TileGrid.swift */,
 			);
 			path = Capture;
 			sourceTree = "<group>";
@@ -468,12 +550,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A9F4C4A2646DC185EAB4F8B2 /* AmountInputFilter.swift in Sources */,
+				934E3242625C35BED0B96BD7 /* AnimatedLogoView.swift in Sources */,
 				03D459D8382BC1695FFB1F77 /* CSVExporter.swift in Sources */,
+				C36F23736DBB27A19B89D13E /* CaptureBookkeeping.swift in Sources */,
 				5F671BC0FCCA7E9800A2A044 /* CaptureForm.swift in Sources */,
 				BB76D8D3AB714C8081432CC6 /* CapturePrefill.swift in Sources */,
 				57D04FC2A52051890047230F /* CategoryManageView.swift in Sources */,
 				8CE70B98B9C3944E1BF4634D /* ContentView.swift in Sources */,
 				301F07FA37534C328DC6AA6F /* DebugSeeder.swift in Sources */,
+				D1DE78D00B84982DF1793F30 /* DropletView.swift in Sources */,
 				CEADB6C297B760768476F0C7 /* Entry.swift in Sources */,
 				96C8A026B355082E77E556A2 /* EntryListView.swift in Sources */,
 				494EE6FABA03802CC3E6CDEA /* EntryRowView.swift in Sources */,
@@ -481,17 +567,24 @@
 				26306C88F962BCC08D7F9FDD /* LogHomeView.swift in Sources */,
 				F3CCA6BC2DACB7FBAAA1A68D /* Money.swift in Sources */,
 				16E73425085637DCCF43CD1C /* OnboardingCategoriesView.swift in Sources */,
-				72B644339EF9A33BC1108162 /* ProLocked.swift in Sources */,
+				10FC99EA0CD361A92052B43D /* OpenCaptureIntent.swift in Sources */,
 				3DC3F135860710F724D5FEDE /* QuickLogIntent.swift in Sources */,
+				EF1BFBF97F6335E1AC0423E5 /* RecapMath.swift in Sources */,
+				964B42C5BDDB3315C60A46E9 /* RetentionManager.swift in Sources */,
+				3A393233E9F5D522AA1232FD /* RippleView.swift in Sources */,
 				02757F7C23442471CBA41280 /* SettingsView.swift in Sources */,
 				2344142B18619D974F6B8ECA /* SetupFrontDoorsView.swift in Sources */,
+				2E6F2D97FFCD86F90748A66C /* ShareParser.swift in Sources */,
 				DABDD1131FE8B6E4541DC315 /* SpendCategory.swift in Sources */,
 				935B66767E2C57C360E8072A /* StoreLocator.swift in Sources */,
 				564D486201F2A0EC049A833D /* TapLogApp.swift in Sources */,
+				3476CB7E522C20EE9E793A5B /* TapLogShortcutsProvider.swift in Sources */,
 				F050097AF5EEECD6B7266F2B /* Theme.swift in Sources */,
+				C53A160B200FB33F5DA734FA /* TileGrid.swift in Sources */,
 				E37461D086CDA7EFB0634484 /* UndoStack.swift in Sources */,
 				D080D8C375310E1E3F7670C3 /* UndoToast.swift in Sources */,
 				CED590693197D171DAE1BEFD /* WeeklyRecapView.swift in Sources */,
+				70186E15E278587B332A0229 /* WeeklyRingView.swift in Sources */,
 				AF5FAC9F8AF883608D9C5562 /* WelcomeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -500,13 +593,20 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EAB42C3D2592A69E61F4D393 /* AmountInputFilter.swift in Sources */,
+				9C7CF920476DCA622A0ADAD0 /* CaptureBookkeeping.swift in Sources */,
+				017FD19376E0BADA218A3604 /* CapturePrefill.swift in Sources */,
 				BAA215AEB6EB92DDBE543F6A /* Entry.swift in Sources */,
 				C29BBE49E35376276946DC98 /* LogExpenseIntent.swift in Sources */,
 				654FE0290D434A453699DD27 /* Money.swift in Sources */,
+				BC03B66F68FF35216B8F2FB4 /* OpenCaptureIntent.swift in Sources */,
 				9305AA5EEDE873C20697A888 /* QuickLogIntent.swift in Sources */,
+				C915094ED8B0CF14FE7C068C /* RetentionManager.swift in Sources */,
+				10D68A923A8E2E9C9AD3B4D2 /* ShareParser.swift in Sources */,
 				C54D8C953287D1116C24A803 /* SpendCategory.swift in Sources */,
 				8CEDFE125F57EF2D49C58BAB /* SpendWidget.swift in Sources */,
 				62EC609BE55A806E0181FD63 /* StoreLocator.swift in Sources */,
+				9558C11C50C4E575BB31B135 /* TapLogShortcutsProvider.swift in Sources */,
 				1932E41B91F45E46AA7B947E /* TapLogWidgetBundle.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -515,7 +615,18 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DAB5FB1B828F5A7F628C6DC9 /* AmountInputFilterTests.swift in Sources */,
+				6EAE93A9D17930A34279BBA0 /* CSVExporterTests.swift in Sources */,
+				4BA53740A22BDA4BE58BB8A8 /* CaptureBookkeepingTests.swift in Sources */,
+				3250540CB941724ECD3D95A8 /* CapturePrefillTests.swift in Sources */,
 				9BF6F9DEACE1F4F15E33995B /* MoneyTests.swift in Sources */,
+				6F0F50E8824E78BC1D7F8C7F /* OpenCaptureIntentTests.swift in Sources */,
+				07F07FAE13CACDFD7F4246B3 /* PersistenceTests.swift in Sources */,
+				A053856F440889544F06D2C1 /* RecapMathTests.swift in Sources */,
+				C43E0B895B64A75176F53DAE /* RetentionManagerTests.swift in Sources */,
+				FE0C41BD1EA95880437984EB /* ShareParserTests.swift in Sources */,
+				918FC202598E02AC6F1027B9 /* StoreLocatorTests.swift in Sources */,
+				517CA2752492795FF822A77F /* UndoStackTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -523,9 +634,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7CF118853A08588EC1E210DD /* AmountInputFilter.swift in Sources */,
+				5B92ECAC89AD9816F7A5A444 /* CaptureBookkeeping.swift in Sources */,
 				AC7E61336FFA39CD1A104DE6 /* Entry.swift in Sources */,
 				29A7E78D7E66C5C96DB5CC33 /* Money.swift in Sources */,
-				BF76C176A18872D43DD7A917 /* ShareParser.swift in Sources */,
+				C2737376F33598D3B3021A62 /* RetentionManager.swift in Sources */,
+				93620DDAD2EB03F6DD778785 /* ShareParser.swift in Sources */,
 				32F0EE12DA061219B09071DA /* ShareViewController.swift in Sources */,
 				2DFADCEFE987ACAA518EE64E /* SpendCategory.swift in Sources */,
 				58044425907448C520D7A63D /* StoreLocator.swift in Sources */,
@@ -563,7 +677,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.taplog.share;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.amteshwar.taplog.share;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -646,7 +760,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.taplog.widget;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.amteshwar.taplog.widget;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -724,7 +838,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.taplog;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.amteshwar.taplog;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -740,7 +854,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.taplog.share;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.amteshwar.taplog.share;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -759,7 +873,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.taplog;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.amteshwar.taplog;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -775,7 +889,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.taplog.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.amteshwar.taplog.tests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TapLog.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TapLog";
@@ -792,7 +906,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.taplog.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.amteshwar.taplog.tests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TapLog.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TapLog";
@@ -809,7 +923,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.taplog.widget;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.amteshwar.taplog.widget;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";

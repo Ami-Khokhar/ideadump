@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import Combine
 
 /// App root: a single capture-first home screen. Everything else — History, Recap,
 /// front doors, Settings — lives behind the dropdown menu so the home page stays a
@@ -20,6 +21,12 @@ struct ContentView: View {
     @State private var isOnboardingCapture = false
     @State private var prefill: CapturePrefill?
     @State private var route: Route?
+    /// When true the logo splash is skipped and the capture screen is revealed
+    /// immediately. Set by a pending intent activation.
+    @State private var intentDirectCapture = false
+    /// Tracks that the current launch handled a direct-capture activation, so the
+    /// delayed onboarding flow cannot override it.
+    @State private var handledActivation = false
 
     enum Route: String, Identifiable {
         case history
@@ -51,7 +58,8 @@ struct ContentView: View {
                 },
                 onPrefillConsumed: {
                     prefill = nil
-                }
+                },
+                skipSplash: intentDirectCapture
             )
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -87,20 +95,18 @@ struct ContentView: View {
         .applyAppearanceOverride()
         .tint(Theme.accent)
         .onAppear {
+            // Consume any pending intent activation written before the UI was ready.
+            consumePendingIntent()
+            // Start the delayed onboarding flow (unless an activation was handled).
             handleLaunchFlow()
-            // Dev/testing hooks:
-            //   `-route history` opens a sheet; `-appearance dark` flips the appearance
-            //   in-app shortly after launch (exercises the live-update path while a
-            //   sheet may be up, exactly like the user changing it in Settings).
+            // Dev/testing hooks
             let args = ProcessInfo.processInfo.arguments
             if args.contains("-onboarding") {
-                // Dev/testing hook: jump straight into the onboarding capture beat,
-                // exactly as if the user had finished the welcome. Pairs with
-                // `-autolog` to exercise the post-log onboarding advance headlessly.
                 hasLaunchedBefore = true
                 onboardingActive = true
                 onboardingStepRaw = OnboardingStep.capture.rawValue
                 isOnboardingCapture = true
+                handledActivation = false
             }
             if let index = args.lastIndex(of: "-route"),
                args.indices.contains(index + 1),
@@ -114,6 +120,11 @@ struct ContentView: View {
                     appearanceMode = value
                 }
             }
+        }
+        // Handle warm/background activation: the scene becomes active after the
+        // intent wrote its payload while the app was suspended.
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            consumePendingIntent()
         }
         .onOpenURL { url in
             guard let prefill = CapturePrefill(url: url) else { return }
@@ -144,12 +155,39 @@ struct ContentView: View {
         .overlay(alignment: .bottom) { UndoToast() }
     }
 
+    // MARK: - Intent Routing
+
+    /// Consumes a persisted pending activation. Only changes routing state when
+    /// the result is `.open`; an ordinary launch (`.none`) is a no-op.
+    private func consumePendingIntent() {
+        let activation = OpenCaptureIntent.consumePendingActivation()
+        guard case .open(let pendingPrefill) = activation else { return }
+
+        // Mark that we handled an activation — the delayed onboarding must not
+        // override this.
+        handledActivation = true
+        intentDirectCapture = true
+
+        if let pendingPrefill {
+            self.prefill = pendingPrefill
+        }
+
+        // Dismiss any open sheet or onboarding cover.
+        route = nil
+        onboardingStep = nil
+        onboardingActive = false
+        isOnboardingCapture = false
+    }
+
     // MARK: - Onboarding
 
     private func handleLaunchFlow() {
         // Slight delay so a cold-start deep link (widget/Siri) can arrive first and
         // suppress the welcome — don't ambush someone who came to log something.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            // If a direct-capture activation was handled, never present onboarding.
+            guard !handledActivation else { return }
+
             if !hasLaunchedBefore && prefill == nil {
                 hasLaunchedBefore = true
                 onboardingActive = true
@@ -211,5 +249,6 @@ struct ContentView: View {
 #Preview {
     ContentView()
         .modelContainer(StoreLocator.makeContainer())
+        .environment(RetentionManager())
         .environmentObject(UndoStack())
 }

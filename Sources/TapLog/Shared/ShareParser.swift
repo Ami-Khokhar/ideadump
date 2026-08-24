@@ -6,7 +6,7 @@ struct ShareParse {
 }
 
 /// Extracts a plausible amount and merchant from a bank payment notification
-/// like "CHASE: You spent $12.50 at Starbucks".
+/// like "CHASE: You spent $12.50 at Starbucks" or "Rs 1,200 debited HDFC".
 enum ShareParser {
     static func parse(_ text: String) -> ShareParse {
         guard !text.isEmpty else { return ShareParse(amount: nil, note: nil) }
@@ -16,22 +16,28 @@ enum ShareParser {
     }
 
     private static func extractAmount(from text: String) -> (value: Decimal?, raw: String) {
+        // Group 1 captures just the number; the full match (e.g. "$12.50", "Rs 1,200")
+        // is removed from the note text.
         let patterns = [
-            #"[$€£]\s?([0-9]+(?:\.[0-9]{1,2})?)"#,
-            #"([0-9]+(?:\.[0-9]{1,2}))"#,
+            #"[₹$€£]\s?([0-9][0-9,]*(?:\.[0-9]{1,2})?)"#,
+            #"(?i)\brs\.?\s?([0-9][0-9,]*(?:\.[0-9]{1,2})?)"#,
+            #"(?i)\binr\.?\s?([0-9][0-9,]*(?:\.[0-9]{1,2})?)"#,
+            #"([0-9][0-9,]*(?:\.[0-9]{1,2})?)"#,
         ]
         for pattern in patterns {
-            if let match = text.range(of: pattern, options: .regularExpression) {
-                let raw = String(text[match])
-                let cleaned = raw
-                    .replacingOccurrences(of: "$", with: "")
-                    .replacingOccurrences(of: "€", with: "")
-                    .replacingOccurrences(of: "£", with: "")
-                    .trimmingCharacters(in: .whitespaces)
-                if let value = Money.parse(cleaned) {
-                    return (value, raw)
-                }
+            guard let regex = try? NSRegularExpression(pattern: pattern),
+                  let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+                  let numberRange = Range(match.range(at: 1), in: text) else {
+                continue
             }
+            let raw = String(text[Range(match.range, in: text)!])
+            // A matched candidate that fails validation (e.g. "$1,000,000,000"
+            // exceeds the amount cap) must never degrade into a numeric fragment
+            // of itself via the looser fallback patterns — bail out instead.
+            guard let value = Money.parse(String(text[numberRange])) else {
+                return (nil, "")
+            }
+            return (value, raw)
         }
         return (nil, "")
     }
@@ -43,8 +49,8 @@ enum ShareParser {
         }
         let stopWords: Set<String> = [
             "spent", "at", "on", "your", "you", "a", "payment", "of", "total", "for",
-            "the", "with", "to", "purchase", "debit", "card", "xxx", "xxxx", "amt",
-            "amount", "approved", "done", "from", "receipt", "merchant",
+            "the", "with", "to", "purchase", "debit", "debited", "card", "xxx", "xxxx",
+            "amt", "amount", "approved", "done", "from", "receipt", "merchant", "inr",
         ]
         var words = cleaned.split(whereSeparator: { $0.isWhitespace || $0.isNewline })
         words = words.filter { word in

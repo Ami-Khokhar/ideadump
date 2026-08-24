@@ -46,8 +46,10 @@ extension SpendCategory {
         ("other", "Other", "📦"),
     ]
 
-    /// Builds a unique slug key for a new custom category.
-    static func makeKey(forName name: String, existing: [SpendCategory]) -> String {
+    /// Builds a unique slug key for a new custom category. `takenKeys` must include
+    /// keys still referenced by entries — otherwise recreating a deleted category
+    /// name would silently reattach that history to the new category.
+    static func makeKey(forName name: String, existing: [SpendCategory], takenKeys: Set<String> = []) -> String {
         let base = name
             .lowercased()
             .folding(options: .diacriticInsensitive, locale: .current)
@@ -56,7 +58,7 @@ extension SpendCategory {
         let stem = base.isEmpty ? "custom" : base
         var key = stem
         var counter = 2
-        while existing.contains(where: { $0.key == key }) {
+        while existing.contains(where: { $0.key == key }) || takenKeys.contains(key) {
             key = "\(stem)-\(counter)"
             counter += 1
         }

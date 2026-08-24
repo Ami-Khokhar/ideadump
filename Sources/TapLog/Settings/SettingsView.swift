@@ -15,7 +15,11 @@ struct SettingsView: View {
 
     @AppStorage("appearanceMode") private var appearanceMode = "system"
 
+#if DEBUG
     @AppStorage("isProDemo") private var isPro = false
+#endif
+
+    @State private var showingClearConfirmation = false
 
     var body: some View {
         NavigationStack {
@@ -61,24 +65,23 @@ struct SettingsView: View {
                 }
 
                 Section("Data") {
+#if DEBUG
                     Button("Seed sample data") {
                         DebugSeeder.seed(context: modelContext)
                     }
+#endif
                     Button("Delete all entries", role: .destructive) {
-                        let all = try? modelContext.fetch(FetchDescriptor<Entry>())
-                        for entry in all ?? [] {
-                            modelContext.delete(entry)
-                        }
-                        try? modelContext.save()
-                        WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
+                        showingClearConfirmation = true
                     }
                 }
 
+#if DEBUG
                 Section("Preview build") {
                     Button(isPro ? "Turn Pro off (demo)" : "Turn Pro on (demo)") {
                         isPro.toggle()
                     }
                 }
+#endif
             }
             .scrollContentBackground(.hidden)
             .background(Theme.background)
@@ -90,7 +93,39 @@ struct SettingsView: View {
                         .fontWeight(.semibold)
                 }
             }
+            .confirmationDialog(
+                "Delete all entries?",
+                isPresented: $showingClearConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Delete All", role: .destructive) {
+                    clearAllEntries()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This permanently removes your history and resets your consistency progress.")
+            }
         }
         .tint(Theme.accent)
+    }
+
+    /// A wiped history is a clean slate: entries go, and so do the counters,
+    /// streaks, and category usage that described them (the weekly-target
+    /// preference stays).
+    private func clearAllEntries() {
+        let all = (try? modelContext.fetch(FetchDescriptor<Entry>())) ?? []
+        for entry in all {
+            modelContext.delete(entry)
+        }
+        do {
+            try modelContext.save()
+        } catch {
+            print("TapLog: Failed to clear entries: \(error)")
+            return
+        }
+        CaptureBookkeeping.resetCategoryUsage(modelContext: modelContext)
+        StoreLocator.sharedDefaults.removeObject(forKey: "logsLogged")
+        retention.resetAll()
+        WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
     }
 }
