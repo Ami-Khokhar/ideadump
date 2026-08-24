@@ -18,11 +18,10 @@ struct EntryRowView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
-                } else {
-                    Text(entry.date.formatted(date: .abbreviated, time: .shortened))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
+                Text(entry.date.formatted(date: .abbreviated, time: .shortened))
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
             }
             Spacer()
             Text(Money.format(entry.amount))

@@ -1,65 +1,40 @@
 import SwiftUI
-import UIKit
+import AppIntents
+import _AppIntents_SwiftUI
 
-/// Shown once, after the user has logged a few expenses: how to log without opening
-/// the app. Purely informational — no permissions, no accounts.
+/// A concise, optional guide to the fastest capture surfaces. It never claims
+/// that the app can invoke Siri for the user; the user starts the interaction.
 struct SetupFrontDoorsView: View {
     @Environment(\.dismiss) private var dismiss
 
-    /// Called when the user finishes the screen (Done or Not now). The onboarding
-    /// flow uses it to mark onboarding complete; the menu entry leaves it nil.
+    /// Called when the user finishes the screen (Done or Not now). The deferred
+    /// onboarding prompt uses this to persist its dismissal; the menu entry leaves it nil.
     var onDone: (() -> Void)? = nil
+
+    @AppStorage(OnboardingFlow.openCaptureUsedKey, store: StoreLocator.sharedDefaults)
+    private var usedOpenCapture = false
+    @AppStorage(OnboardingFlow.directCaptureUsedKey, store: StoreLocator.sharedDefaults)
+    private var usedDirectCapture = false
+    @AppStorage(OnboardingFlow.logExpenseUsedKey, store: StoreLocator.sharedDefaults)
+    private var usedHandsFree = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("One more thing 🎉")
-                            .font(.title3.bold())
-                        Text("Next time you won't even open the app to log an expense. Pick a front door:")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("Faster ways to log")
+                        .font(.title3.bold())
 
-                    frontDoorCard(
-                        icon: "square.grid.2x2",
-                        tint: .blue,
-                        title: "Home-screen widget",
-                        body: "Long-press the home screen → tap + → search TapLog → add the medium widget. Then tap ☕️ or 🍽️ right on the widget to log instantly.",
-                        footnote: "Works on every iPhone."
-                    )
+                    Text("Try one when it fits. TapLog stays out of your way until you ask it to log.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
 
-                    frontDoorCard(
-                        icon: "mic.fill",
-                        tint: .purple,
-                        title: "Siri",
-                        body: "Just say one of these — no setup needed:\n• \"Hey Siri, log an expense in TapLog\"\n• \"Hey Siri, open capture in TapLog\"",
-                        footnote: "TapLog opens directly into the capture screen."
-                    ) {
-                        Button {
-                            openShortcuts()
-                        } label: {
-                            Label("Open Shortcuts", systemImage: "arrow.up.right.square")
-                        }
-                        .buttonStyle(.bordered)
-                    }
-
-                    frontDoorCard(
-                        icon: "button.programmable",
-                        tint: .orange,
-                        title: "Action Button (iPhone 15 Pro+)",
-                        body: "In Settings → Action Button → Shortcut, pick \"Open Expense Capture\". One press opens TapLog directly into the focused capture keypad.",
-                        footnote: "The closest thing to a dedicated capture button."
-                    ) {
-                        Link("Open Settings", destination: URL(string: UIApplication.openSettingsURLString)!)
-                            .font(.footnote)
-                            .foregroundStyle(Theme.accent)
-                    }
+                    captureCard
+                    handsFreeCard
+                    surfacesCard
 
                     Button {
-                        onDone?()
-                        dismiss()
+                        finish()
                     } label: {
                         Text("Done")
                             .font(.headline)
@@ -70,55 +45,119 @@ struct SetupFrontDoorsView: View {
                 }
                 .padding(20)
             }
-            .navigationTitle("Log without TapLog")
+            .navigationTitle("Faster ways")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Not now") {
-                        onDone?()
-                        dismiss()
-                    }
+                    Button("Not now") { finish() }
                 }
             }
         }
     }
 
-    private func frontDoorCard(
-        icon: String,
-        tint: Color,
-        title: String,
-        body: String,
-        footnote: String,
-        @ViewBuilder extra: () -> some View = { EmptyView() }
-    ) -> some View {
-        HStack(alignment: .top, spacing: 14) {
-            Image(systemName: icon)
-                .font(.title3)
-                .foregroundStyle(tint)
-                .frame(width: 34, height: 34)
-                .background(tint.opacity(0.15), in: RoundedRectangle(cornerRadius: 9))
-            VStack(alignment: .leading, spacing: 5) {
-                Text(title)
-                    .font(.subheadline.bold())
-                Text(body)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                if footnote != "" {
-                    Text(footnote)
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
+    private var captureCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            cardTitle("Open the keypad", icon: "number.circle.fill", tint: .blue)
+            Text("Say “Hey Siri, open capture in TapLog” or use the Action Button shortcut named Open Expense Capture. TapLog opens the keypad and focuses the amount.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            if let status = OnboardingFlow.directCaptureStatus(
+                openCaptureUsed: usedOpenCapture,
+                directCaptureUsed: usedDirectCapture
+            ) {
+                self.status(status)
+            } else {
+                Button("Try capture now (without Siri)") {
+                    // This local fallback deliberately does not set Siri-use state.
+                    OpenCaptureIntent.writePendingActivation()
                 }
-                extra()
+                .buttonStyle(.bordered)
             }
-            Spacer(minLength: 0)
+
+            if #available(iOS 16.0, *) {
+                SiriTipView(intent: OpenCaptureIntent())
+                    .siriTipViewStyle(.automatic)
+                    .accessibilityLabel("Learn the Open the keypad Siri phrase")
+            }
         }
-        .padding(14)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14))
+        .cardSurface()
+        .accessibilityElement(children: .contain)
     }
 
-    private func openShortcuts() {
-        guard let url = URL(string: "shortcuts://") else { return }
-        UIApplication.shared.open(url)
+    private var handsFreeCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            cardTitle("Log hands-free", icon: "mic.fill", tint: .purple)
+            Text("Say “Hey Siri, log an expense in TapLog.” Siri asks for the amount, logs it without opening TapLog, and confirms the saved amount and category.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            if usedHandsFree {
+                status("Used")
+            }
+
+            if #available(iOS 16.0, *) {
+                SiriTipView(intent: LogExpenseIntent())
+                    .siriTipViewStyle(.automatic)
+                    .accessibilityLabel("Learn the Log hands-free Siri phrase")
+                ShortcutsLink()
+                    .shortcutsLinkStyle(.automaticOutline)
+                    .accessibilityLabel("Open TapLog actions in Shortcuts")
+            }
+        }
+        .cardSurface()
+        .accessibilityElement(children: .contain)
     }
+
+    private var surfacesCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            cardTitle("Other front doors", icon: "square.grid.2x2.fill", tint: .orange)
+            Text("Home Screen: long-press → + → TapLog → add the widget.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            Text("Lock Screen: long-press → Customize → Lock Screen → Add Widgets → TapLog.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            Text("iOS 18 Control Center: open Control Center → + → Add a Control → TapLog → Log expense.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            Text("Action Button (iPhone 15 Pro+): Settings → Action Button → Shortcut → Open Expense Capture.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            Text("These are optional device-level setup steps; TapLog cannot open a specific Settings pane for you.")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+        }
+        .cardSurface()
+        .accessibilityElement(children: .combine)
+    }
+
+    private func cardTitle(_ title: String, icon: String, tint: Color) -> some View {
+        Label(title, systemImage: icon)
+            .font(.subheadline.bold())
+            .foregroundStyle(tint)
+    }
+
+    private func status(_ text: String) -> some View {
+        Label(text, systemImage: "checkmark.circle.fill")
+            .font(.footnote.weight(.semibold))
+            .foregroundStyle(Theme.accent)
+    }
+
+    private func finish() {
+        onDone?()
+        dismiss()
+    }
+}
+
+private struct CardSurface: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .padding(14)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14))
+    }
+}
+
+private extension View {
+    func cardSurface() -> some View { modifier(CardSurface()) }
 }

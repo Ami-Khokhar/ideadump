@@ -145,6 +145,17 @@ struct SpendWidgetEntryView: View {
         switch family {
         case .systemMedium:
             mediumView
+        case .accessoryCircular:
+            Image(systemName: "plus")
+                .font(.title3.weight(.semibold))
+                .widgetURL(URL(string: "taplog://log")!)
+            .accessibilityLabel("Log expense")
+        case .accessoryRectangular:
+            Link(destination: URL(string: "taplog://log")!) {
+                Label("Log expense", systemImage: "plus.circle.fill")
+                    .font(.caption.weight(.semibold))
+            }
+            .accessibilityLabel("Open TapLog expense capture")
         default:
             smallView
         }
@@ -244,6 +255,6 @@ struct SpendWidget: Widget {
         }
         .configurationDisplayName("TapLog")
         .description("Quick-log expenses from your home screen.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryRectangular])
     }
 }

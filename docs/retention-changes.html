@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TapLog — Phase 1 Retention Changes</title>
+<style>
+  :root { --paper: #F7F5F2; --ink: #1C1B1A; --sage: #6B8F71; --sage-soft: rgba(107,143,113,0.12); --surface: #EFECE7; --muted: #6E6A64; --hairline: rgba(28,27,26,0.08); }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, system-ui, sans-serif; background: #0e0e0e; color: #f0eeeb; line-height: 1.6; }
+
+  .hero { text-align: center; padding: 3rem 2rem 2rem; }
+  .hero h1 { font-size: 2rem; font-weight: 700; }
+  .hero h1 span { color: var(--sage); }
+  .hero p { color: var(--muted); font-size: 0.9rem; margin-top: 0.5rem; }
+  .badge { display: inline-block; background: var(--sage-soft); color: var(--sage); font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.7rem; border-radius: 99px; margin-top: 0.8rem; }
+
+  .content { max-width: 900px; margin: 0 auto; padding: 1rem 2rem 3rem; }
+
+  /* File cards */
+  .file { margin-bottom: 2rem; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; overflow: hidden; background: #1a1a1a; }
+  .file-header { display: flex; align-items: center; gap: 0.75rem; padding: 0.8rem 1.2rem; background: #222; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .file-header .icon { width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+  .file-header .icon.new { background: var(--sage); color: white; }
+  .file-header .icon.mod { background: #d4a017; color: #1a1a1a; }
+  .file-header .path { font-family: "SF Mono", Menlo, monospace; font-size: 0.8rem; color: #ccc; }
+  .file-header .tag { margin-left: auto; font-size: 0.65rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .file-header .tag.new { background: rgba(107,143,113,0.2); color: var(--sage); }
+  .file-header .tag.mod { background: rgba(212,160,23,0.2); color: #d4a017; }
+
+  pre { margin: 0; padding: 1rem 1.2rem; overflow-x: auto; font-size: 0.78rem; line-height: 1.55; }
+  code { font-family: "SF Mono", Menlo, Consolas, monospace; color: #e0ddd8; }
+
+  /* Diff styling */
+  .add { color: #7eca9c; }
+  .del { color: #e06c75; }
+  .ctx { color: #666; }
+  .ln { color: #555; user-select: none; display: inline-block; width: 2.5em; text-align: right; margin-right: 1em; }
+
+  /* Summary */
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 2rem 0; }
+  .stat { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 1.2rem; text-align: center; }
+  .stat .num { font-size: 2rem; font-weight: 700; color: var(--sage); }
+  .stat .label { font-size: 0.75rem; color: var(--muted); margin-top: 0.3rem; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  h2 { font-size: 1.2rem; font-weight: 600; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  h2 span { color: var(--sage); }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Phase 1 <span>Retention System</span></h1>
+  <p>All code changes — new files, modifications, and diffs</p>
+  <div class="badge">7 FILES · +991 LINES · COMMIT 9f2c7e1</div>
+</div>
+
+<div class="content">
+
+<!-- Summary -->
+<div class="summary">
+  <div class="stat"><div class="num">2</div><div class="label">New Files</div></div>
+  <div class="stat"><div class="num">5</div><div class="label">Modified Files</div></div>
+  <div class="stat"><div class="num">298</div><div class="label">New Lines</div></div>
+  <div class="stat"><div class="num">11</div><div class="label">Tests Pass</div></div>
+</div>
+
+<!-- File 1: RetentionManager -->
+<h2><span>NEW</span> — RetentionManager.swift</h2>
+<div class="file">
+  <div class="file-header">
+    <div class="icon new">+</div>
+    <div class="path">Sources/TapLog/Retention/RetentionManager.swift</div>
+    <div class="tag new">New File · 200 lines</div>
+  </div>
+  <pre><code><span class="add">+import Foundation</span>
+<span class="add">+import SwiftData</span>
+<span class="add">+</span>
+<span class="add">+/// Tracks weekly log consistency, streaks, and streak freezes.</span>
+<span class="add">+///</span>
+<span class="add">+/// Uses `UserDefaults` for lightweight persistence (no new SwiftData model needed).</span>
+<span class="add">+/// The weekly log mask resets automatically when a new Monday is detected.</span>
+<span class="add">+@Observable</span>
+<span class="add">+final class RetentionManager {</span>
+<span class="add">+    private let defaults = UserDefaults.standard</span>
+<span class="add">+</span>
+<span class="add">+    // MARK: - Weekly Target</span>
+<span class="add">+</span>
+<span class="add">+    /// How many days per week the user aims to log (3–7, default 5).</span>
+<span class="add">+    var weeklyTarget: Int {</span>
+<span class="add">+        get {</span>
+<span class="add">+            let raw = defaults.integer(forKey: Keys.weeklyTarget)</span>
+<span class="add">+            return raw == 0 ? 5 : max(3, min(7, raw))</span>
+<span class="add">+        }</span>
+<span class="add">+        set { defaults.set(max(3, min(7, newValue)), forKey: Keys.weeklyTarget) }</span>
+<span class="add">+    }</span>
+<span class="add">+</span>
+<span class="add">+    // MARK: - Streak</span>
+<span class="add">+</span>
+<span class="add">+    var currentStreak: Int {</span>
+<span class="add">+        get { defaults.integer(forKey: Keys.currentStreak) }</span>
+<span class="add">+        set {</span>
+<span class="add">+            defaults.set(newValue, forKey: Keys.currentStreak)</span>
+<span class="add">+            if newValue &gt; longestStreak { longestStreak = newValue }</span>
+<span class="add">+        }</span>
+<span class="add">+    }</span>
+<span class="add">+</span>
+<span class="add">+    var longestStreak: Int {</span>
+<span class="add">+        get { defaults.integer(forKey: Keys.longestStreak) }</span>
+<span class="add">+        set { defaults.set(newValue, forKey: Keys.longestStreak) }</span>
+<span class="add">+    }</span>
+<span class="add">+</span>
+<span class="add">+    // MARK: - Streak Freezes</span>
+<span class="add">+</span>
+<span class="add">+    var streakFreezes: Int {</span>
+<span class="add">+        get { min(3, defaults.integer(forKey: Keys.streakFreezes)) }</span>
+<span class="add">+        set { defaults.set(min(3, max(0, newValue)), forKey: Keys.streakFreezes) }</span>
+<span class="add">+    }</span>
+<span class="add">+</span>
+<span class="add">+    var totalLogs: Int {</span>
+<span class="add">+        get { defaults.integer(forKey: Keys.totalLogs) }</span>
+<span class="add">+        set {</span>
+<span class="add">+            defaults.set(newValue, forKey: Keys.totalLogs)</span>
+<span class="add">+            let newFreezes = newValue / 10</span>
+<span class="add">+            if newFreezes &gt; streakFreezes {</span>
+<span class="add">+                streakFreezes = min(3, newFreezes)</span>
+<span class="add">+            }</span>
+<span class="add">+        }</span>
+<span class="add">+    }</span>
+<span class="add">+</span>
+<span class="add">+    // MARK: - Weekly Log Mask</span>
+<span class="add">+</span>
+<span class="add">+    private var weekStartDate: Date { ... }</span>
+<span class="add">+    private var weeklyMask: [Bool] { ... }</span>
+<span class="add">+</span>
+<span class="add">+    // MARK: - Computed</span>
+<span class="add">+</span>
+<span class="add">+    var daysLoggedThisWeek: Int { ... }</span>
+<span class="add">+    var targetMet: Bool { daysLoggedThisWeek &gt;= weeklyTarget }</span>
+<span class="add">+    var weeklyProgress: Double { ... }</span>
+<span class="add">+    var ringFraction: Double { min(1.0, weeklyProgress) }</span>
+<span class="add">+</span>
+<span class="add">+    // MARK: - Actions</span>
+<span class="add">+</span>
+<span class="add">+    func recordLogDay() {</span>
+<span class="add">+        refreshWeekIfNeeded()</span>
+<span class="add">+        let today = Calendar.current.component(.weekday, from: Date())</span>
+<span class="add">+        let index = (today + 5) % 7</span>
+<span class="add">+        var mask = weeklyMask</span>
+<span class="add">+        mask[index] = true</span>
+<span class="add">+        weeklyMask = mask</span>
+<span class="add">+        totalLogs += 1</span>
+<span class="add">+        if targetMet &amp;&amp; !defaults.bool(forKey: Keys.weekResolved) {</span>
+<span class="add">+            extendStreak()</span>
+<span class="add">+        }</span>
+<span class="add">+    }</span>
+<span class="add">+</span>
+<span class="add">+    func useStreakFreeze() -&gt; Bool { ... }</span>
+<span class="add">+</span>
+<span class="add">+    var streakDescription: String? {</span>
+<span class="add">+        guard currentStreak &gt; 0 else { return nil }</span>
+<span class="add">+        return "\(currentStreak)-week streak"</span>
+<span class="add">+    }</span>
+<span class="add">+}</span></code></pre>
+</div>
+
+<!-- File 2: WeeklyRingView -->
+<h2><span>NEW</span> — WeeklyRingView.swift</h2>
+<div class="file">
+  <div class="file-header">
+    <div class="icon new">+</div>
+    <div class="path">Sources/TapLog/Retention/WeeklyRingView.swift</div>
+    <div class="tag new">New File · 98 lines</div>
+  </div>
+  <pre><code><span class="add">+import SwiftUI</span>
+<span class="add">+</span>
+<span class="add">+/// 60pt circular progress ring — Apple Watch Activity Rings style.</span>
+<span class="add">+struct WeeklyRingView: View {</span>
+<span class="add">+    let progress: Double      // 0.0 … 1.0</span>
+<span class="add">+    let daysLogged: Int</span>
+<span class="add">+    let target: Int</span>
+<span class="add">+    let freezesAvailable: Int</span>
+<span class="add">+</span>
+<span class="add">+    private var isComplete: Bool { progress &gt;= 1.0 }</span>
+<span class="add">+    private var nearComplete: Bool { progress &gt;= 0.8 &amp;&amp; !isComplete }</span>
+<span class="add">+</span>
+<span class="add">+    var body: some View {</span>
+<span class="add">+        VStack(spacing: 4) {</span>
+<span class="add">+            ZStack {</span>
+<span class="add">+                // Background track</span>
+<span class="add">+                Circle()</span>
+<span class="add">+                    .stroke(Theme.surface, lineWidth: 6)</span>
+<span class="add">+</span>
+<span class="add">+                // Filled arc</span>
+<span class="add">+                Circle()</span>
+<span class="add">+                    .trim(from: 0, to: progress)</span>
+<span class="add">+                    .stroke(ringColor, style: StrokeStyle(lineWidth: 6, lineCap: .round))</span>
+<span class="add">+                    .rotationEffect(.degrees(-90))</span>
+<span class="add">+                    .animation(Motion.gentle, value: progress)</span>
+<span class="add">+</span>
+<span class="add">+                // Center: checkmark or "2/5"</span>
+<span class="add">+                if isComplete {</span>
+<span class="add">+                    Image(systemName: "checkmark")</span>
+<span class="add">+                        .font(.system(size: 16, weight: .semibold))</span>
+<span class="add">+                        .foregroundStyle(Theme.accent)</span>
+<span class="add">+                } else {</span>
+<span class="add">+                    Text("\(daysLogged)/\(target)")</span>
+<span class="add">+                        .font(.system(size: 13, weight: .semibold, design: .rounded))</span>
+<span class="add">+                        .foregroundStyle(Theme.textPrimary)</span>
+<span class="add">+                }</span>
+<span class="add">+            }</span>
+<span class="add">+            .frame(width: 60, height: 60)</span>
+<span class="add">+            // Glow at 80%+</span>
+<span class="add">+            .shadow(color: nearComplete ? Theme.accent.opacity(0.25) : .clear, radius: 8)</span>
+<span class="add">+</span>
+<span class="add">+            // Freeze count</span>
+<span class="add">+            if freezesAvailable &gt; 0 &amp;&amp; !isComplete {</span>
+<span class="add">+                Text("\(freezesAvailable) freeze\(freezesAvailable == 1 ? "" : "s")")</span>
+<span class="add">+                    .font(.system(size: 9))</span>
+<span class="add">+                    .foregroundStyle(Theme.textTertiary)</span>
+<span class="add">+            }</span>
+<span class="add">+        }</span>
+<span class="add">+    }</span>
+<span class="add">+</span>
+<span class="add">+    private var ringColor: Color {</span>
+<span class="add">+        if isComplete { return Theme.accent }</span>
+<span class="add">+        if freezesAvailable &gt; 0 &amp;&amp; daysLogged == 0 {</span>
+<span class="add">+            return Color(red: 0.83, green: 0.63, blue: 0.09) // gold</span>
+<span class="add">+        }</span>
+<span class="add">+        return Theme.accent</span>
+<span class="add">+    }</span>
+<span class="add">+}</span></code></pre>
+</div>
+
+<!-- File 3: LogHomeView diff -->
+<h2><span>MODIFIED</span> — LogHomeView.swift</h2>
+<div class="file">
+  <div class="file-header">
+    <div class="icon mod">M</div>
+    <div class="path">Sources/TapLog/Capture/LogHomeView.swift</div>
+    <div class="tag mod">Modified · +39 lines</div>
+  </div>
+  <pre><code><span class="ctx"> struct LogHomeView: View {</span>
+<span class="ctx">     @Environment(\.modelContext) private var modelContext</span>
+<span class="ctx">     @Environment(\.colorScheme) private var colorScheme</span>
+<span class="add">+    @Environment(RetentionManager.self) private var retention</span>
+<span class="ctx">     @EnvironmentObject private var undoStack: UndoStack</span>
+<span class="ctx"> </span>
+<span class="ctx">     var body: some View {</span>
+<span class="ctx">         VStack(spacing: 0) {</span>
+<span class="ctx">             statusLine.entrance()</span>
+<span class="add">+            weeklyRingRow.entrance(delay: 0.04)</span>
+<span class="ctx">             Spacer(minLength: 16)</span>
+<span class="ctx">             heroStone.entrance(delay: 0.08)</span>
+<span class="ctx">             ...</span>
+<span class="ctx">         }</span>
+<span class="ctx">     }</span>
+<span class="ctx"> </span>
+<span class="add">+    /// Weekly ring + streak — sits between the status line and the zen stone.</span>
+<span class="add">+    private var weeklyRingRow: some View {</span>
+<span class="add">+        HStack(spacing: 12) {</span>
+<span class="add">+            WeeklyRingView(</span>
+<span class="add">+                progress: retention.ringFraction,</span>
+<span class="add">+                daysLogged: retention.daysLoggedThisWeek,</span>
+<span class="add">+                target: retention.weeklyTarget,</span>
+<span class="add">+                freezesAvailable: retention.streakFreezes</span>
+<span class="add">+            )</span>
+<span class="add">+            VStack(alignment: .leading, spacing: 2) {</span>
+<span class="add">+                if let streak = retention.streakDescription {</span>
+<span class="add">+                    Text("🔥 \(streak)")</span>
+<span class="add">+                        .font(.subheadline.weight(.semibold))</span>
+<span class="add">+                        .foregroundStyle(Theme.textPrimary)</span>
+<span class="add">+                } else {</span>
+<span class="add">+                    Text("Log this week")</span>
+<span class="add">+                        .font(.subheadline)</span>
+<span class="add">+                        .foregroundStyle(Theme.textSecondary)</span>
+<span class="add">+                }</span>
+<span class="add">+                Text("\(retention.weeklyTarget) days/week target")</span>
+<span class="add">+                    .font(.caption)</span>
+<span class="add">+                    .foregroundStyle(Theme.textTertiary)</span>
+<span class="add">+            }</span>
+<span class="add">+            Spacer()</span>
+<span class="add">+        }</span>
+<span class="add">+        .padding(.horizontal, 28)</span>
+<span class="add">+    }</span>
+<span class="ctx"> </span>
+<span class="ctx">         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")</span>
+<span class="add">+        retention.recordLogDay()</span>
+<span class="ctx">         UINotificationFeedbackGenerator().notificationOccurred(.success)</span></code></pre>
+</div>
+
+<!-- File 4: SettingsView diff -->
+<h2><span>MODIFIED</span> — SettingsView.swift</h2>
+<div class="file">
+  <div class="file-header">
+    <div class="icon mod">M</div>
+    <div class="path">Sources/TapLog/Settings/SettingsView.swift</div>
+    <div class="tag mod">Modified · +16 lines</div>
+  </div>
+  <pre><code><span class="ctx"> struct SettingsView: View {</span>
+<span class="ctx">     @Environment(\.dismiss) private var dismiss</span>
+<span class="ctx">     @Environment(\.modelContext) private var modelContext</span>
+<span class="add">+    @Environment(RetentionManager.self) private var retention</span>
+<span class="ctx"> </span>
+<span class="ctx">     ...</span>
+<span class="ctx"> </span>
+<span class="add">+                Section {</span>
+<span class="add">+                    Stepper(</span>
+<span class="add">+                        "Log target: \(retention.weeklyTarget) days/week",</span>
+<span class="add">+                        value: Binding(</span>
+<span class="add">+                            get: { retention.weeklyTarget },</span>
+<span class="add">+                            set: { retention.weeklyTarget = $0 }</span>
+<span class="add">+                        ),</span>
+<span class="add">+                        in: 3...7</span>
+<span class="add">+                    )</span>
+<span class="add">+                } header: {</span>
+<span class="add">+                    Text("Consistency")</span>
+<span class="add">+                } footer: {</span>
+<span class="add">+                    Text("How many days per week you aim to log.")</span>
+<span class="add">+                }</span>
+<span class="ctx"> </span>
+<span class="ctx">                 Section("Data") {</span></code></pre>
+</div>
+
+<!-- File 5: TapLogApp diff -->
+<h2><span>MODIFIED</span> — TapLogApp.swift</h2>
+<div class="file">
+  <div class="file-header">
+    <div class="icon mod">M</div>
+    <div class="path">Sources/TapLog/TapLogApp.swift</div>
+    <div class="tag mod">Modified · +2 lines</div>
+  </div>
+  <pre><code><span class="ctx"> struct TapLogApp: App {</span>
+<span class="ctx">     @StateObject private var undoStack = UndoStack()</span>
+<span class="add">+    @State private var retention = RetentionManager()</span>
+<span class="ctx">     private let container: ModelContainer</span>
+<span class="ctx"> </span>
+<span class="ctx">             ContentView()</span>
+<span class="ctx">                 .environmentObject(undoStack)</span>
+<span class="add">+                .environment(retention)</span>
+<span class="ctx">         }</span>
+<span class="ctx">         .modelContainer(container)</span></code></pre>
+</div>
+
+<!-- File 6: Design doc -->
+<h2><span>NEW</span> — docs/retention-system.md</h2>
+<div class="file">
+  <div class="file-header">
+    <div class="icon new">+</div>
+    <div class="path">docs/retention-system.md</div>
+    <div class="tag new">New File · 191 lines</div>
+  </div>
+  <pre><code><span class="add">+# TapLog — Retention System Design</span>
+<span class="add">+</span>
+<span class="add">+## Guiding Principle</span>
+<span class="add">+TapLog is a **tool**, not a game. Every retention mechanic must pass</span>
+<span class="add">+the **5% test**.</span>
+<span class="add">+</span>
+<span class="add">+## The 7 Mechanics</span>
+<span class="add">+I. Winnable Arenas — "Beat your own average" weekly challenge</span>
+<span class="add">+II. Cognitive Load Caps — 5-second capture stays sacred</span>
+<span class="add">+III. Flexible Consistency — Weekly streak (5/7 target, customizable)</span>
+<span class="add">+IV. Variable Rewards — Weekly Insight reveal after ring completion</span>
+<span class="add">+V. Gestalt Closure — Weekly spending ring on home screen</span>
+<span class="add">+VI. Competence Metrics — Real financial awareness, not badges</span>
+<span class="add">+VII. Micro Social — 1-tap share monthly summary card</span>
+<span class="add">+</span>
+<span class="add">+## Implementation Phases</span>
+<span class="add">+Phase 1 (Weeks 1-2): Ring + streak + freeze  ← YOU ARE HERE</span>
+<span class="add">+Phase 2 (Weeks 3-4): Variable weekly insights</span>
+<span class="add">+Phase 3 (Weeks 5-6): Competence metrics</span>
+<span class="add">+Phase 4 (Weeks 7-8): Social sharing</span>
+<span class="add">+</span>
+<span class="add">+## Guardrails</span>
+<span class="add">+🚫 Never: Virtual currency, pay-to-progress, punitive streaks,</span>
+<span class="add">+   social pressure, notification spam, engagement theater</span></code></pre>
+</div>
+
+<!-- File 7: HTML design doc -->
+<h2><span>NEW</span> — docs/retention-system.html</h2>
+<div class="file">
+  <div class="file-header">
+    <div class="icon new">+</div>
+    <div class="path">docs/retention-system.html</div>
+    <div class="tag new">New File · 449 lines</div>
+  </div>
+  <pre><code><span class="add">+Interactive HTML design document with:</span>
+<span class="add">+• SVG ring mockups (75%, 100%, freeze states)</span>
+<span class="add">+• 3-phase reward flow diagram</span>
+<span class="add">+• 7-mechanic mapping table</span>
+<span class="add">+• 4-phase implementation checklist</span>
+<span class="add">+• Guardrails card grid</span></code></pre>
+</div>
+
+</div>
+</body>
+</html>

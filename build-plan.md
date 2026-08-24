@@ -229,9 +229,12 @@ hangs off "≤5 seconds, from anywhere."
 - In Shortcuts on a simulator/device, the "Log Expense" action appears under the app's
   actions; running it with amount 12 and note "coffee" creates an entry visible in the
   list.
-- In Siri (device), "Log twelve on coffee" creates the entry.
-- On a real iPhone, the Action Button is configured (Settings → Action Button →
-  Shortcut) to call "Log Expense" and creates an entry from the lock screen.
+- In Siri (device), "Hey Siri, log an expense in TapLog" asks for the amount and creates
+  the entry headlessly with a spoken confirmation.
+- In Siri (device), "Hey Siri, open capture in TapLog" opens the keypad; the same route is
+  exposed as the **Open Expense Capture** shortcut.
+- On a real iPhone, the Action Button is configured (Settings → Action Button → Shortcut)
+  to call **Open Expense Capture** and opens the keypad from the lock screen.
 - Builds clean; commit.
 
 **Agent prompt (template):**

@@ -70,12 +70,19 @@ Button / widget-on-lock-screen checks, and capture timing — see `build-plan.md
 6. **Test the front doors on the device:**
    - **Deep link:** in Safari on the phone, type `taplog://log?amount=12.50&note=coffee`
      and the capture form opens pre-filled.
-   - **Siri/Shortcuts:** open the Shortcuts app → TapLog → add “Log Expense”; run it
-     (amount 12, category coffee) — it logs without opening the app.
+   - **Siri keypad:** say “Hey Siri, open capture in TapLog” — TapLog opens the keypad
+     and focuses the amount. This is the same route as the **Open Expense Capture** action.
+   - **Siri hands-free / Shortcuts:** say “Hey Siri, log an expense in TapLog”, or open
+     Shortcuts → TapLog → “Log Expense”; Siri asks for the amount and logs without opening
+     TapLog.
    - **Action Button (iPhone 15 Pro+):** Settings → Action Button → Shortcut → choose
-     the “Log Expense” shortcut you just made.
+     **Open Expense Capture**.
    - **Widget:** long-press the home screen → + → TapLog → add the medium widget; tap
      ☕️/$12 to log instantly.
+   - **Lock Screen widget:** long-press the Lock Screen → Customize → Lock Screen →
+     Add Widgets → TapLog; choose the circular or rectangular capture widget.
+   - **iOS 18 Control Center:** open Control Center → + → Add a Control → TapLog →
+     add “Log expense”.
    - **Share sheet:** share any text (e.g. a fake “You spent $12.50 at Starbucks” note)
      → TapLog → confirm in the app.
 7. **Seed demo data + settings** (optional): in the app, tap **⋯** (top-right on the

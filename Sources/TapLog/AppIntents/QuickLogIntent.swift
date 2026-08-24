@@ -28,7 +28,6 @@ struct QuickLogIntent: AppIntent {
         let context = container.mainContext
         let categories = (try? context.fetch(FetchDescriptor<SpendCategory>())) ?? []
         let categoryKey = categories.first { $0.key == category }?.key
-            ?? categories.first?.key
             ?? SpendCategory.fallbackKey
         let entry = Entry(amount: validatedAmount, category: categoryKey, note: nil)
         context.insert(entry)

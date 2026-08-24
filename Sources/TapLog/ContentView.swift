@@ -15,7 +15,8 @@ struct ContentView: View {
     @AppStorage("onboardingStepRaw") private var onboardingStepRaw = OnboardingStep.capture.rawValue
     @AppStorage("appearanceMode") private var appearanceMode = "system"
 
-    @Query private var allEntries: [Entry]
+    @Query(filter: #Predicate<Entry> { !$0.isArchived && !$0.isPending })
+    private var confirmedEntries: [Entry]
 
     @State private var onboardingStep: OnboardingStep?
     @State private var isOnboardingCapture = false
@@ -27,6 +28,10 @@ struct ContentView: View {
     /// Tracks that the current launch handled a direct-capture activation, so the
     /// delayed onboarding flow cannot override it.
     @State private var handledActivation = false
+    @State private var deferredPrompt: DeferredPrompt?
+    @State private var activeDeferredPrompt: DeferredPrompt?
+    @State private var loggedInCurrentSession = false
+    @State private var suppressDeferredPromptsThisSession = false
 
     enum Route: String, Identifiable {
         case history
@@ -37,7 +42,14 @@ struct ContentView: View {
         var id: String { rawValue }
     }
 
-    private var hasAnyEntry: Bool { !allEntries.isEmpty }
+    enum DeferredPrompt: String, Identifiable {
+        case categories
+        case fasterWays
+
+        var id: String { rawValue }
+    }
+
+    private var hasConfirmedEntry: Bool { !confirmedEntries.isEmpty }
 
     var body: some View {
         NavigationStack {
@@ -45,12 +57,11 @@ struct ContentView: View {
                 isOnboarding: isOnboardingCapture,
                 prefill: prefill,
                 onLogged: {
-                    // Only advance the flow during the onboarding capture beat —
-                    // otherwise EVERY log would re-open the categories cover.
+                    // The first log completes core onboarding, but never interrupts
+                    // the capture surface with a second setup screen.
                     guard isOnboardingCapture else { return }
-                    onboardingStepRaw = OnboardingStep.categories.rawValue
-                    isOnboardingCapture = false
-                    onboardingStep = .categories
+                    completeCoreOnboarding()
+                    OnboardingFlow.markCoreComplete()
                 },
                 onCancelOnboarding: {
                     isOnboardingCapture = false
@@ -78,7 +89,7 @@ struct ContentView: View {
                         Button {
                             route = .frontDoors
                         } label: {
-                            Label("Log without opening TapLog", systemImage: "sparkles")
+                            Label("Faster ways to log", systemImage: "sparkles")
                         }
                         Divider()
                         Button {
@@ -95,8 +106,14 @@ struct ContentView: View {
         .applyAppearanceOverride()
         .tint(Theme.accent)
         .onAppear {
+            // Legacy onboarding state must be migrated before any confirmed-entry
+            // reconciliation can change the live/core flags.
+            OnboardingFlow.migrate()
             // Consume any pending intent activation written before the UI was ready.
             consumePendingIntent()
+            // Reconcile durable SwiftData truth before deciding whether to show
+            // welcome or deferred prompts after a cold relaunch.
+            reconcileOnboarding(with: confirmedEntries.count)
             // Start the delayed onboarding flow (unless an activation was handled).
             handleLaunchFlow()
             // Dev/testing hooks
@@ -124,11 +141,28 @@ struct ContentView: View {
         // Handle warm/background activation: the scene becomes active after the
         // intent wrote its payload while the app was suspended.
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            OnboardingFlow.migrate()
             consumePendingIntent()
+            reconcileOnboarding(with: confirmedEntries.count)
+            handleLaunchFlow()
+        }
+        // Handle in-process activation: OpenCaptureIntent writes the durable
+        // payload to UserDefaults then posts this notification so ContentView
+        // can consume it immediately, even when the scene is already active
+        // (didBecomeActiveNotification won't fire in that case).
+        .onReceive(NotificationCenter.default.publisher(for: OpenCaptureIntent.activationNotification)) { _ in
+            consumePendingIntent()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: OnboardingFlow.coreCompletionNotification)) { _ in
+            completeCoreOnboarding(markSessionLog: false)
+            suppressDeferredPromptsThisSession = true
+        }
+        .onChange(of: confirmedEntries.count) { _, count in
+            reconcileOnboarding(with: count)
         }
         .onOpenURL { url in
             guard let prefill = CapturePrefill(url: url) else { return }
-            self.prefill = prefill
+            routeToDirectCapture(prefill: prefill, recordDirectUse: true)
         }
         .sheet(item: $route) { route in
             Group {
@@ -139,7 +173,9 @@ struct ContentView: View {
                 case .recap:
                     WeeklyRecapView()
                 case .frontDoors:
-                    SetupFrontDoorsView()
+                    SetupFrontDoorsView(onDone: {
+                        OnboardingFlow.dismissFasterWays()
+                    })
                 case .settings:
                     SettingsView()
                 }
@@ -152,6 +188,34 @@ struct ContentView: View {
             onboardingView(for: step)
                 .applyAppearanceOverride()
         }
+        .sheet(item: $deferredPrompt, onDismiss: {
+            if let activeDeferredPrompt {
+                switch activeDeferredPrompt {
+                case .categories:
+                    OnboardingFlow.dismissCategories()
+                case .fasterWays:
+                    OnboardingFlow.dismissFasterWays()
+                }
+            }
+            activeDeferredPrompt = nil
+        }) { prompt in
+            switch prompt {
+            case .categories:
+                OnboardingCategoriesView(onContinue: {
+                    OnboardingFlow.dismissCategories()
+                    deferredPrompt = nil
+                })
+                .presentationDetents([.large])
+                .onAppear { activeDeferredPrompt = .categories }
+            case .fasterWays:
+                SetupFrontDoorsView(onDone: {
+                    OnboardingFlow.dismissFasterWays()
+                    deferredPrompt = nil
+                })
+                .presentationDetents([.medium, .large])
+                .onAppear { activeDeferredPrompt = .fasterWays }
+            }
+        }
         .overlay(alignment: .bottom) { UndoToast() }
     }
 
@@ -163,17 +227,20 @@ struct ContentView: View {
         let activation = OpenCaptureIntent.consumePendingActivation()
         guard case .open(let pendingPrefill) = activation else { return }
 
+        preserveAwaitingFirstConfirmedLogIfNeeded()
+
         // Mark that we handled an activation — the delayed onboarding must not
         // override this.
         handledActivation = true
         intentDirectCapture = true
 
         if let pendingPrefill {
-            self.prefill = pendingPrefill
+            routeToDirectCapture(prefill: pendingPrefill)
         }
 
         // Dismiss any open sheet or onboarding cover.
         route = nil
+        deferredPrompt = nil
         onboardingStep = nil
         onboardingActive = false
         isOnboardingCapture = false
@@ -188,21 +255,54 @@ struct ContentView: View {
             // If a direct-capture activation was handled, never present onboarding.
             guard !handledActivation else { return }
 
-            if !hasLaunchedBefore && prefill == nil {
+            // The initial query can be populated after onAppear; repeat the
+            // reconciliation at the start of the delayed launch decision.
+            reconcileOnboarding(with: confirmedEntries.count)
+
+            if !hasLaunchedBefore && prefill == nil && !hasConfirmedEntry {
                 hasLaunchedBefore = true
                 onboardingActive = true
                 onboardingStepRaw = OnboardingStep.capture.rawValue
                 onboardingStep = .welcome
+                return
+            } else if !hasLaunchedBefore {
+                // A headless/widget/deep-link log is already a meaningful first
+                // action. Do not make the next app launch replay setup screens.
+                hasLaunchedBefore = true
+                OnboardingFlow.markCoreComplete()
+                suppressDeferredPromptsThisSession = true
+                return
             } else if onboardingActive && onboardingStep == nil && prefill == nil {
                 // Killed mid-onboarding: resume at the stored step, never at the welcome.
                 switch OnboardingStep(rawValue: onboardingStepRaw) {
                 case .capture:
                     isOnboardingCapture = true
                 case .categories, .frontDoors:
-                    onboardingStep = OnboardingStep(rawValue: onboardingStepRaw)
+                    // Old builds persisted these as mandatory covers. Migration
+                    // converts them into optional prompts instead.
+                    onboardingActive = false
                 default:
                     break
                 }
+            }
+
+            guard OnboardingFlow.canScheduleDeferredPrompts(
+                onboardingActive: onboardingActive,
+                hasOnboardingCover: onboardingStep != nil,
+                routeActive: route != nil,
+                deferredPromptActive: deferredPrompt != nil,
+                activeDeferredPrompt: activeDeferredPrompt != nil,
+                prefillActive: prefill != nil,
+                loggedInCurrentSession: loggedInCurrentSession,
+                suppressForCurrentSession: suppressDeferredPromptsThisSession
+            ) else { return }
+            if OnboardingFlow.shouldOfferCategories(confirmedLogCount: confirmedEntries.count) {
+                deferredPrompt = .categories
+            } else if OnboardingFlow.shouldOfferFasterWays(
+                confirmedLogCount: confirmedEntries.count,
+                isFirstLogSession: loggedInCurrentSession
+            ) {
+                deferredPrompt = .fasterWays
             }
         }
     }
@@ -213,11 +313,12 @@ struct ContentView: View {
         case .welcome:
             WelcomeView(
                 onContinue: {
-                    // Already logged via another door? Skip the "first log" beat.
+                    // Already logged via another door? Finish core onboarding and
+                    // leave the user on the home screen.
                     onboardingStep = nil
-                    if hasAnyEntry {
-                        onboardingStepRaw = OnboardingStep.categories.rawValue
-                        onboardingStep = .categories
+                    if hasConfirmedEntry {
+                        onboardingActive = false
+                        OnboardingFlow.markCoreComplete()
                     } else {
                         onboardingStepRaw = OnboardingStep.capture.rawValue
                         isOnboardingCapture = true
@@ -232,17 +333,60 @@ struct ContentView: View {
             // Never a cover — the home tab IS the capture form (isOnboardingCapture).
             EmptyView()
         case .categories:
-            OnboardingCategoriesView(onContinue: {
-                onboardingStepRaw = OnboardingStep.frontDoors.rawValue
-                onboardingStep = .frontDoors
-            })
+            EmptyView()
         case .frontDoors:
-            // Finishing this step is the end of onboarding — clear the active flag so
-            // the resume branch never re-shows this cover on a later cold launch.
-            SetupFrontDoorsView(onDone: {
-                onboardingActive = false
-            })
+            EmptyView()
         }
+    }
+
+    private func routeToDirectCapture(prefill: CapturePrefill?, recordDirectUse: Bool = false) {
+        preserveAwaitingFirstConfirmedLogIfNeeded()
+        handledActivation = true
+        intentDirectCapture = true
+        self.prefill = prefill
+        if recordDirectUse {
+            OnboardingFlow.recordIntentUse(OnboardingFlow.directCaptureUsedKey)
+        }
+        route = nil
+        deferredPrompt = nil
+        onboardingStep = nil
+        onboardingActive = false
+        isOnboardingCapture = false
+    }
+
+    private func preserveAwaitingFirstConfirmedLogIfNeeded() {
+        let coreComplete = UserDefaults.standard.bool(forKey: OnboardingFlow.coreCompleteKey)
+        let shouldAwait = OnboardingFlow.shouldAwaitFirstConfirmedLog(
+            coreComplete: coreComplete,
+            confirmedLogCount: confirmedEntries.count
+        )
+        if shouldAwait {
+            OnboardingFlow.markAwaitingFirstConfirmedLog()
+        }
+    }
+
+    private func completeCoreOnboarding(markSessionLog: Bool = true) {
+        guard isOnboardingCapture || onboardingStep != nil || onboardingActive else { return }
+        isOnboardingCapture = false
+        onboardingActive = false
+        onboardingStep = nil
+        if markSessionLog {
+            loggedInCurrentSession = true
+        }
+    }
+
+    private func reconcileOnboarding(with confirmedCount: Int) {
+        let liveOnboardingActive = onboardingActive || isOnboardingCapture || onboardingStep != nil
+        guard OnboardingFlow.reconcileCoreIfNeeded(
+            confirmedLogCount: confirmedCount,
+            onboardingActive: liveOnboardingActive
+        ) else { return }
+
+        // Cross-process intents/share confirmations may update SwiftData without
+        // emitting this process's completion notification. Clear live state here
+        // as well, and suppress deferred prompts for this session.
+        completeCoreOnboarding(markSessionLog: false)
+        suppressDeferredPromptsThisSession = true
     }
 }
 

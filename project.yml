@@ -52,7 +52,9 @@ targets:
       - path: Sources/TapLog/Models
       - path: Sources/TapLog/Shared
       - path: Sources/TapLog/DeepLink
-      - path: Sources/TapLog/AppIntents
+      # Only the extension-safe quick-log intent belongs in the widget target.
+      # Foreground intents and AppShortcutsProvider are app-only metadata.
+      - path: Sources/TapLog/AppIntents/QuickLogIntent.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.amteshwar.taplog.widget

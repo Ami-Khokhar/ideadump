@@ -33,34 +33,50 @@ enum DebugSeeder {
         seed(context: context)
     }
 
+    @MainActor
     static func seed(context: ModelContext) {
         let calendar = Calendar.current
         let thisWeekStart = calendar.dateInterval(of: .weekOfYear, for: .now)!.start
         let lastWeekStart = calendar.date(byAdding: .day, value: -7, to: thisWeekStart)!
+        let today = calendar.startOfDay(for: .now)
 
+        // Dates are placed in the past relative to today so the Recap chart
+        // never shows future bars. The earliest seed entry is last week's
+        // Monday; the latest is "yesterday" so today starts empty and feels
+        // like the user's first real log.
         let samples: [(Decimal, String, String?, Date)] = [
-            (4.50, "coffee", "latte", thisWeekStart.addingTimeInterval(3600)),
-            (12.50, "food", "lunch", thisWeekStart.addingTimeInterval(86400)),
-            (3.25, "coffee", nil, thisWeekStart.addingTimeInterval(2 * 86400)),
-            (45.00, "shopping", "groceries", thisWeekStart.addingTimeInterval(3 * 86400)),
-            (22.00, "transport", "gas", thisWeekStart.addingTimeInterval(4 * 86400)),
-            (8.75, "food", "dinner", thisWeekStart.addingTimeInterval(5 * 86400)),
-            (15.00, "fun", "movies", lastWeekStart.addingTimeInterval(3600)),
-            (60.00, "bills", "electric", lastWeekStart.addingTimeInterval(86400)),
-            (5.50, "coffee", nil, lastWeekStart.addingTimeInterval(2 * 86400)),
-            (30.00, "shopping", "clothes", lastWeekStart.addingTimeInterval(3 * 86400)),
-            (10.00, "health", "pharmacy", lastWeekStart.addingTimeInterval(4 * 86400)),
-            (18.00, "food", "takeout", lastWeekStart.addingTimeInterval(5 * 86400)),
+            (4.50, "chai", "latte",              today.addingTimeInterval(-5 * 86400)),  // 5 days ago
+            (12.50, "food", "lunch",             today.addingTimeInterval(-4 * 86400)),  // 4 days ago
+            (3.25, "chai", nil,                  today.addingTimeInterval(-3 * 86400)),  // 3 days ago
+            (45.00, "shopping", "groceries",     today.addingTimeInterval(-2 * 86400)),  // 2 days ago
+            (22.00, "transport", "metro",        today.addingTimeInterval(-1 * 86400)),  // yesterday
+            (8.75, "food", "dinner",             today.addingTimeInterval(-1 * 86400 + 7200)),  // yesterday evening
+            (15.00, "fun", "movies",             lastWeekStart.addingTimeInterval(86400)),       // last week Tue
+            (60.00, "bills", "electric",         lastWeekStart.addingTimeInterval(2 * 86400)),   // last week Wed
+            (5.50, "chai", nil,                  lastWeekStart.addingTimeInterval(3 * 86400)),   // last week Thu
+            (30.00, "shopping", "clothes",       lastWeekStart.addingTimeInterval(4 * 86400)),   // last week Fri
+            (10.00, "health", "pharmacy",        lastWeekStart.addingTimeInterval(5 * 86400)),   // last week Sat
+            (18.00, "food", "takeout",           lastWeekStart.addingTimeInterval(6 * 86400)),   // last week Sun
         ]
 
-        for (amount, category, note, date) in samples {
-            context.insert(Entry(amount: amount, category: category, note: note, date: date))
+        var categories: [SpendCategory] = (try? context.fetch(FetchDescriptor<SpendCategory>())) ?? []
+
+        for (amount, categoryKey, note, date) in samples {
+            let entry = Entry(amount: amount, category: categoryKey, note: note, date: date)
+            context.insert(entry)
+            CaptureBookkeeping.apply(modelContext: context, categories: categories, categoryKey: categoryKey)
         }
+
         do {
             try context.save()
         } catch {
             print("TapLog: Failed to save sample data: \(error)")
         }
+
+        // Update streaks to reflect last week's activity.
+        let retention = RetentionManager()
+        _ = retention.daysLoggedThisWeek
+
         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
     }
 }

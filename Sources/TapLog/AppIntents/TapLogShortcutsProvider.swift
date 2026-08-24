@@ -1,50 +1,44 @@
 import AppIntents
 import SwiftUI
 
-/// Parameterless wrapper around `LogExpenseIntent` that opens the app for the
-/// user to complete the amount via Siri voice or the capture screen. This is
-/// needed because the AppShortcuts metadata processor only allows `AppEntity`
-/// and `AppEnum` types in phrase parameters — `Double` and `String` are both
-/// rejected.
-struct LogExpenseShortcutIntent: AppIntent {
-    static var title: LocalizedStringResource = "Log Expense"
-    static var description = IntentDescription(
-        "Opens TapLog to log a new expense. Siri will ask for the amount."
-    )
-    static var openAppWhenRun: Bool = true
-    static var isDiscoverable: Bool = true
-
-    @MainActor
-    func perform() async throws -> some IntentResult {
-        // Route to the capture screen — the user completes the log manually.
-        OpenCaptureIntent.writePendingActivation()
-        return .result()
-    }
-}
-
 /// Prebuilt App Shortcuts for TapLog. These appear in Siri suggestions, the
 /// Shortcuts app, and Spotlight — zero user configuration required.
+///
+/// Two shortcuts are exposed:
+/// 1. **Open Expense Capture** — opens the app into the focused capture screen
+///    (Action Button, keypad Siri phrase, Control Center). No parameters required.
+/// 2. **Log Expense** — headless voice logging via the real `LogExpenseIntent`.
+///    The amount parameter (`Double`) cannot appear in `AppShortcut` phrases
+///    (the metadata processor only allows `AppEntity`/`AppEnum`), so the phrases
+///    omit it. Siri resolves the required amount through standard parameter
+///    collection — it will ask "How much?" before running the intent.
 struct TapLogShortcutsProvider: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
-        // MARK: - Open Capture (primary — Action Button, Siri, Control Center)
+        // MARK: - Open Expense Capture (primary keypad route)
 
         AppShortcut(
             intent: OpenCaptureIntent(),
             phrases: [
-                "Log an expense in \(.applicationName)",
                 "Open capture in \(.applicationName)",
-                "Record spending in \(.applicationName)",
+                "Open the keypad in \(.applicationName)",
                 "Start logging in \(.applicationName)",
             ],
-            shortTitle: "Open Capture",
+            shortTitle: "Open Expense Capture",
             systemImageName: "plus.circle.fill"
         )
 
-        // MARK: - Log Expense (secondary — Siri voice logging)
+        // MARK: - Log Expense (secondary — headless voice logging)
 
+        // The phrases intentionally omit the $amount parameter. AppShortcuts
+        // metadata only allows AppEntity/AppEnum types in phrase interpolation,
+        // and Double is rejected. When the user says one of these phrases, Siri
+        // matches the intent and then resolves the required `amount` parameter
+        // through its standard parameter-collection flow ("How much?").
+        // LogExpenseIntent.openAppWhenRun = false, so it logs silently.
         AppShortcut(
-            intent: LogExpenseShortcutIntent(),
+            intent: LogExpenseIntent(),
             phrases: [
+                "Log an expense in \(.applicationName)",
                 "Log a purchase in \(.applicationName)",
                 "Record an expense in \(.applicationName)",
                 "Add spending in \(.applicationName)",

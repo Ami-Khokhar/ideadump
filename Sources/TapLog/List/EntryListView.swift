@@ -45,6 +45,47 @@ struct EntryListView: View {
         showingArchived ? archivedEntries : activeEntries
     }
 
+    // MARK: - Date grouping
+
+    private struct DateGroup: Identifiable {
+        let id = UUID()
+        let title: String
+        let entries: [Entry]
+    }
+
+    private var groupedEntries: [DateGroup] {
+        guard !showingArchived else { return [DateGroup(title: "Archived", entries: displayedEntries)] }
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
+        let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)!.start
+
+        var groups: [DateGroup] = []
+        var todayEntries: [Entry] = []
+        var yesterdayEntries: [Entry] = []
+        var thisWeekEntries: [Entry] = []
+        var earlierEntries: [Entry] = []
+
+        for entry in displayedEntries {
+            if calendar.isDate(entry.date, inSameDayAs: today) {
+                todayEntries.append(entry)
+            } else if calendar.isDate(entry.date, inSameDayAs: yesterday) {
+                yesterdayEntries.append(entry)
+            } else if entry.date >= weekStart {
+                thisWeekEntries.append(entry)
+            } else {
+                earlierEntries.append(entry)
+            }
+        }
+
+        if !todayEntries.isEmpty { groups.append(DateGroup(title: "Today", entries: todayEntries)) }
+        if !yesterdayEntries.isEmpty { groups.append(DateGroup(title: "Yesterday", entries: yesterdayEntries)) }
+        if !thisWeekEntries.isEmpty { groups.append(DateGroup(title: "This Week", entries: thisWeekEntries)) }
+        if !earlierEntries.isEmpty { groups.append(DateGroup(title: "Earlier", entries: earlierEntries)) }
+
+        return groups
+    }
+
     private var lookup: CategoryLookup { CategoryLookup(categories) }
 
     var body: some View {
@@ -69,23 +110,19 @@ struct EntryListView: View {
                                 }
                             }
                         }
-                        Section(showingArchived ? "Archived" : "Recent") {
-                            ForEach(displayedEntries) { entry in
-                                EntryRowView(entry: entry, lookup: lookup)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture { editingEntry = entry }
-                                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                        if showingArchived {
-                                            Button("Unarchive") { unarchive(entry) }
-                                                .tint(Theme.accent)
-                                        } else {
-                                            Button("Archive") { archive(entry) }
-                                                .tint(Theme.accent)
-                                        }
-                                        Button(role: .destructive) { delete(entry) } label: {
-                                            Label("Delete", systemImage: "trash")
-                                        }
+                        if showingArchived {
+                            Section("Archived") {
+                                ForEach(displayedEntries) { entry in
+                                    entryRow(entry)
+                                }
+                            }
+                        } else {
+                            ForEach(groupedEntries) { group in
+                                Section(group.title) {
+                                    ForEach(group.entries) { entry in
+                                        entryRow(entry)
                                     }
+                                }
                             }
                         }
                     }
@@ -110,7 +147,7 @@ struct EntryListView: View {
                         Button {
                             showingSetupSheet = true
                         } label: {
-                            Label("Log without opening TapLog", systemImage: "sparkles")
+                            Label("Faster ways to log", systemImage: "sparkles")
                         }
                         Divider()
                         Picker("View", selection: $showingArchived) {
@@ -123,7 +160,9 @@ struct EntryListView: View {
                 }
             }
             .sheet(isPresented: $showingSetupSheet) {
-                SetupFrontDoorsView()
+                SetupFrontDoorsView(onDone: {
+                    OnboardingFlow.dismissFasterWays()
+                })
                     .presentationDetents([.medium, .large])
             }
             .sheet(item: $editingEntry) { entry in
@@ -150,12 +189,31 @@ struct EntryListView: View {
         Menu {
             Button("Seed sample data") { DebugSeeder.seed(context: modelContext) }
             Button(isPro ? "Turn Pro off (demo)" : "Turn Pro on (demo)") { isPro.toggle() }
+            Divider()
             Button("Delete all entries", role: .destructive) { showingClearConfirmation = true }
         } label: {
             Image(systemName: "hammer")
         }
     }
 #endif
+
+    private func entryRow(_ entry: Entry) -> some View {
+        EntryRowView(entry: entry, lookup: lookup)
+            .contentShape(Rectangle())
+            .onTapGesture { editingEntry = entry }
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                if showingArchived {
+                    Button("Unarchive") { unarchive(entry) }
+                        .tint(Theme.accent)
+                } else {
+                    Button("Archive") { archive(entry) }
+                        .tint(Theme.accent)
+                }
+                Button(role: .destructive) { delete(entry) } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
+    }
 
     // MARK: - Pending (share sheet) actions
 
@@ -193,6 +251,9 @@ struct EntryListView: View {
             return
         }
         CaptureBookkeeping.apply(modelContext: modelContext, categories: categories, categoryKey: entry.category)
+        // A share-sheet item becomes a confirmed log only after this save. This
+        // completes core onboarding just like a home capture, never while pending.
+        OnboardingFlow.markCoreCompleteIfConfirmed(isPending: entry.isPending, isArchived: entry.isArchived)
         undoStack.record("Added \(Money.format(entry.amount))") {
             entry.isPending = true
             do {

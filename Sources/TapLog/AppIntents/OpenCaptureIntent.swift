@@ -14,8 +14,8 @@ enum PendingCaptureActivation {
 // MARK: - OpenCaptureIntent
 
 /// Opens TapLog directly into the focused expense-capture screen. Designed for the
-/// Action Button, Control Center, Siri phrases ("Log an expense in TapLog"), and
-/// Shortcuts — zero configuration required.
+/// Action Button, Control Center, keypad-opening Siri phrases, and Shortcuts —
+/// zero configuration required. Headless logging owns the "log an expense" phrase.
 ///
 /// Persists a pending activation via `UserDefaults` (App Group suite) so the UI
 /// can consume it deterministically on the next launch. Optional prefill parameters
@@ -47,9 +47,17 @@ struct OpenCaptureIntent: AppIntent {
         static let pendingNote = "intent.pendingCaptureNote"
     }
 
+    // MARK: - In-Process Notification
+
+    /// Posted after the durable payload is written to UserDefaults. ContentView
+    /// subscribes to this for warm/in-process activations where the scene is
+    /// already active and `didBecomeActiveNotification` won't fire.
+    static let activationNotification = Notification.Name("OpenCaptureIntent.activation")
+
     // MARK: - Write Helpers (static, usable from tests)
 
-    /// Writes a pending capture activation to UserDefaults.
+    /// Writes a pending capture activation to UserDefaults and posts the
+    /// in-process notification.
     static func writePendingActivation(
         amount: String? = nil,
         category: String? = nil,
@@ -60,11 +68,17 @@ struct OpenCaptureIntent: AppIntent {
         defaults.set(category, forKey: Keys.pendingCategory)
         defaults.set(note, forKey: Keys.pendingNote)
         defaults.set(true, forKey: Keys.pendingActive)
+
+        // Post in-process notification so ContentView can consume the activation
+        // even when the scene is already active (didBecomeActiveNotification
+        // won't fire in that case). The UserDefaults payload remains the source
+        // of truth — the notification is just a wake-up signal.
+        NotificationCenter.default.post(name: activationNotification, object: nil)
     }
 
     /// Reads and clears the pending activation. Returns `.none` if nothing is
     /// pending, `.open(prefill:)` if an activation was found (prefill may be nil
-    /// for a parameterless invocation).
+    /// for a parameterless invocation). Idempotent: a second call returns `.none`.
     static func consumePendingActivation(
         defaults: UserDefaults = StoreLocator.sharedDefaults
     ) -> PendingCaptureActivation {
@@ -95,13 +109,10 @@ struct OpenCaptureIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        var prefillAmount: String? = nil
+        let prefillAmount = try Self.prefillAmountText(from: amount)
         var prefillCategory: String? = nil
         let prefillNote: String? = note
 
-        if let amount, amount > 0 {
-            prefillAmount = String(amount)
-        }
         if let category, !category.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             prefillCategory = category
         }
@@ -114,6 +125,17 @@ struct OpenCaptureIntent: AppIntent {
             )
         }
 
+        OnboardingFlow.recordIntentUse(OnboardingFlow.openCaptureUsedKey)
+
         return .result()
+    }
+
+    static func prefillAmountText(from amount: Double?) throws -> String? {
+        guard let amount else { return nil }
+        guard amount.isFinite, amount > 0,
+              amount <= NSDecimalNumber(decimal: Money.maxAmount).doubleValue else {
+            throw TapLogIntentError.invalidOptionalAmount
+        }
+        return String(amount)
     }
 }

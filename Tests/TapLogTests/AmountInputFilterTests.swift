@@ -9,6 +9,60 @@ import XCTest
 /// - Font sizing never produces a size below the minimum
 final class AmountInputFilterTests: XCTestCase {
 
+    func testSelectionRestoresAfterRejectedEdit() {
+        let original = NSRange(location: 1, length: 2)
+        let result = AmountEditResult(text: "12.50", error: nil, restoresPrevious: true)
+
+        XCTAssertEqual(
+            AmountTextField.Coordinator.selectionAfterEdit(
+                current: "12.50",
+                originalSelection: original,
+                editRange: NSRange(location: 1, length: 0),
+                replacement: "9",
+                result: result
+            ),
+            original
+        )
+    }
+
+    func testSelectionMovesAfterAcceptedReplacementAndIsBounded() {
+        let result = AmountEditResult(text: "19.50", error: nil, restoresPrevious: false)
+
+        XCTAssertEqual(
+            AmountTextField.Coordinator.selectionAfterEdit(
+                current: "12.50",
+                originalSelection: NSRange(location: 0, length: 0),
+                editRange: NSRange(location: 1, length: 1),
+                replacement: "9",
+                result: result
+            ),
+            NSRange(location: 2, length: 0)
+        )
+    }
+
+    func testSelectionMapsPastCurrencySymbolThatFilterStrips() {
+        let current = "12.50"
+        let editRange = NSRange(location: 2, length: 0)
+        let replacement = "$"
+        let result = AmountInputFilter.filterEdit(
+            current: current,
+            range: editRange,
+            replacement: replacement
+        )
+
+        XCTAssertEqual(result.text, "12.50")
+        XCTAssertEqual(
+            AmountTextField.Coordinator.selectionAfterEdit(
+                current: current,
+                originalSelection: editRange,
+                editRange: editRange,
+                replacement: replacement,
+                result: result
+            ),
+            NSRange(location: 2, length: 0)
+        )
+    }
+
     // MARK: - Typed Input
 
     func testEmptyInputIsAccepted() {
@@ -129,6 +183,145 @@ final class AmountInputFilterTests: XCTestCase {
         case .rejected(let error):
             XCTFail("should be accepted, got: \(error)")
         }
+    }
+
+    // MARK: - Edit metadata (selection replacement)
+
+    func testSelectionReplacementUSGroupingUsesReplacementValue() {
+        let result = AmountInputFilter.filterEdit(
+            current: "12,34", range: NSRange(location: 0, length: 5), replacement: "1,200"
+        )
+        XCTAssertEqual(result.text, "1,200")
+        XCTAssertNil(result.error)
+        XCTAssertEqual(Money.parse(result.text), 1200)
+    }
+
+    func testSelectionReplacementEuropeanGroupingUsesReplacementValue() {
+        let result = AmountInputFilter.filterEdit(
+            current: "12.34", range: NSRange(location: 0, length: 5), replacement: "1.200,50"
+        )
+        XCTAssertEqual(result.text, "1.200,50")
+        XCTAssertNil(result.error)
+        XCTAssertEqual(Money.parse(result.text), Decimal(string: "1200.50"))
+    }
+
+    func testSelectionReplacementWithCurrencySymbolPreservesAmount() {
+        let result = AmountInputFilter.filterEdit(
+            current: "9999", range: NSRange(location: 0, length: 4), replacement: "$1,200"
+        )
+        XCTAssertEqual(result.text, "1,200")
+        XCTAssertNil(result.error)
+        XCTAssertEqual(Money.parse(result.text), 1200)
+    }
+
+    func testTypingMixedSeparatorRestoresPreviousValue() {
+        let result = AmountInputFilter.filterEdit(
+            current: "1.2", range: NSRange(location: 3, length: 0), replacement: ","
+        )
+        XCTAssertTrue(result.restoresPrevious)
+        XCTAssertEqual(result.text, "1.2")
+        XCTAssertNotNil(result.error)
+    }
+
+    func testTypingDotDecimalOneEditAtATime() {
+        let first = AmountInputFilter.filterEdit(
+            current: "12", range: NSRange(location: 2, length: 0), replacement: "."
+        )
+        XCTAssertEqual(first.text, "12.")
+        XCTAssertNil(first.error)
+
+        let second = AmountInputFilter.filterEdit(
+            current: first.text, range: NSRange(location: 3, length: 0), replacement: "3"
+        )
+        XCTAssertEqual(second.text, "12.3")
+        XCTAssertNil(second.error)
+
+        let third = AmountInputFilter.filterEdit(
+            current: second.text, range: NSRange(location: 4, length: 0), replacement: "4"
+        )
+        XCTAssertEqual(third.text, "12.34")
+        XCTAssertNil(third.error)
+    }
+
+    func testTypingCommaDecimalOneEditAtATime() {
+        let first = AmountInputFilter.filterEdit(
+            current: "12", range: NSRange(location: 2, length: 0), replacement: ","
+        )
+        XCTAssertEqual(first.text, "12,")
+        XCTAssertNil(first.error)
+
+        let second = AmountInputFilter.filterEdit(
+            current: first.text, range: NSRange(location: 3, length: 0), replacement: "3"
+        )
+        XCTAssertEqual(second.text, "12,3")
+        XCTAssertNil(second.error)
+
+        let third = AmountInputFilter.filterEdit(
+            current: second.text, range: NSRange(location: 4, length: 0), replacement: "4"
+        )
+        XCTAssertEqual(third.text, "12,34")
+        XCTAssertNil(third.error)
+    }
+
+    func testOversizedSelectionReplacementRemainsVisible() {
+        let result = AmountInputFilter.filterEdit(
+            current: "999999999", range: NSRange(location: 0, length: 9), replacement: "1000000000"
+        )
+        XCTAssertFalse(result.restoresPrevious)
+        XCTAssertEqual(result.text, "1000000000")
+        XCTAssertTrue(result.error?.contains("Maximum") == true)
+    }
+
+    func testOversizedPasteCanBeCorrectedOrDeleted() {
+        let oversized = AmountInputFilter.filterEdit(
+            current: "", range: NSRange(location: 0, length: 0), replacement: "1000000000"
+        )
+        XCTAssertEqual(oversized.text, "1000000000")
+        XCTAssertNotNil(oversized.error)
+
+        let corrected = AmountInputFilter.filterEdit(
+            current: oversized.text,
+            range: NSRange(location: 0, length: oversized.text.count),
+            replacement: "999999999"
+        )
+        XCTAssertEqual(corrected.text, "999999999")
+        XCTAssertNil(corrected.error)
+
+        let deleted = AmountInputFilter.filterEdit(
+            current: oversized.text,
+            range: NSRange(location: oversized.text.count - 1, length: 1),
+            replacement: ""
+        )
+        XCTAssertEqual(deleted.text, "100000000")
+        XCTAssertNil(deleted.error)
+    }
+
+    func testTypedDigitOverMaximumRestoresPreviousValue() {
+        let result = AmountInputFilter.filterEdit(
+            current: "999999999",
+            range: NSRange(location: 9, length: 0),
+            replacement: "0"
+        )
+        XCTAssertTrue(result.restoresPrevious)
+        XCTAssertEqual(result.text, "999999999")
+    }
+
+    func testTypedThirdFractionalDigitRestoresPreviousValue() {
+        let result = AmountInputFilter.filterEdit(
+            current: "12.34",
+            range: NSRange(location: 5, length: 0),
+            replacement: "5"
+        )
+        XCTAssertTrue(result.restoresPrevious)
+        XCTAssertEqual(result.text, "12.34")
+    }
+
+    func testMalformedMixedSeparatorReplacementRemainsVisible() {
+        let result = AmountInputFilter.filterEdit(
+            current: "12", range: NSRange(location: 0, length: 2), replacement: "1.2,"
+        )
+        XCTAssertEqual(result.text, "1.2,")
+        XCTAssertEqual(result.error, "Invalid amount format.")
     }
 
     // MARK: - Maximum Amount

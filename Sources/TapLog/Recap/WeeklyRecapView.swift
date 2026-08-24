@@ -89,9 +89,18 @@ struct WeeklyRecapView: View {
                     let maxDay = max(dayTotals.max() ?? 1, 1)
                     ForEach(0..<7, id: \.self) { index in
                         let value = dayTotals[index]
+                        let isFuture = index > todayIndex
+                        let isPast = index < todayIndex
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(index == todayIndex ? Theme.accent : Theme.surfaceStrong)
+                            .fill(index == todayIndex ? Theme.accent : (isFuture ? Theme.surfaceStrong.opacity(0.4) : Theme.surfaceStrong))
                             .frame(height: value == 0 ? 4 : max(10, CGFloat(NSDecimalNumber(decimal: value / maxDay).doubleValue) * 96))
+                            .overlay(
+                                isFuture && value == 0 ?
+                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        .strokeBorder(Theme.hairline, style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                                        .frame(height: 4)
+                                : nil
+                            )
                             .scaleEffect(y: barsGrown ? 1 : 0.02, anchor: .bottom)
                             .animation(
                                 Motion.gentleSlow.delay(0.08 * Double(index)),
@@ -105,9 +114,10 @@ struct WeeklyRecapView: View {
 
                 HStack(spacing: 8) {
                     ForEach(0..<7, id: \.self) { index in
+                        let isFuture = index > todayIndex
                         Text(dayLetter(index))
                             .font(.caption)
-                            .foregroundStyle(index == todayIndex ? Theme.accent : Theme.textTertiary)
+                            .foregroundStyle(index == todayIndex ? Theme.accent : (isFuture ? Theme.textTertiary.opacity(0.4) : Theme.textTertiary))
                             .fontWeight(index == todayIndex ? .semibold : .regular)
                             .frame(maxWidth: .infinity)
                     }
@@ -219,7 +229,7 @@ struct WeeklyRecapView: View {
                 freezesAvailable: retention.streakFreezes
             )
             VStack(alignment: .leading, spacing: 4) {
-                Text(retention.streakDescription ?? "No streak yet")
+                Text(retention.streakDescription ?? (retention.currentStreak == 0 ? "Start your streak" : "No streak yet"))
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Theme.textPrimary)
                 Text(consistencyFootnote)
@@ -245,7 +255,13 @@ struct WeeklyRecapView: View {
 
     private var consistencyFootnote: String {
         guard !retention.targetMet else { return "Target met — nice week." }
+        if retention.currentStreak == 0 && retention.daysLoggedThisWeek == 0 {
+            return "Log once today to start building momentum."
+        }
         let remaining = retention.weeklyTarget - retention.daysLoggedThisWeek
+        if retention.currentStreak == 0 {
+            return "\(remaining) more day\(remaining == 1 ? "" : "s") to start a streak."
+        }
         return "\(remaining) more day\(remaining == 1 ? "" : "s") to hit your \(retention.weeklyTarget)-day target."
     }
 

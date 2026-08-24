@@ -105,4 +105,29 @@ final class OpenCaptureIntentTests: XCTestCase {
             XCTFail("expected .open after re-write")
         }
     }
+
+    func testWritePostsWarmActivationNotification() {
+        let expectation = expectation(description: "activation notification")
+        let token = NotificationCenter.default.addObserver(
+            forName: OpenCaptureIntent.activationNotification,
+            object: nil,
+            queue: .main
+        ) { notification in
+            XCTAssertEqual(notification.name, OpenCaptureIntent.activationNotification)
+            expectation.fulfill()
+        }
+        defer { NotificationCenter.default.removeObserver(token) }
+
+        OpenCaptureIntent.writePendingActivation(amount: "7", defaults: defaults)
+        wait(for: [expectation], timeout: 1)
+
+        // The notification is only a wake-up signal; consuming remains durable
+        // and idempotent through the UserDefaults payload.
+        if case .open = OpenCaptureIntent.consumePendingActivation(defaults: defaults) {} else {
+            XCTFail("expected durable activation after notification")
+        }
+        if case .none = OpenCaptureIntent.consumePendingActivation(defaults: defaults) {} else {
+            XCTFail("activation should be consumed exactly once")
+        }
+    }
 }

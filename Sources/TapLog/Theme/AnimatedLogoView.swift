@@ -2,6 +2,7 @@ import SwiftUI
 
 /// The animated logo shown on app launch — smooth materialise + breathing pulse + ripple rings.
 struct AnimatedLogoView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var breathe = false
     @State private var showText = false
     @State private var ripplePhase: Double = 0
@@ -22,11 +23,14 @@ struct AnimatedLogoView: View {
                     .scaleEffect(breathe ? 1.0 : 0.85)
                     .blur(radius: logoVisible ? 0 : 6)
                     .opacity(breathe ? 1 : 0)
-                    .animation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.15), value: breathe)
+                    .animation(
+                        reduceMotion ? nil : .spring(response: 0.8, dampingFraction: 0.7).delay(0.15),
+                        value: breathe
+                    )
                     // Continuous subtle breathing after entrance
                     .scaleEffect(breathe ? breatheScale : 1.0)
                     .animation(
-                        .easeInOut(duration: 2.4).repeatForever(autoreverses: true).delay(1.0),
+                        reduceMotion ? nil : .easeInOut(duration: 2.4).repeatForever(autoreverses: true).delay(1.0),
                         value: breathe
                     )
             }
@@ -38,13 +42,20 @@ struct AnimatedLogoView: View {
                 .foregroundStyle(Theme.textPrimary)
                 .offset(y: showText ? 0 : 8)
                 .opacity(showText ? 1 : 0)
-                .animation(.easeOut(duration: 0.5).delay(0.05), value: showText)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.5).delay(0.05), value: showText)
         }
         .onAppear {
-            withAnimation(.easeOut(duration: 0.4)) { logoVisible = true }
-            withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.15)) { breathe = true }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { showText = true }
-            startRipples()
+            if reduceMotion {
+                logoVisible = true
+                breathe = true
+                showText = true
+                ripplePhase = 1
+            } else {
+                withAnimation(.easeOut(duration: 0.4)) { logoVisible = true }
+                withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.15)) { breathe = true }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { showText = true }
+                startRipples()
+            }
         }
     }
 
@@ -63,7 +74,7 @@ struct AnimatedLogoView: View {
                     .frame(width: 80 + ripplePhase * 130, height: 80 + ripplePhase * 130)
                     .opacity(max(0, 1 - ripplePhase))
                     .animation(
-                        .easeOut(duration: 3.5).delay(delay).repeatForever(autoreverses: false),
+                        reduceMotion ? nil : .easeOut(duration: 3.5).delay(delay).repeatForever(autoreverses: false),
                         value: ripplePhase
                     )
             }

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TapLog — Mascot Research</title>
+<style>
+  :root { --paper: #F7F5F2; --ink: #1C1B1A; --sage: #6B8F71; --sage-soft: rgba(107,143,113,0.12); }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, system-ui, sans-serif; background: #0e0e0e; color: #f0eeeb; line-height: 1.6; }
+  .hero { text-align: center; padding: 3rem 2rem 2rem; }
+  .hero h1 { font-size: 2rem; font-weight: 700; }
+  .hero h1 span { color: var(--sage); }
+  .hero p { color: #6E6A64; font-size: 0.9rem; margin-top: 0.5rem; }
+  .content { max-width: 900px; margin: 0 auto; padding: 1rem 2rem 3rem; }
+  h2 { font-size: 1.3rem; font-weight: 600; margin: 2rem 0 1rem; color: var(--sage); }
+  h3 { font-size: 1rem; font-weight: 600; margin: 1.5rem 0 0.5rem; }
+  p, li { font-size: 0.9rem; color: #ccc; }
+  ul { padding-left: 1.5rem; margin: 0.5rem 0; }
+  li { margin-bottom: 0.4rem; }
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin: 1rem 0; }
+  .card { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 1.25rem; }
+  .card .tag { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sage); margin-bottom: 0.5rem; }
+  .card h4 { font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; color: #f0eeeb; }
+  .card p { font-size: 0.85rem; color: #888; }
+  .note { background: #1a1a1a; border-left: 3px solid var(--sage); padding: 1rem 1.25rem; border-radius: 0 8px 8px 0; margin: 1rem 0; font-size: 0.9rem; }
+  .note strong { color: var(--sage); }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+  th { text-align: left; padding: 0.6rem; border-bottom: 2px solid #333; color: var(--sage); }
+  td { padding: 0.6rem; border-bottom: 1px solid #222; color: #ccc; }
+  .emoji { font-size: 2rem; }
+</style>
+</head>
+<body>
+<div class="hero">
+  <h1>Mascot <span>Research</span></h1>
+  <p>What types of mascots work for iOS apps — and what fits TapLog</p>
+</div>
+<div class="content">
+
+<h2>1. Mascot Archetypes in Popular Apps</h2>
+
+<div class="card-grid">
+  <div class="card">
+    <div class="tag">Duolingo / Headspace</div>
+    <h4>The Guide / Companion</h4>
+    <p>A character that walks alongside you. Duolingo's owl coaches you through lessons. Headspace's orange blob guides meditation. The mascot IS the experience — it has personality, emotions, and a voice.</p>
+  </div>
+  <div class="card">
+    <div class="tag">Reddit / Discord</div>
+    <h4>The Mascot Logo</h4>
+    <p>The mascot IS the brand mark. Reddit's Snoo, Discord's Clyde. Simple, scalable, works at 16px and 1024px. The mascot doesn't "do" anything — it just IS the identity.</p>
+  </div>
+  <div class="card">
+    <div class="tag">Fintech (Mint, YNAB)</div>
+    <h4>The No-Mascot Approach</h4>
+    <p>Most finance apps avoid mascots entirely. They use abstract marks, gradients, or typography. The reasoning: money is serious, mascots feel childish.</p>
+  </div>
+  <div class="card">
+    <div class="tag">Fitbit / Apple Watch</div>
+    <h4>The Abstract Companion</h4>
+    <p>Not a character — a shape. Apple's Activity Rings, Fitbit's leaf. The "mascot" is a geometric element that responds to your behavior. It's alive without being a creature.</p>
+  </div>
+  <div class="card">
+    <div class="tag">Headspace / Calm</div>
+    <h4>The Animated Element</h4>
+    <p>A simple shape that moves, breathes, and reacts. Headspace's dot morphs and bounces. It's not a character with a face — it's a living shape that creates emotional connection.</p>
+  </div>
+  <div class="card">
+    <div class="tag">Todoist / Things</div>
+    <h4>The Minimal Mark</h4>
+    <p>A clean icon that becomes synonymous with the app. Todoist's checkmark, Things' circle. No character, just a symbol that users learn to associate with the experience.</p>
+  </div>
+</div>
+
+<h2>2. What Works for Finance Apps Specifically</h2>
+
+<table>
+  <tr><th>App</th><th>Mascot?</th><th>Type</th><th>Why It Works</th></tr>
+  <tr><td>Duolingo</td><td>🦉 Owl</td><td>Guide/Companion</td><td>Makes learning feel fun, not like homework</td></tr>
+  <tr><td>Headspace</td><td>🟠 Orange blob</td><td>Animated Element</td><td>Breathes, moves — creates calm without being a character</td></tr>
+  <tr><td>Apple Watch</td><td>🔴🟢🔵 Rings</td><td>Abstract Companion</td><td>Responds to YOUR behavior — personalized, not generic</td></tr>
+  <tr><td>Robinhood</td><td> feather</td><td>Minimal Mark</td><td>Clean, trustworthy, works at all sizes</td></tr>
+  <tr><td>Credit Karma</td><td> none</td><td>No Mascot</td><td>Finance is serious — clean typography instead</td></tr>
+  <tr><td>Mint</td><td> none</td><td>No Mascot</td><td>Abstract leaf gradient — serious but friendly</td></tr>
+</table>
+
+<h2>3. What Fits TapLog's Zen Philosophy</h2>
+
+<div class="note">
+  <strong>TapLog is NOT a game.</strong> The mascot should NOT be:
+  <ul>
+    <li>A character with eyes/mouth (feels like a game, not a tool)</li>
+    <li>A "pet" that needs feeding (violates the 5% cognitive load cap)</li>
+    <li>Something that talks or has opinions (too much personality for a finance tool)</li>
+  </ul>
+</div>
+
+<p>What FITS TapLog:</p>
+
+<div class="card-grid">
+  <div class="card">
+    <div class="tag">Best Fit</div>
+    <h4>🌊 The Ripple</h4>
+    <p>TapLog already HAS a mascot — the concentric ripple rings from the logo. They breathe, expand, and respond to your logs. The ripple IS the mascot: alive, responsive, zen, zero cognitive load.</p>
+  </div>
+  <div class="card">
+    <div class="tag">Runner Up</div>
+    <h4>🪨 The Zen Stone</h4>
+    <p>The circular amount field is already a "stone" — a zen garden rock. A mascot could be a small animated stone that sits on the home screen, breathing with the ripples.</p>
+  </div>
+  <div class="card">
+    <div class="tag">Alternative</div>
+    <h4>💧 The Droplet</h4>
+    <p>A single drop that creates the ripple when you log. It falls into the stone, creates concentric rings, then dissolves. Simple, physical, satisfying.</p>
+  </div>
+</div>
+
+<h2>4. Recommendation</h2>
+
+<div class="note">
+  <strong>Don't add a separate mascot.</strong> Instead, enhance what already exists:
+  <ol>
+    <li>The <strong>ripple rings</strong> are already your mascot — they breathe, expand, and respond</li>
+    <li>The <strong>zen stone</strong> is already your character — it has physical presence, shadow, depth</li>
+    <li>On-log, add a <strong>droplet animation</strong> — a small drop falls into the stone, creating the ripple burst</li>
+  </ol>
+  <p>This is the "Abstract Companion" archetype (like Apple Watch rings) — alive, responsive, zero cognitive load. It fits TapLog's zen philosophy perfectly.</p>
+</div>
+
+</div>
+</body>
+</html>

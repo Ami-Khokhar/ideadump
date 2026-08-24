@@ -67,10 +67,17 @@ struct CaptureForm: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("0.00", text: $amountText)
-                        .keyboardType(.decimalPad)
-                        .font(AmountFont.font(for: amountText))
-                        .focused($amountFocused)
+                    AmountTextField(
+                        text: $amountText,
+                        isFocused: $amountFocused,
+                        placeholder: "0.00",
+                        fontSize: AmountFont.fontSize(for: amountText),
+                        onErrorChanged: { error in
+                            amountFilterError = error
+                            if error == nil { showAmountError = false }
+                        }
+                    )
+                    .frame(maxWidth: .infinity, minHeight: 36)
                     if let error = amountFilterError {
                         Text(error)
                             .font(.footnote)
@@ -119,23 +126,6 @@ struct CaptureForm: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(isEditing ? "Save" : "Log") { save() }
                         .fontWeight(.semibold)
-                }
-            }
-            .onChange(of: amountText) { oldValue, newValue in
-                let result = AmountInputFilter.filter(newValue, current: oldValue)
-                switch result {
-                case .accepted(let filtered):
-                    if filtered != newValue {
-                        amountText = filtered
-                    }
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        amountFilterError = nil
-                        showAmountError = false
-                    }
-                case .rejected(let error):
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        amountFilterError = error
-                    }
                 }
             }
             .onAppear {
@@ -289,6 +279,7 @@ struct CaptureForm: View {
             if previous.isPending {
                 lastUsedCategoryKey = categoryKey
                 CaptureBookkeeping.apply(modelContext: modelContext, categories: categories, categoryKey: categoryKey)
+                OnboardingFlow.markCoreCompleteIfConfirmed(isPending: entry.isPending, isArchived: entry.isArchived)
             }
             undoStack.record("Edited \(Money.format(amount)) · \(lookup.name(for: categoryKey))") {
                 entry.amount = previous.amount

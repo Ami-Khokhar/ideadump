@@ -64,15 +64,22 @@ struct SettingsView: View {
                     Text("How many days per week you aim to log. The weekly ring and streak track this target.")
                 }
 
-                Section("Data") {
 #if DEBUG
+                Section("Debug") {
                     Button("Seed sample data") {
                         DebugSeeder.seed(context: modelContext)
                     }
+                }
 #endif
+
+                Section {
                     Button("Delete all entries", role: .destructive) {
                         showingClearConfirmation = true
                     }
+                } header: {
+                    Text("Danger Zone")
+                } footer: {
+                    Text("This permanently removes your history and resets your consistency progress.")
                 }
 
 #if DEBUG

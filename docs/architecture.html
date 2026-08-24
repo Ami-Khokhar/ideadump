@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TapLog — System Architecture</title>
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2236;
+    --border: #1e293b;
+    --accent: #6366f1;
+    --accent2: #818cf8;
+    --green: #22c55e;
+    --amber: #f59e0b;
+    --rose: #f43f5e;
+    --cyan: #06b6d4;
+    --purple: #a78bfa;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #64748b;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+    line-height: 1.5;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding: 60px 24px 40px;
+    position: relative;
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+  .logo-mark {
+    width: 64px;
+    height: 64px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    margin-bottom: 20px;
+    box-shadow: 0 0 40px rgba(99,102,241,0.3);
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 40px rgba(99,102,241,0.2); }
+    50% { box-shadow: 0 0 60px rgba(99,102,241,0.4); }
+  }
+  h1 {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    color: var(--text2);
+    font-size: 16px;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  /* Section */
+  .section {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+  .section-title {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  /* Architecture Grid */
+  .arch-grid {
+    display: grid;
+    grid-template-columns: 280px 1fr 280px;
+    gap: 24px;
+    align-items: start;
+    position: relative;
+  }
+
+  /* Entry Point Cards */
+  .entry-col { display: flex; flex-direction: column; gap: 12px; }
+  .entry-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+  .entry-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    border-radius: 0 2px 2px 0;
+    transition: opacity 0.3s;
+  }
+  .entry-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(99,102,241,0.15);
+  }
+  .entry-card.active {
+    border-color: var(--accent);
+    background: var(--surface2);
+  }
+  .entry-card.active::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at top left, rgba(99,102,241,0.08), transparent 70%);
+    pointer-events: none;
+  }
+  .entry-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+  }
+  .entry-name {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .entry-desc {
+    font-size: 12px;
+    color: var(--text3);
+    line-height: 1.4;
+  }
+  .entry-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-top: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .badge-bg { background: rgba(34,197,94,0.15); color: var(--green); }
+  .badge-fg { background: rgba(244,63,94,0.15); color: var(--rose); }
+  .badge-wd { background: rgba(6,182,212,0.15); color: var(--cyan); }
+  .badge-ext { background: rgba(245,158,11,0.15); color: var(--amber); }
+  .badge-url { background: rgba(167,139,250,0.15); color: var(--purple); }
+  .badge-hw { background: rgba(99,102,241,0.15); color: var(--accent2); }
+
+  .entry-card[data-color="green"]::before { background: var(--green); }
+  .entry-card[data-color="rose"]::before { background: var(--rose); }
+  .entry-card[data-color="cyan"]::before { background: var(--cyan); }
+  .entry-card[data-color="amber"]::before { background: var(--amber); }
+  .entry-card[data-color="purple"]::before { background: var(--purple); }
+  .entry-card[data-color="indigo"]::before { background: var(--accent); }
+
+  /* Center Panel */
+  .center-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* Data Flow SVG */
+  .flow-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    min-height: 500px;
+  }
+  .flow-container svg {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+  }
+  .flow-svg line {
+    stroke: var(--border);
+    stroke-width: 1.5;
+    stroke-dasharray: 4 4;
+    transition: stroke 0.4s, stroke-width 0.4s;
+  }
+  .flow-svg line.active {
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-dasharray: none;
+    filter: drop-shadow(0 0 6px rgba(99,102,241,0.4));
+  }
+  .flow-svg .flow-dot {
+    fill: var(--accent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .flow-svg .flow-dot.animate {
+    opacity: 1;
+  }
+
+  /* Node boxes in center */
+  .node-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    position: relative;
+    z-index: 2;
+    transition: all 0.3s;
+  }
+  .node-box.highlight {
+    border-color: var(--accent);
+    box-shadow: 0 0 24px rgba(99,102,241,0.15);
+  }
+  .node-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text3);
+    margin-bottom: 6px;
+  }
+  .node-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .node-detail {
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  /* Storage Core */
+  .storage-core {
+    background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(167,139,250,0.08));
+    border: 2px solid var(--accent);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .storage-core::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 0%, rgba(99,102,241,0.1), transparent 60%);
+  }
+  .storage-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+  }
+  .storage-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .storage-sub {
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .storage-tags {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .storage-tag {
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 8px;
+    background: rgba(99,102,241,0.15);
+    color: var(--accent2);
+    font-weight: 500;
+  }
+
+  /* Detail Panel (right) */
+  .detail-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    min-height: 500px;
+    transition: all 0.3s;
+  }
+  .detail-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .detail-icon {
+    font-size: 28px;
+  }
+  .detail-title {
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .detail-section {
+    margin-bottom: 16px;
+  }
+  .detail-section h4 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text3);
+    margin-bottom: 8px;
+  }
+  .detail-section p, .detail-section li {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.6;
+  }
+  .detail-section ul {
+    list-style: none;
+    padding: 0;
+  }
+  .detail-section li {
+    padding: 4px 0;
+    padding-left: 16px;
+    position: relative;
+  }
+  .detail-section li::before {
+    content: '›';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .code-block {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    color: var(--cyan);
+    overflow-x: auto;
+    margin-top: 8px;
+  }
+  .flow-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .flow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 12px;
+    background: var(--surface2);
+    border-radius: 8px;
+    font-size: 12px;
+  }
+  .step-num {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .step-text { color: var(--text2); line-height: 1.5; }
+  .step-text strong { color: var(--text); }
+
+  /* Bottom Architecture Diagram */
+  .arch-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    position: relative;
+  }
+  .arch-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .arch-row::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 20px;
+    background: linear-gradient(to bottom, var(--border), transparent);
+  }
+  .arch-row:last-child::after { display: none; }
+  .arch-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+    min-width: 120px;
+    transition: all 0.3s;
+  }
+  .arch-box:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+  .arch-box .box-icon { font-size: 20px; margin-bottom: 4px; }
+  .arch-box .box-label { color: var(--text2); font-size: 10px; }
+
+  .arch-box.core {
+    border-color: var(--accent);
+    background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(167,139,250,0.05));
+  }
+  .arch-arrow {
+    color: var(--text3);
+    font-size: 16px;
+  }
+  .arch-connector {
+    width: 2px;
+    height: 24px;
+    background: var(--border);
+    margin: 0 auto;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 40px 24px 60px;
+    color: var(--text3);
+    font-size: 12px;
+  }
+  .footer a { color: var(--accent2); text-decoration: none; }
+
+  /* Responsive */
+  @media (max-width: 960px) {
+    .arch-grid {
+      grid-template-columns: 1fr;
+    }
+    .detail-panel { min-height: auto; }
+  }
+
+  /* Animate in */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(16px);
+    animation: fadeIn 0.6s ease forwards;
+  }
+  @keyframes fadeIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .fade-in:nth-child(2) { animation-delay: 0.1s; }
+  .fade-in:nth-child(3) { animation-delay: 0.2s; }
+  .fade-in:nth-child(4) { animation-delay: 0.3s; }
+  .fade-in:nth-child(5) { animation-delay: 0.4s; }
+  .fade-in:nth-child(6) { animation-delay: 0.5s; }
+
+  /* Process badge */
+  .process-badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    margin-left: 6px;
+  }
+  .same-process { background: rgba(34,197,94,0.15); color: var(--green); }
+  .diff-process { background: rgba(244,63,94,0.15); color: var(--rose); }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header fade-in">
+  <div class="logo-mark">💧</div>
+  <h1>TapLog Architecture</h1>
+  <p class="subtitle">Six distinct paths to log an expense — all converging on a single SwiftData store.</p>
+</div>
+
+<!-- Interactive Explorer -->
+<div class="section fade-in">
+  <div class="section-title"><span class="dot"></span> Interactive Path Explorer</div>
+  <div class="arch-grid">
+
+    <!-- Left: Entry Points -->
+    <div class="entry-col">
+      <div class="entry-card active" data-color="green" data-path="app" onclick="showPath('app')">
+        <div class="entry-icon">📱</div>
+        <div class="entry-name">In-App Capture</div>
+        <div class="entry-desc">Manual entry on the home screen — amount field with category picker</div>
+        <span class="entry-badge badge-bg">Same process</span>
+      </div>
+      <div class="entry-card" data-color="rose" data-path="siri" onclick="showPath('siri')">
+        <div class="entry-icon">🗣️</div>
+        <div class="entry-name">Siri Voice</div>
+        <div class="entry-desc">"Hey Siri, log 40 on transport" — headless background logging</div>
+        <span class="entry-badge badge-fg">Background</span>
+      </div>
+      <div class="entry-card" data-color="cyan" data-path="widget" onclick="showPath('widget')">
+        <div class="entry-icon">📊</div>
+        <div class="entry-name">Widget Quick Log</div>
+        <div class="entry-desc">One-tap tiles on the home screen widget — learned from history</div>
+        <span class="entry-badge badge-wd">Widget ext</span>
+      </div>
+      <div class="entry-card" data-color="amber" data-path="share" onclick="showPath('share')">
+        <div class="entry-icon">🔗</div>
+        <div class="entry-name">Share Extension</div>
+        <div class="entry-desc">Share payment SMS → saves pending entry for in-app confirmation</div>
+        <span class="entry-badge badge-ext">Share ext</span>
+      </div>
+      <div class="entry-card" data-color="purple" data-path="deeplink" onclick="showPath('deeplink')">
+        <div class="entry-icon">🌐</div>
+        <div class="entry-name">Deep Link</div>
+        <div class="entry-desc">taplog://log?amount=12.50&category=Coffee — opens with prefill</div>
+        <span class="entry-badge badge-url">URL scheme</span>
+      </div>
+      <div class="entry-card" data-color="indigo" data-path="action" onclick="showPath('action')">
+        <div class="entry-icon">⚡</div>
+        <div class="entry-name">Action Button / Control Center</div>
+        <div class="entry-desc">OpenCaptureIntent — opens app directly into focused capture keypad</div>
+        <span class="entry-badge badge-hw">Hardware</span>
+      </div>
+    </div>
+
+    <!-- Center: Flow Diagram -->
+    <div class="center-panel">
+      <!-- Path 1: In-App Capture -->
+      <div class="flow-container" id="flow-app" style="display: block;">
+        <div style="position: relative; z-index: 2;">
+          <div class="node-box highlight" style="margin-bottom: 16px;">
+            <div class="node-label">UI Layer</div>
+            <div class="node-title">LogHomeView</div>
+            <div class="node-detail">Amount field (adaptive font) · Category chips · Notes</div>
+          </div>
+          <div style="text-align: center; color: var(--text3); font-size: 14px; margin: 8px 0;">↓</div>
+          <div class="node-box" style="margin-bottom: 16px;">
+            <div class="node-label">Input Filter</div>
+            <div class="node-title">AmountInputFilter</div>
+            <div class="node-detail">Typed vs paste detection · Max amount · Decimal validation</div>
+          </div>
+          <div style="text-align: center; color: var(--text3); font-size: 14px; margin: 8px 0;">↓</div>
+          <div class="node-box" style="margin-bottom: 16px;">
+            <div class="node-label">Save</div>
+            <div class="node-title">SwiftData Entry.insert()</div>
+            <div class="node-detail">do/catch save · UndoStack push · Category learning</div>
+          </div>
+          <div style="text-align: center; color: var(--text3); font-size: 14px; margin: 8px 0;">↓</div>
+          <div class="storage-core">
+            <div class="storage-icon">🗄️</div>
+            <div class="storage-title">SwiftData Store</div>
+            <div class="storage-sub">TapLog.store — App Group container</div>
+            <div class="storage-tags">
+              <span class="storage-tag">Entry</span>
+              <span class="storage-tag">SpendCategory</span>
+              <span class="storage-tag">Decimal precision</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Path 2: Siri -->
+      <div class="flow-container" id="flow-siri" style="display: none;">
+        <div style="position: relative; z-index: 2;">
+          <div class="node-box highlight" style="margin-bottom: 16px;">
+            <div class="node-label">Voice</div>
+            <div class="node-title">Siri / Shortcuts</div>
+            <div class="node-detail">"Log 40 on transport" — Siri resolves amount parameter</div>
+          </div>
+          <div style="text-align: center; color: var(--text3); font-size: 14px; margin: 8px 0;">↓</div>
+          <div class="node-box" style="margin-bottom: 16px;">
+            <div class="node-label">App Intent</div>
+            <div class="node-title">LogExpenseIntent</div>
+            <div class="node-detail">openAppWhenRun = false · isDiscoverable = true</div>
+          </div>
+          <div style="text-align: center; color: var(--text3); font-size: 14px; margin: 8px 0;">↓</div>
+          <div class="node-box" style="margin-bottom: 16px;">
+            <div class="node-label">Validate</div>
+            <div class="node-title">TapLogIntentAmountValidator</div>
+            <div class="node-detail">Amount > 0 · ≤ maxAmount · Finite check</div>
+          </div>
+          <div style="text-align: center; color: var(--text3); font-size: 14px; margin: 8px 0;">↓</div>
+          <div class="node-box" style="margin-bottom: 16px;">
+            <div class="node-label">Save + Bookkeeping</div>
+            <div class="node-title">CaptureBookkeeping.apply()</div>
+            <div class="node-detail">logCount++ · Category learning · Widget reload · Streak update</div>
+          </div>
+          <div style="text-align: center; color: var(--text3); font-size: 14px; margin: 8px 0;">↓</div>
+          <div class="storage-core">
+            <div class="storage-icon">🗄️</div>
+            <div class="storage-title">SwiftData Store</div>
+            <div class="storage-sub">Same store — Siri writes from its own process</div>
+            <div class="storage-tags">
+              <span class="storage-tag">Spoken confirmation</span>
+              <span class="storage-tag">Entry inserted</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Path 3: Widget -->
+      <div class="flow-container" id="flow-widget" style="display: none;">
+        <div style="position: relative; z-index: 2;">
+          <div class="node-box highlight" style="margin-bottom: 16px;">
+            <div class="node-label">Widget UI</div>
+            <div class="node-title">SpendWidgetEntryView</div>
+            <div class="node-detail">3 learned tiles + ₹? custom amount button</div>
+          </div>
+          <div style="text-align: center; color: var(--text3); font-size: 14px; margin: 8px 0;">↓</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+            <div class="node-box">
+              <div class="node-label">Tap tile</div>
+              <div class="node-title" style="font-size: 13px;">QuickLogIntent</div>
+              <div class="node-detail">amount + category → Entry</div>
+            </div>
+            <div class="node-box">
+              <div class="node-label">Tap ₹?</div>
+              <div class="node-title" style="font-size: 13px;">Deep Link</div>
+              <div class="node-detail">taplog://log → opens app</div>
+            </div>
+          </div>
+          <div style="text-align: center; color: var(--text3); font-size: 14px; margin: 8px 0;">↓</div>
+          <div class="node-box" style="margin-bottom: 16px;">
+            <div class="node-label">QuickLogIntent</div>
+            <div class="node-title">Headless SwiftData Write</div>
+            <div class="node-detail">openAppWhenRun = false · Category learning · Widget timeline reload</div>
+          </div>
+          <div style="text-align: center; color: var(--text3); font-size: 14px; margin: 8px 0;">↓</div>
+          <div class="storage-core">
+            <div class="storage-icon">🗄️</div>
+            <div class="storage-title">SwiftData Store</div>
+            <div class="storage-sub">Widget process → App Group container</div>
+            <div class="storage-tags">
+              <span class="storage-tag">Quick tile data</span>
+              <span class="storage-tag">Learns top 3</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Path 4: Share Extension -->
+      <div class="flow-container" id="flow-share" style="display: none;">
+        <div style="position: relative; z-index: 2;">
+          <div class="node-box highlight" style="margin-bottom: 16px;">
+            <div class="node-label">Other App</div>
+            <div class="node-title">Share Sheet</div>
+            <div class="node-detail">Payment SMS · Bank notification · Any text with ₹ amount</div>
+          </div>
+          <div style="text-align: center; color: var(--text3); font-size: 14px; margin: 8px 0;">↓</div>
+          <div class="node-box" style="margin-bottom: 16px;">
+            <div class="node-label">Parse</div>
+            <div class="node-title">ShareParser.parse(text)</div>
+            <div class="node-detail">Extract amount + note from shared text · Async loading</div>
+          </div>
+          <div style="text-align: center; color: var(--text3); font-size: 14px; margin: 8px 0;">↓</div>
+          <div class="node-box" style="margin-bottom: 16px;">
+            <div class="node-label">Save Pending</div>
+            <div class="node-title">Entry(isPending: true)</div>
+            <div class="node-detail">Category = "Other" · Awaits user confirmation in-app</div>
+          </div>
+          <div style="text-align: center; color: var(--text3); font-size: 14px; margin: 8px 0;">↓</div>
+          <div class="storage-core">
+            <div class="storage-icon">🗄️</div>
+            <div class="storage-title">SwiftData Store</div>
+            <div class="storage-sub">Share ext process → App Group container</div>
+            <div class="storage-tags">
+              <span class="storage-tag">Pending entry</span>
+              <span class="storage-tag">Confirmed in-app</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Path 5: Deep Link -->
+      <div class="flow-container" id="flow-deeplink" style="display: none;">
+        <div style="position: relative; z-index: 2;">
+          <div class="node-box highlight" style="margin-bottom: 16px;">
+            <div class="node-label">URL</div>
+            <div class="node-title">taplog://log?amount=12.50&note=coffee</div>
+            <div class="node-detail">Opened from browser, Shortcuts, another app, or automation</div>
+          </div>
+          <div style="text-align: center; color: var(--text3); font-size: 14px; margin: 8px 0;">↓</div>
+          <div class="node-box" style="margin-bottom: 16px;">
+            <div class="node-label">Parse URL</div>
+            <div class="node-title">CapturePrefill(url:)</div>
+            <div class="node-detail">Extracts amount, note, category from query params</div>
+          </div>
+          <div style="text-align: center; color: var(--text3); font-size: 14px; margin: 8px 0;">↓</div>
+          <div class="node-box" style="margin-bottom: 16px;">
+            <div class="node-label">Route</div>
+            <div class="node-title">ContentView.onOpenURL</div>
+            <div class="node-detail">Skips splash · Dismisses sheets · Sets prefill · Focuses amount</div>
+          </div>
+          <div style="text-align: center; color: var(--text3); font-size: 14px; margin: 8px 0;">↓</div>
+          <div class="storage-core">
+            <div class="storage-icon">🗄️</div>
+            <div class="storage-title">SwiftData Store</div>
+            <div class="storage-sub">Same process as in-app — normal save path</div>
+            <div class="storage-tags">
+              <span class="storage-tag">Prefilled form</span>
+              <span class="storage-tag">User confirms</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Path 6: Action Button -->
+      <div class="flow-container" id="flow-action" style="display: none;">
+        <div style="position: relative; z-index: 2;">
+          <div class="node-box highlight" style="margin-bottom: 16px;">
+            <div class="node-label">Hardware</div>
+            <div class="node-title">Action Button / Control Center</div>
+            <div class="node-detail">One hardware press — configured via Settings → Action Button</div>
+          </div>
+          <div style="text-align: center; color: var(--text3); font-size: 14px; margin: 8px 0;">↓</div>
+          <div class="node-box" style="margin-bottom: 16px;">
+            <div class="node-label">App Intent</div>
+            <div class="node-title">OpenCaptureIntent</div>
+            <div class="node-detail">openAppWhenRun = true · Writes durable UserDefaults payload</div>
+          </div>
+          <div style="text-align: center; color: var(--text3); font-size: 14px; margin: 8px 0;">↓</div>
+          <div class="node-box" style="margin-bottom: 16px;">
+            <div class="node-label">Durable State</div>
+            <div class="node-title">PendingCaptureActivation</div>
+            <div class="node-detail">.none / .open(prefill:) — persisted in App Group UserDefaults</div>
+          </div>
+          <div style="text-align: center; color: var(--text3); font-size: 14px; margin: 8px 0;">↓</div>
+          <div class="node-box" style="margin-bottom: 16px;">
+            <div class="node-label">Routing</div>
+            <div class="node-title">ContentView.consumePendingIntent()</div>
+            <div class="node-detail">Bypass onboarding · Skip splash · Dismiss sheets · Focus keypad</div>
+          </div>
+          <div style="text-align: center; color: var(--text3); font-size: 14px; margin: 8px 0;">↓</div>
+          <div class="storage-core">
+            <div class="storage-icon">🗄️</div>
+            <div class="storage-title">SwiftData Store</div>
+            <div class="storage-sub">Opens app → user types amount → normal save</div>
+            <div class="storage-tags">
+              <span class="storage-tag">Instant capture</span>
+              <span class="storage-tag">Zero taps to start</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Detail Panel -->
+    <div class="detail-panel" id="detail-panel">
+      <div class="detail-header">
+        <div class="detail-icon" id="detail-icon">📱</div>
+        <div class="detail-title" id="detail-title">In-App Capture</div>
+      </div>
+      <div id="detail-content">
+        <div class="detail-section">
+          <h4>Data Flow</h4>
+          <div class="flow-steps">
+            <div class="flow-step">
+              <div class="step-num">1</div>
+              <div class="step-text"><strong>LogHomeView</strong> renders amount field with adaptive font (56pt → 34pt)</div>
+            </div>
+            <div class="flow-step">
+              <div class="step-num">2</div>
+              <div class="step-text"><strong>AmountInputFilter</strong> validates typed/pasted input, enforces 2 decimals</div>
+            </div>
+            <div class="flow-step">
+              <div class="step-num">3</div>
+              <div class="step-text">User taps Log → <strong>SwiftData Entry</strong> inserted with do/catch</div>
+            </div>
+            <div class="flow-step">
+              <div class="step-num">4</div>
+              <div class="step-text"><strong>UndoStack</strong> pushes inverse operation for 5s undo toast</div>
+            </div>
+            <div class="flow-step">
+              <div class="step-num">5</div>
+              <div class="step-text"><strong>CaptureBookkeeping</strong> updates logCount, streak, category learning</div>
+            </div>
+          </div>
+        </div>
+        <div class="detail-section">
+          <h4>Process</h4>
+          <p>Same process as the main app. No IPC. SwiftData writes directly via <code>modelContext</code>.</p>
+        </div>
+        <div class="detail-section">
+          <h4>Entry Point</h4>
+          <div class="code-block">ContentView → NavigationStack → LogHomeView</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Process Architecture -->
+<div class="section fade-in">
+  <div class="section-title"><span class="dot" style="background: var(--cyan);"></span> Process & Data Architecture</div>
+  <div class="arch-diagram">
+    <div class="arch-row">
+      <div class="arch-box">
+        <div class="box-icon">📱</div>
+        <div><strong>TapLog App</strong></div>
+        <div class="box-label">Main process</div>
+      </div>
+      <div class="arch-box">
+        <div class="box-icon">📊</div>
+        <div><strong>Widget Extension</strong></div>
+        <div class="box-label">WidgetKit process</div>
+      </div>
+      <div class="arch-box">
+        <div class="box-icon">🔗</div>
+        <div><strong>Share Extension</strong></div>
+        <div class="box-label">Extension process</div>
+      </div>
+      <div class="arch-box">
+        <div class="box-icon">🗣️</div>
+        <div><strong>Siri / Shortcuts</strong></div>
+        <div class="box-label">System process</div>
+      </div>
+    </div>
+
+    <div style="text-align: center; margin: 8px 0;">
+      <svg width="600" height="40" style="max-width: 100%;">
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#6366f1" />
+          </marker>
+        </defs>
+        <line x1="75" y1="0" x2="300" y2="35" stroke="#6366f1" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.6"/>
+        <line x1="225" y1="0" x2="300" y2="35" stroke="#6366f1" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.6"/>
+        <line x1="375" y1="0" x2="300" y2="35" stroke="#6366f1" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.6"/>
+        <line x1="525" y1="0" x2="300" y2="35" stroke="#6366f1" stroke-width="1.5" marker-end="url(#arrow)" opacity="0.6"/>
+      </svg>
+    </div>
+
+    <div class="arch-row" style="margin-bottom: 0;">
+      <div class="arch-box core" style="min-width: 400px;">
+        <div class="box-icon">🗄️</div>
+        <div><strong>SwiftData Store</strong> <span style="font-size: 11px; color: var(--accent2);">TapLog.store</span></div>
+        <div class="box-label">App Group container: group.dev.amteshwar.taplog</div>
+        <div style="display: flex; gap: 6px; justify-content: center; margin-top: 8px; flex-wrap: wrap;">
+          <span class="storage-tag">Entry (amount, category, note, date, isPending)</span>
+          <span class="storage-tag">SpendCategory (key, emoji, name)</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align: center; margin: 8px 0;">
+      <svg width="600" height="40" style="max-width: 100%;">
+        <defs>
+          <marker id="arrow2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" stroke="#22c55e" fill="#22c55e" />
+          </marker>
+        </defs>
+        <line x1="300" y1="5" x2="75" y2="35" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrow2)" opacity="0.5"/>
+        <line x1="300" y1="5" x2="225" y2="35" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrow2)" opacity="0.5"/>
+        <line x1="300" y1="5" x2="375" y2="35" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrow2)" opacity="0.5"/>
+        <line x1="300" y1="5" x2="525" y2="35" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrow2)" opacity="0.5"/>
+      </svg>
+    </div>
+
+    <div class="arch-row" style="margin-bottom: 0;">
+      <div class="arch-box">
+        <div class="box-icon">💾</div>
+        <div><strong>UserDefaults</strong></div>
+        <div class="box-label">App Group shared defaults</div>
+      </div>
+      <div class="arch-box">
+        <div class="box-icon">🔔</div>
+        <div><strong>NotificationCenter</strong></div>
+        <div class="box-label">In-process intent activation</div>
+      </div>
+      <div class="arch-box">
+        <div class="box-icon">📦</div>
+        <div><strong>WidgetKit</strong></div>
+        <div class="box-label">Timeline reload</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Storage Analysis -->
+<div class="section fade-in">
+  <div class="section-title"><span class="dot" style="background: var(--green);"></span> Storage & Data Analysis</div>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+    <div class="node-box">
+      <div class="node-label">Per Entry</div>
+      <div class="node-title">~200 bytes</div>
+      <div class="node-detail" style="margin-top: 8px;">
+        <ul style="list-style: none; padding: 0;">
+          <li style="padding: 3px 0; font-size: 12px; color: var(--text2);">• amount: Decimal (16 bytes)</li>
+          <li style="padding: 3px 0; font-size: 12px; color: var(--text2);">• category: String (~20 bytes)</li>
+          <li style="padding: 3px 0; font-size: 12px; color: var(--text2);">• note: String? (0-100 bytes)</li>
+          <li style="padding: 3px 0; font-size: 12px; color: var(--text2);">• date: Date (8 bytes)</li>
+          <li style="padding: 3px 0; font-size: 12px; color: var(--text2);">• isArchived/isPending: Bool (2 bytes)</li>
+          <li style="padding: 3px 0; font-size: 12px; color: var(--text2);">• SwiftData overhead (~150 bytes)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="node-box">
+      <div class="node-label">Capacity Estimates</div>
+      <div class="node-title">Years of data</div>
+      <div class="node-detail" style="margin-top: 8px;">
+        <ul style="list-style: none; padding: 0;">
+          <li style="padding: 3px 0; font-size: 12px; color: var(--text2);">• 10 logs/day × 365 days = 3,650 entries/year</li>
+          <li style="padding: 3px 0; font-size: 12px; color: var(--text2);">• 3,650 × 200 bytes = <strong style="color: var(--green);">~730 KB/year</strong></li>
+          <li style="padding: 3px 0; font-size: 12px; color: var(--text2);">• 5 years of daily logging ≈ <strong style="color: var(--green);">~3.6 MB</strong></li>
+          <li style="padding: 3px 0; font-size: 12px; color: var(--text2);">• iOS gives apps <strong>unlimited</strong> local storage</li>
+          <li style="padding: 3px 0; font-size: 12px; color: var(--text2);">• No server, no cloud sync, no subscription</li>
+          <li style="padding: 3px 0; font-size: 12px; color: var(--text2);">• Data stays on-device forever (free)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="node-box">
+      <div class="node-label">Free Tier Reality</div>
+      <div class="node-title">$0 forever</div>
+      <div class="node-detail" style="margin-top: 8px;">
+        <ul style="list-style: none; padding: 0;">
+          <li style="padding: 3px 0; font-size: 12px; color: var(--text2);">• Apple charges nothing for local SwiftData</li>
+          <li style="padding: 3px 0; font-size: 12px; color: var(--text2);">• App Group container is free for all devs</li>
+          <li style="padding: 3px 0; font-size: 12px; color: var(--text2);">• WidgetKit, Siri, Shortcuts — all free</li>
+          <li style="padding: 3px 0; font-size: 12px; color: var(--text2);">• No API keys, no backend, no CDN</li>
+          <li style="padding: 3px 0; font-size: 12px; color: var(--text2);">• Only cost: Apple Developer Program ($99/yr)</li>
+          <li style="padding: 3px 0; font-size: 12px; color: var(--text2);">• User data: <strong style="color: var(--green);">100% on their device</strong></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Shared Bookkeeping -->
+<div class="section fade-in">
+  <div class="section-title"><span class="dot" style="background: var(--amber);"></span> Cross-Path Bookkeeping</div>
+  <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; overflow-x: auto;">
+    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+      <thead>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <th style="text-align: left; padding: 10px 12px; color: var(--text3); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Path</th>
+          <th style="text-align: center; padding: 10px 12px; color: var(--text3); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Category Learning</th>
+          <th style="text-align: center; padding: 10px 12px; color: var(--text3); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Streak Update</th>
+          <th style="text-align: center; padding: 10px 12px; color: var(--text3); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Widget Reload</th>
+          <th style="text-align: center; padding: 10px 12px; color: var(--text3); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Undo Support</th>
+          <th style="text-align: center; padding: 10px 12px; color: var(--text3); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Haptic</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 10px 12px; font-weight: 500;">📱 In-App</td>
+          <td style="text-align: center; padding: 10px 12px;">✅</td>
+          <td style="text-align: center; padding: 10px 12px;">✅</td>
+          <td style="text-align: center; padding: 10px 12px;">✅</td>
+          <td style="text-align: center; padding: 10px 12px;">✅</td>
+          <td style="text-align: center; padding: 10px 12px;">✅</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 10px 12px; font-weight: 500;">🗣️ Siri</td>
+          <td style="text-align: center; padding: 10px 12px;">✅</td>
+          <td style="text-align: center; padding: 10px 12px;">✅</td>
+          <td style="text-align: center; padding: 10px 12px;">✅</td>
+          <td style="text-align: center; padding: 10px 12px; color: var(--text3);">—</td>
+          <td style="text-align: center; padding: 10px 12px;">🔊 Spoken</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 10px 12px; font-weight: 500;">📊 Widget</td>
+          <td style="text-align: center; padding: 10px 12px;">✅</td>
+          <td style="text-align: center; padding: 10px 12px;">✅</td>
+          <td style="text-align: center; padding: 10px 12px;">✅</td>
+          <td style="text-align: center; padding: 10px 12px; color: var(--text3);">—</td>
+          <td style="text-align: center; padding: 10px 12px;">✅</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 10px 12px; font-weight: 500;">🔗 Share</td>
+          <td style="text-align: center; padding: 10px 12px; color: var(--text3);">—</td>
+          <td style="text-align: center; padding: 10px 12px; color: var(--text3);">—</td>
+          <td style="text-align: center; padding: 10px 12px;">✅</td>
+          <td style="text-align: center; padding: 10px 12px; color: var(--text3);">—</td>
+          <td style="text-align: center; padding: 10px 12px;">✅</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 10px 12px; font-weight: 500;">🌐 Deep Link</td>
+          <td style="text-align: center; padding: 10px 12px;">✅</td>
+          <td style="text-align: center; padding: 10px 12px;">✅</td>
+          <td style="text-align: center; padding: 10px 12px;">✅</td>
+          <td style="text-align: center; padding: 10px 12px;">✅</td>
+          <td style="text-align: center; padding: 10px 12px;">✅</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 12px; font-weight: 500;">⚡ Action Btn</td>
+          <td style="text-align: center; padding: 10px 12px; color: var(--text3);">—</td>
+          <td style="text-align: center; padding: 10px 12px; color: var(--text3);">—</td>
+          <td style="text-align: center; padding: 10px 12px; color: var(--text3);">—</td>
+          <td style="text-align: center; padding: 10px 12px; color: var(--text3);">—</td>
+          <td style="text-align: center; padding: 10px 12px;">✅</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  <p>TapLog — Architecture Reference · Built with SwiftUI + SwiftData · August 2026</p>
+</div>
+
+<script>
+const pathData = {
+  app: {
+    icon: '📱',
+    title: 'In-App Capture',
+    detail: `
+      <div class="detail-section">
+        <h4>Data Flow</h4>
+        <div class="flow-steps">
+          <div class="flow-step"><div class="step-num">1</div><div class="step-text"><strong>LogHomeView</strong> renders amount field with adaptive font (56pt → 34pt)</div></div>
+          <div class="flow-step"><div class="step-num">2</div><div class="step-text"><strong>AmountInputFilter</strong> validates typed/pasted input, enforces 2 decimals</div></div>
+          <div class="flow-step"><div class="step-num">3</div><div class="step-text">User taps Log → <strong>SwiftData Entry</strong> inserted with do/catch</div></div>
+          <div class="flow-step"><div class="step-num">4</div><div class="step-text"><strong>UndoStack</strong> pushes inverse operation for 5s undo toast</div></div>
+          <div class="flow-step"><div class="step-num">5</div><div class="step-text"><strong>CaptureBookkeeping</strong> updates logCount, streak, category learning</div></div>
+        </div>
+      </div>
+      <div class="detail-section"><h4>Process</h4><p>Same process as the main app. No IPC. SwiftData writes directly via <code>modelContext</code>.</p></div>
+      <div class="detail-section"><h4>Entry Point</h4><div class="code-block">ContentView → NavigationStack → LogHomeView</div></div>
+    `
+  },
+  siri: {
+    icon: '🗣️',
+    title: 'Siri Voice',
+    detail: `
+      <div class="detail-section">
+        <h4>Data Flow</h4>
+        <div class="flow-steps">
+          <div class="flow-step"><div class="step-num">1</div><div class="step-text">User says <strong>"Hey Siri, log 40 on transport"</strong></div></div>
+          <div class="flow-step"><div class="step-num">2</div><div class="step-text">Siri resolves <strong>amount: 40.0</strong>, <strong>category: "transport"</strong></div></div>
+          <div class="flow-step"><div class="step-num">3</div><div class="step-text"><strong>LogExpenseIntent.perform()</strong> — openAppWhenRun = false</div></div>
+          <div class="flow-step"><div class="step-num">4</div><div class="step-text"><strong>TapLogIntentAmountValidator</strong> validates amount > 0, ≤ maxAmount</div></div>
+          <div class="flow-step"><div class="step-num">5</div><div class="step-text">Creates <strong>Entry</strong> + <strong>CaptureBookkeeping.apply()</strong> + Widget reload</div></div>
+          <div class="flow-step"><div class="step-num">6</div><div class="step-text">Returns spoken confirmation: <strong>"Logged ₹40 in Transport."</strong></div></div>
+        </div>
+      </div>
+      <div class="detail-section"><h4>Process</h4><p>Runs in Siri's system process. Opens its own SwiftData <code>ModelContainer</code> via <code>StoreLocator.makeContainer()</code>.</p></div>
+      <div class="detail-section"><h4>Phrases</h4>
+        <ul>
+          <li>"Log an expense in TapLog"</li>
+          <li>"Log 40 in TapLog"</li>
+          <li>"Record spending in TapLog"</li>
+        </ul>
+      </div>
+    `
+  },
+  widget: {
+    icon: '📊',
+    title: 'Widget Quick Log',
+    detail: `
+      <div class="detail-section">
+        <h4>Data Flow</h4>
+        <div class="flow-steps">
+          <div class="flow-step"><div class="step-num">1</div><div class="step-text"><strong>SpendWidgetEntryView</strong> shows top 3 learned tiles + ₹? button</div></div>
+          <div class="flow-step"><div class="step-num">2</div><div class="step-text">Tap tile → <strong>QuickLogIntent(amount, category)</strong></div></div>
+          <div class="flow-step"><div class="step-num">3</div><div class="step-text">Intent runs in <strong>widget process</strong>, openAppWhenRun = false</div></div>
+          <div class="flow-step"><div class="step-num">4</div><div class="step-text"><strong>Entry</strong> inserted → <strong>CaptureBookkeeping</strong> → Widget timeline reload</div></div>
+        </div>
+      </div>
+      <div class="detail-section"><h4>Tile Learning</h4>
+        <ul>
+          <li>Groups entries by <strong>(category, rounded amount)</strong></li>
+          <li>Sorts by frequency over last 90 days</li>
+          <li>Top 3 become one-tap tiles</li>
+          <li>Defaults: ☕️ ₹10, 🚌 ₹40, 🍽️ ₹120</li>
+        </ul>
+      </div>
+      <div class="detail-section"><h4>₹? Button</h4><p>Deep-links via <code>taplog://log</code> — opens app with amount field focused.</p></div>
+    `
+  },
+  share: {
+    icon: '🔗',
+    title: 'Share Extension',
+    detail: `
+      <div class="detail-section">
+        <h4>Data Flow</h4>
+        <div class="flow-steps">
+          <div class="flow-step"><div class="step-num">1</div><div class="step-text">User shares text from Messages/bank app → iOS Share Sheet</div></div>
+          <div class="flow-step"><div class="step-num">2</div><div class="step-text"><strong>ShareViewController</strong> loads text async (DispatchGroup)</div></div>
+          <div class="flow-step"><div class="step-num">3</div><div class="step-text"><strong>ShareParser.parse()</strong> extracts amount + note from text</div></div>
+          <div class="flow-step"><div class="step-num">4</div><div class="step-text">Saves <strong>Entry(isPending: true)</strong> — category = "Other"</div></div>
+          <div class="flow-step"><div class="step-num">5</div><div class="step-text">User opens TapLog → sees pending entry → confirms with real category</div></div>
+        </div>
+      </div>
+      <div class="detail-section"><h4>Pending State</h4>
+        <p>Entries land with <code>isPending = true</code> and category "Other" — the user attributes the correct category when they open the app. This keeps the share flow fast while preserving accurate categorization.</p>
+      </div>
+    `
+  },
+  deeplink: {
+    icon: '🌐',
+    title: 'Deep Link',
+    detail: `
+      <div class="detail-section">
+        <h4>Data Flow</h4>
+        <div class="flow-steps">
+          <div class="flow-step"><div class="step-num">1</div><div class="step-text">URL: <strong>taplog://log?amount=12.50&note=coffee&category=Coffee</strong></div></div>
+          <div class="flow-step"><div class="step-num">2</div><div class="step-text"><strong>CapturePrefill(url:)</strong> parses query parameters</div></div>
+          <div class="flow-step"><div class="step-num">3</div><div class="step-text"><strong>ContentView.onOpenURL</strong> → routeToDirectCapture()</div></div>
+          <div class="flow-step"><div class="step-num">4</div><div class="step-text">Bypasses splash + dismisses sheets → form pre-filled → user confirms</div></div>
+        </div>
+      </div>
+      <div class="detail-section"><h4>Supported Params</h4>
+        <div class="code-block">taplog://log?amount=12.50&note=coffee&category=Coffee</div>
+      </div>
+    `
+  },
+  action: {
+    icon: '⚡',
+    title: 'Action Button / Control Center',
+    detail: `
+      <div class="detail-section">
+        <h4>Data Flow</h4>
+        <div class="flow-steps">
+          <div class="flow-step"><div class="step-num">1</div><div class="step-text">Hardware press → <strong>OpenCaptureIntent</strong> (openAppWhenRun = true)</div></div>
+          <div class="flow-step"><div class="step-num">2</div><div class="step-text">Writes <strong>PendingCaptureActivation</strong> to UserDefaults (App Group)</div></div>
+          <div class="flow-step"><div class="step-num">3</div><div class="step-text">Posts <strong>activationNotification</strong> for warm activation</div></div>
+          <div class="flow-step"><div class="step-num">4</div><div class="step-text"><strong>ContentView.consumePendingIntent()</strong> → bypasses onboarding</div></div>
+          <div class="flow-step"><div class="step-num">5</div><div class="step-text">App opens directly to focused capture keypad — zero extra taps</div></div>
+        </div>
+      </div>
+      <div class="detail-section"><h4>Durable State</h4>
+        <div class="code-block">enum PendingCaptureActivation {
+  case none
+  case open(prefill: CapturePrefill?)
+}</div>
+      </div>
+      <div class="detail-section"><h4>Phrases</h4>
+        <ul>
+          <li>"Log an expense in TapLog"</li>
+          <li>"Open capture in TapLog"</li>
+          <li>"Record spending in TapLog"</li>
+          <li>"Start logging in TapLog"</li>
+        </ul>
+      </div>
+    `
+  }
+};
+
+function showPath(path) {
+  // Update cards
+  document.querySelectorAll('.entry-card').forEach(c => c.classList.remove('active'));
+  document.querySelector(`[data-path="${path}"]`).classList.add('active');
+
+  // Show flow
+  document.querySelectorAll('.flow-container').forEach(f => f.style.display = 'none');
+  document.getElementById(`flow-${path}`).style.display = 'block';
+
+  // Update detail
+  const data = pathData[path];
+  document.getElementById('detail-icon').textContent = data.icon;
+  document.getElementById('detail-title').textContent = data.title;
+  document.getElementById('detail-content').innerHTML = data.detail;
+}
+</script>
+</body>
+</html>

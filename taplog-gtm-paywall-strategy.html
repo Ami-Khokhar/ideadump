@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TapLog — GTM & Paywall Strategy</title>
+  <style>
+    :root {
+      --bg-primary: #fbfbf9;
+      --bg-secondary: #f4f3ef;
+      --card-bg: #ffffff;
+      --card-border: #e6e4dc;
+      --card-hover: #eceae2;
+      --text-main: #141b24;
+      --text-muted: #5a6472;
+      --accent-navy: #0f2b48;
+      --accent-deep: #0a1c30;
+      --accent-amber: #c88a35;
+      --accent-teal: #1f7a8c;
+      --accent-green: #2d6a4f;
+      --tag-bg: #e9ecef;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --shadow-subtle: 0 4px 20px rgba(15, 43, 72, 0.05);
+      --shadow-card: 0 8px 30px rgba(15, 43, 72, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      padding: 2rem 1rem;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+    }
+
+    header {
+      border-bottom: 2px solid var(--card-border);
+      padding-bottom: 1.75rem;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      background: var(--accent-navy);
+      color: #ffffff;
+      margin-bottom: 0.75rem;
+    }
+
+    h1 {
+      font-size: 2.25rem;
+      font-weight: 800;
+      color: var(--accent-deep);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      padding: 2rem;
+      box-shadow: var(--shadow-subtle);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    h2 {
+      font-size: 1.4rem;
+      color: var(--accent-navy);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      border-bottom: 1px solid var(--bg-secondary);
+      padding-bottom: 0.75rem;
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      color: var(--accent-deep);
+      font-weight: 600;
+      margin-top: 0.5rem;
+    }
+
+    p {
+      color: var(--text-main);
+      font-size: 0.98rem;
+    }
+
+    ul, ol {
+      padding-left: 1.4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    li {
+      font-size: 0.95rem;
+      color: var(--text-main);
+    }
+
+    li strong {
+      color: var(--accent-deep);
+    }
+
+    .highlight-box {
+      background: var(--bg-secondary);
+      border-left: 4px solid var(--accent-navy);
+      padding: 1rem 1.25rem;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      font-size: 0.95rem;
+      color: var(--text-main);
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.92rem;
+      margin-top: 0.5rem;
+    }
+
+    th, td {
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    th {
+      background: var(--bg-secondary);
+      color: var(--accent-navy);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .price-tag {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--accent-deep);
+      display: flex;
+      align-items: baseline;
+      gap: 0.35rem;
+    }
+
+    .price-tag span {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 680px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+      body {
+        padding: 1rem 0.5rem;
+      }
+      .card {
+        padding: 1.25rem;
+      }
+    }
+
+    .phase-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      background: var(--accent-teal);
+      color: #ffffff;
+      width: fit-content;
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      padding: 1.5rem 0;
+      border-top: 1px solid var(--card-border);
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <div class="badge">Product Strategy Document</div>
+    <h1>TapLog: GTM & Lifetime Paywall Strategy</h1>
+    <div class="subtitle">A lean, zero-subscription playbook designed for privacy-conscious iOS power users.</div>
+  </header>
+
+  <!-- Core Thesis -->
+  <section class="card">
+    <h2>🎯 Executive Summary & Core Wedge</h2>
+    <div class="highlight-box">
+      <strong>The Thesis:</strong> Do not market TapLog as a generic "budgeting app" or "personal finance tracker." Competing on broad feature sets (bank sync, complex graphs, debt tracking) invites support burden and feature bloat. Position TapLog strictly around <strong>capture friction</strong> and <strong>complete privacy</strong>.
+    </div>
+    <p><strong>Core Positioning Statement:</strong></p>
+    <p style="font-style: italic; font-size: 1.05rem; color: var(--accent-navy); font-weight: 500;">
+      "The private, two-tap iPhone expense log for people who manually track spending—without bank connections, logins, or monthly subscriptions."
+    </p>
+    <ul>
+      <li><strong>Target Wedge:</strong> iOS Power Users, iPhone 15/16 Pro Action Button adopters, privacy-conscious individuals, and manual loggers escaping heavy SaaS subscriptions.</li>
+      <li><strong>Distribution Edge:</strong> Native iOS integration (Prebuilt App Shortcuts, Action Button, Siri, zero configuration).</li>
+      <li><strong>Monetization Model:</strong> Generous free utility + Paid Lifetime Unlock (No SaaS/Subscriptions).</li>
+    </ul>
+  </section>
+
+  <!-- Pricing Strategy -->
+  <section class="card">
+    <h2>💎 Pricing Strategy (India & Global)</h2>
+    <div class="grid-2">
+      <div style="background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius-sm);">
+        <div class="price-tag">₹499 <span>/ lifetime</span></div>
+        <p style="font-size: 0.85rem; color: var(--accent-amber); font-weight: 600; margin-top: 0.25rem;">Launch Special: ₹299 (First 100 users)</p>
+        <p style="font-size: 0.88rem; margin-top: 0.75rem; color: var(--text-muted);">
+          <strong>India Market Rationale:</strong> Sits squarely below the impulse threshold for Indian iPhone users while severely undercutting competitors (which charge ₹799–₹1,999+).
+        </p>
+      </div>
+      <div style="background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius-sm);">
+        <div class="price-tag">$9.99 <span>/ lifetime</span></div>
+        <p style="font-size: 0.85rem; color: var(--accent-teal); font-weight: 600; margin-top: 0.25rem;">Tier 1 Standard (US / Global)</p>
+        <p style="font-size: 0.88rem; margin-top: 0.75rem; color: var(--text-muted);">
+          <strong>Global Market Rationale:</strong> Standard micro-utility price point that bypasses software evaluation fatigue and converts instantly via Apple Pay.
+        </p>
+      </div>
+    </div>
+
+    <h3>Why One-Time Lifetime Beats Subscriptions Here</h3>
+    <ul>
+      <li><strong>Zero Ongoing Cloud Cost:</strong> The app is 100% local-first (CoreData/SQLite). You incur zero server or AI token costs per transaction.</li>
+      <li><strong>Anti-SaaS Resonance:</strong> Users are exhausted by ₹299/month subscriptions for simple utilities. A clean "buy once, own forever" model stands out aggressively.</li>
+      <li><strong>High Word-of-Mouth:</strong> Indie communities champion apps that respect ownership over recurring rent.</li>
+    </ul>
+  </section>
+
+  <!-- Paywall Architecture -->
+  <section class="card">
+    <h2>⚖️ The Paywall Architecture: Free vs. Lifetime Pro</h2>
+    <div class="highlight-box">
+      <strong>Product Principle:</strong> The magic (speed, capture, shortcuts) is <strong>100% Free</strong> so users build the daily habit. Power-user control, synthesized analysis, and data ownership sit behind the <strong>Lifetime Paywall</strong>.
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Feature Area</th>
+            <th>Free Tier (The Daily Hook)</th>
+            <th>Lifetime Pro (₹299 / ₹499)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Speed & Capture</strong></td>
+            <td>Unlimited manual logs, Action Button, Siri</td>
+            <td>Included + Haptic personalization</td>
+          </tr>
+          <tr>
+            <td><strong>Categories</strong></td>
+            <td>6 Default core categories</td>
+            <td><strong>Unlimited custom categories & icons</strong></td>
+          </tr>
+          <tr>
+            <td><strong>Analysis & Recaps</strong></td>
+            <td>Today's total, Current week basic sum</td>
+            <td><strong>Deep Weekly/Monthly recaps & trends</strong></td>
+          </tr>
+          <tr>
+            <td><strong>Data Ownership</strong></td>
+            <td>In-app transaction history</td>
+            <td><strong>Full CSV / Spreadsheet export</strong></td>
+          </tr>
+          <tr>
+            <td><strong>Customization</strong></td>
+            <td>Default system theme</td>
+            <td><strong>Custom OLED dark themes & App Icons</strong></td>
+          </tr>
+          <tr>
+            <td><strong>Widgets</strong></td>
+            <td>Glanceable summary widget</td>
+            <td><strong>Interactive 1-tap quick log widgets</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Why Recaps Belong Behind the Paywall</h3>
+    <ul>
+      <li><strong>Data Value Compounding:</strong> On Day 1, a recap has zero value. By Day 14, after logging 40+ expenses, synthesized breakdown is high-value intelligence.</li>
+      <li><strong>The "Awareness" Upgrade Trigger:</strong> Free logging establishes the muscle memory. When the user asks *"Where did my money actually go this month?"*, the paywall appears at the exact moment of peak intent.</li>
+      <li><strong>No Black-Hole Effect:</strong> Free users still see basic daily/weekly totals so the app never feels broken or crippled.</li>
+    </ul>
+  </section>
+
+  <!-- 30-Day GTM Roadmap -->
+  <section class="card">
+    <h2>🚀 30-Day Go-To-Market Execution Plan</h2>
+
+    <div>
+      <span class="phase-badge">Phase 1 · Week 1</span>
+      <h3 style="margin-top: 0.35rem;">Asset Creation & Polish</h3>
+      <ul>
+        <li><strong>10-Second Demo Video:</strong> Screen recording showing iPhone 16 Pro Action Button press &rarr; immediate keypad popup &rarr; type `150` &rarr; tap category &rarr; done in 2.5 seconds.</li>
+        <li><strong>App Store Screenshots:</strong> Highlighting "2-Second Action Button Capture", "Zero Cloud / 100% Private", and "Pay Once, Own Forever".</li>
+      </ul>
+    </div>
+
+    <div>
+      <span class="phase-badge">Phase 2 · Week 2</span>
+      <h3 style="margin-top: 0.35rem;">Targeted Community Launch</h3>
+      <ul>
+        <li><strong>Subreddits:</strong> <code>r/shortcuts</code>, <code>r/iosapps</code>, <code>r/privacy</code>, <code>r/SideProject</code>. Focus on native zero-setup shortcuts and local-first storage.</li>
+        <li><strong>Community Incentive:</strong> Offer the first 50 testers a launch unlock code in exchange for unfiltered product feedback.</li>
+      </ul>
+    </div>
+
+    <div>
+      <span class="phase-badge">Phase 3 · Week 3</span>
+      <h3 style="margin-top: 0.35rem;">Directories & Micro-Creator Seeding</h3>
+      <ul>
+        <li><strong>Platforms:</strong> Product Hunt launch, Show HN (Hacker News), curated lists (AppRaven, iOS Dev Weekly).</li>
+        <li><strong>Creator Outreach:</strong> Direct DM to 10 iOS productivity creators on X/Twitter with a clean 15-second screen recording and promo code.</li>
+      </ul>
+    </div>
+
+    <div>
+      <span class="phase-badge">Phase 4 · Week 4</span>
+      <h3 style="margin-top: 0.35rem;">Data Review & Decision Gate</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Pass Threshold (Continue & Maintain)</th>
+              <th>Fail Threshold (Park Project)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Downloads / Installs</strong></td>
+              <td>150+ organic installs</td>
+              <td>&lt; 50 installs</td>
+            </tr>
+            <tr>
+              <td><strong>Day-7 Retention</strong></td>
+              <td>&gt; 20% active loggers</td>
+              <td>&lt; 5% active loggers</td>
+            </tr>
+            <tr>
+              <td><strong>Paid Conversions</strong></td>
+              <td><strong>15+ Lifetime sales</strong> (~₹4,500–₹7,500+)</td>
+              <td>0–2 sales</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- On-Device Action Plan -->
+  <section class="card">
+    <h2>📱 Immediate Verification Steps</h2>
+    <ol>
+      <li><strong>Build Verification:</strong> Run <code>xcodegen generate</code> in <code>~/FlowyProjects/ideadump</code> and deploy via Xcode (<code>⌘R</code>) to your iPhone 16 Pro.</li>
+      <li><strong>Action Button Test:</strong> Assign <code>Settings &rarr; Action Button &rarr; Shortcut &rarr; TapLog &rarr; Open Expense Capture</code>.</li>
+      <li><strong>Siri Test:</strong> Trigger *"Hey Siri, log an expense in TapLog"*.</li>
+      <li><strong>Record Demo:</strong> Capture the seamless 2-second capture clip for the launch campaign.</li>
+    </ol>
+  </section>
+
+  <footer class="footer-note">
+    Document compiled for TapLog strategy review · Flowy Systems &copy; 2026
+  </footer>
+
+</div>
+
+</body>
+</html>

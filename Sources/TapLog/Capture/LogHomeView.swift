@@ -8,6 +8,8 @@ import SwiftData
 struct LogHomeView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(RetentionManager.self) private var retention
     @EnvironmentObject private var undoStack: UndoStack
 
@@ -27,9 +29,6 @@ struct LogHomeView: View {
     @State private var showingCategoryPicker = false
     @State private var showingManageCategories = false
     @State private var hasFocused = false
-    @State private var isCommitting = false
-    @State private var rippleBurst = false
-    @State private var dropTriggerID = 0
     @State private var amountError: String?
     /// Opening animation: 0 = logo visible, 1 = content visible
     @State private var openingPhase: CGFloat = 0
@@ -83,7 +82,7 @@ struct LogHomeView: View {
                 hasFocused = true
                 amountFocused = true
             }
-            if skipSplash {
+            if skipSplash || reduceMotion {
                 // Intent launch — skip straight to capture, no logo delay.
                 openingPhase = 1
             } else {
@@ -107,26 +106,13 @@ struct LogHomeView: View {
             // Handle intent activation received after onAppear — e.g. the app
             // was already visible when OpenCaptureIntent fired.
             if newValue && openingPhase < 1 {
-                withAnimation(.spring(response: 0.4, dampingFraction: 1.0)) {
+                withAnimation(reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 1.0)) {
                     openingPhase = 1
                 }
                 amountFocused = true
             }
         }
         .onChange(of: prefill) { applyPrefill() }
-        .onChange(of: amountText) { oldValue, newValue in
-            let result = AmountInputFilter.filter(newValue, current: oldValue)
-            switch result {
-            case .accepted(let filtered):
-                if filtered != newValue {
-                    amountText = filtered
-                }
-                withAnimation(.easeInOut(duration: 0.2)) { amountError = nil }
-            case .rejected(let error):
-                // Keep the text as-is (user sees what they typed) but show error.
-                withAnimation(.easeInOut(duration: 0.2)) { amountError = error }
-            }
-        }
         .onChange(of: categories.count) { resolveLastUsedCategoryIfNeeded() }
         .sheet(isPresented: $showingManageCategories) {
             CategoryManageView()
@@ -157,19 +143,24 @@ struct LogHomeView: View {
     // MARK: - Main Content
 
     private var mainContent: some View {
-        VStack(spacing: 0) {
-            statusBar
-            Spacer()
-            amountArea
-            Spacer()
-            categoryLine
-            tileRow
-            noteField
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            logButton
-                .padding(.bottom, 12)
-                .padding(.top, 4)
+        GeometryReader { geometry in
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 0) {
+                    statusBar
+                    Spacer(minLength: geometry.size.height < 650 ? 8 : 20)
+                    amountArea
+                    Spacer(minLength: geometry.size.height < 650 ? 8 : 20)
+                    categoryLine
+                    tileRow
+                    noteField
+                }
+                .frame(minHeight: geometry.size.height, alignment: .top)
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                logButton
+                    .padding(.bottom, 8)
+                    .padding(.top, 4)
+            }
         }
     }
 
@@ -208,7 +199,7 @@ struct LogHomeView: View {
         .padding(.horizontal, 24)
         .padding(.top, 16)
         .padding(.trailing, 40)
-        .animation(Motion.stateChange, value: todayTotal)
+        .animation(reduceMotion ? nil : Motion.stateChange, value: todayTotal)
     }
 
     private var miniRing: some View {
@@ -228,45 +219,58 @@ struct LogHomeView: View {
 
     private var amountArea: some View {
         VStack(spacing: 8) {
-            ZStack {
-                RippleView()
-                    .frame(width: 120, height: 120)
-                    .allowsHitTesting(false)
-                DropletView(ambient: true)
-                    .frame(width: 120, height: 120)
-                DropletView(ambient: false, triggerID: dropTriggerID)
-                    .frame(width: 120, height: 120)
-                if rippleBurst {
-                    RippleView(burst: true)
-                        .frame(width: 120, height: 120)
-                        .allowsHitTesting(false)
-                        .transition(.opacity)
-                }
-
-                HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text(Money.currencySymbol)
-                        .font(AmountFont.symbolFont(for: amountText))
-                        .foregroundStyle(Theme.textTertiary)
-                    TextField("0", text: $amountText)
-                        .keyboardType(.decimalPad)
-                        .font(AmountFont.font(for: amountText))
-                        .multilineTextAlignment(.center)
-                        .lineLimit(1)
-                        .focused($amountFocused)
-                        .tint(Theme.accent)
-                }
-                .scaleEffect(isCommitting ? 1.06 : 1)
+            if amountText.isEmpty && !amountFocused {
+                Text("Type the amount, tap Log.")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.textTertiary)
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.3), value: amountFocused)
             }
-            .frame(maxWidth: .infinity)
+            GeometryReader { geometry in
+                let fontSize = AmountFont.fontSize(for: amountText, dynamicTypeSize: dynamicTypeSize)
+                let fieldHeight = AmountLayout.fieldHeight(fontSize: fontSize)
+                let symbolWidth = (Money.currencySymbol as NSString).size(
+                    withAttributes: [.font: UIFont.systemFont(ofSize: fontSize * 0.5, weight: .semibold)]
+                ).width
+                let maxFieldWidth = max(44, geometry.size.width - symbolWidth - 34)
+                let fieldWidth = AmountLayout.fieldWidth(
+                    text: amountText,
+                    fontSize: fontSize,
+                    maxWidth: maxFieldWidth
+                )
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(Money.currencySymbol)
+                        .font(AmountFont.symbolFont(for: amountText, dynamicTypeSize: dynamicTypeSize))
+                        .foregroundStyle(Theme.textTertiary)
+                        .accessibilityHidden(true)
+                    AmountTextField(
+                        text: $amountText,
+                        isFocused: $amountFocused,
+                        fontSize: fontSize,
+                        minimumFontSize: AmountLayout.minimumFontSize(
+                            text: amountText,
+                            fontSize: fontSize,
+                            availableWidth: fieldWidth
+                        ),
+                        onErrorChanged: { error in setAmountError(error) }
+                    )
+                    .frame(width: fieldWidth, height: fieldHeight)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            }
+            .frame(height: AmountLayout.heroHeight(fontSize: AmountFont.fontSize(
+                for: amountText,
+                dynamicTypeSize: dynamicTypeSize
+            )))
 
             if let error = amountError {
                 Text(error)
                     .font(.caption)
                     .foregroundStyle(.red)
                     .multilineTextAlignment(.center)
-                    .transition(.opacity)
             }
         }
+        .accessibilityElement(children: .contain)
     }
 
     // MARK: - 3. Category + Planned Line
@@ -287,7 +291,11 @@ struct LogHomeView: View {
                 .foregroundStyle(Theme.textTertiary)
 
             Button {
-                withAnimation(Motion.gentleFast) { isPlanned.toggle() }
+                if reduceMotion {
+                    isPlanned.toggle()
+                } else {
+                    withAnimation(Motion.gentleFast) { isPlanned.toggle() }
+                }
             } label: {
                 Text(isPlanned ? "Planned" : "Impulse?")
                     .font(.subheadline)
@@ -301,13 +309,15 @@ struct LogHomeView: View {
     // MARK: - 4. Tile Row
 
     private var tileRow: some View {
-        HStack(spacing: 10) {
-            ForEach(topCategories) { category in
-                tileButton(category)
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(topCategories) { category in
+                    tileButton(category)
+                }
+                otherTile
             }
-            otherTile
+            .padding(.horizontal, 24)
         }
-        .padding(.horizontal, 24)
     }
 
     private func tileButton(_ category: SpendCategory) -> some View {
@@ -323,15 +333,17 @@ struct LogHomeView: View {
                     .font(.caption)
                     .foregroundStyle(isSelected ? Theme.accent : Theme.textSecondary)
                     .fontWeight(isSelected ? .semibold : .medium)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
-            .frame(maxWidth: .infinity)
+            .frame(width: 62)
             .padding(.vertical, 12)
             .background(
                 isSelected ? Theme.accentSoft : Theme.surface,
                 in: RoundedRectangle(cornerRadius: 14, style: .continuous)
             )
             .scaleEffect(isSelected ? 1.03 : 1)
-            .animation(Motion.gentleFast, value: isSelected)
+            .animation(reduceMotion ? nil : Motion.gentleFast, value: isSelected)
         }
         .buttonStyle(.plain)
     }
@@ -348,7 +360,7 @@ struct LogHomeView: View {
                     .font(.caption)
                     .foregroundStyle(Theme.textSecondary)
             }
-            .frame(maxWidth: .infinity)
+            .frame(width: 62)
             .padding(.vertical, 12)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
@@ -424,7 +436,7 @@ struct LogHomeView: View {
     private func resolveLastUsedCategoryIfNeeded() {
         guard selectedCategoryKey.isEmpty else { return }
         selectedCategoryKey = categories.first(where: { $0.key == lastUsedCategoryKey })?.key
-            ?? categories.first(where: { $0.key == SpendCategory.fallbackKey })?.key
+            ?? categories.first(where: { $0.key != SpendCategory.fallbackKey })?.key
             ?? categories.first?.key
             ?? ""
     }
@@ -466,23 +478,22 @@ struct LogHomeView: View {
         CaptureBookkeeping.apply(modelContext: modelContext, categories: categories, categoryKey: categoryKey)
         UINotificationFeedbackGenerator().notificationOccurred(.success)
 
-        withAnimation(Motion.gentle) { isCommitting = true }
-        dropTriggerID += 1
-        rippleBurst = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
-            withAnimation(Motion.gentle) { rippleBurst = false }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
-            withAnimation(Motion.gentleFast) {
-                isCommitting = false
-                amountText = ""
-                note = ""
-                isPlanned = false
-            }
-            amountFocused = true
-        }
+        amountText = ""
+        note = ""
+        isPlanned = false
+        amountFocused = true
 
         amountError = nil
         onLogged?()
+    }
+
+    private func setAmountError(_ error: String?) {
+        if reduceMotion {
+            amountError = error
+        } else {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                amountError = error
+            }
+        }
     }
 }

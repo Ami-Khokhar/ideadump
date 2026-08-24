@@ -22,43 +22,43 @@ struct OnboardingCategoriesView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Keep the ones you'll use.")
-                    .font(.title3.bold())
-                    .entrance()
-                Text("You can change these anytime.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .entrance(delay: 0.08)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Keep the ones you'll use.")
+                        .font(.title3.bold())
+                        .entrance()
+                    Text("You can change these anytime.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .entrance(delay: 0.08)
 
-                LazyVGrid(columns: columns, spacing: 10) {
-                    ForEach(categories) { category in
-                        chip(category)
+                    LazyVGrid(columns: columns, spacing: 10) {
+                        ForEach(categories) { category in
+                            chip(category)
+                        }
+                        addChip
                     }
-                    addChip
-                }
-                .entrance(delay: 0.16)
+                    .entrance(delay: 0.16)
 
-                Spacer()
+                    Button {
+                        applyAndContinue()
+                    } label: {
+                        Text("Continue")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 6)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .entrance(delay: 0.24)
 
-                Button {
-                    applyAndContinue()
-                } label: {
-                    Text("Continue")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 6)
+                    Button("Not now") {
+                        onContinue()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .entrance(delay: 0.3)
                 }
-                .buttonStyle(.borderedProminent)
-                .entrance(delay: 0.24)
-
-                Button("Skip") {
-                    onContinue()
-                }
-                .frame(maxWidth: .infinity)
-                .entrance(delay: 0.3)
+                .padding(20)
             }
-            .padding(20)
             .navigationTitle("Your categories")
             .navigationBarTitleDisplayMode(.inline)
         }
@@ -113,6 +113,9 @@ struct OnboardingCategoriesView: View {
         }
         .buttonStyle(.plain)
         .disabled(isInUse)
+        .accessibilityLabel("\(category.name) category")
+        .accessibilityValue(isInUse ? "In use" : (isKept ? "Selected" : "Not selected"))
+        .accessibilityHint(isInUse ? "Used by an existing expense and cannot be removed here." : "Double tap to toggle.")
     }
 
     private var addChip: some View {
