@@ -12,6 +12,7 @@
 		03D459D8382BC1695FFB1F77 /* CSVExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F39BE7063CC4D232FC7DD8D1 /* CSVExporter.swift */; };
 		07F07FAE13CACDFD7F4246B3 /* PersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B981E1CD86D1D49E1B89DAAA /* PersistenceTests.swift */; };
 		0A06D0E1446BD988D6E632FC /* IntentSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AFDF5F905D85495CC043D15 /* IntentSupport.swift */; };
+		101A6912F8C10D53F2E322B8 /* TimeBucket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DD6A7AF092AF09A67270576 /* TimeBucket.swift */; };
 		10D68A923A8E2E9C9AD3B4D2 /* ShareParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D80F4F776E0564FC7F8201 /* ShareParser.swift */; };
 		10FC99EA0CD361A92052B43D /* OpenCaptureIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81FFDEB986BB922DED4CE884 /* OpenCaptureIntent.swift */; };
 		16E73425085637DCCF43CD1C /* OnboardingCategoriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FCAFA2601272F61B499A280 /* OnboardingCategoriesView.swift */; };
@@ -30,6 +31,7 @@
 		3C7943A4295129D2204EB8F7 /* OnboardingFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EC8711A571D36069B32250F /* OnboardingFlowTests.swift */; };
 		3DC3F135860710F724D5FEDE /* QuickLogIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CCFD7C9C1623952E799140E /* QuickLogIntent.swift */; };
 		458C5F0772D39EB04AC604D9 /* TapLogWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C5F641E7F91BA446B4783A55 /* TapLogWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		473818FD29C8AA1B87935510 /* TimeBucket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DD6A7AF092AF09A67270576 /* TimeBucket.swift */; };
 		494EE6FABA03802CC3E6CDEA /* EntryRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DE4D63F839A1FC98CE3CC4 /* EntryRowView.swift */; };
 		4AF040C455CC9F3F424076FC /* AmountTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = E61E6D1F80EEF58F89B322BC /* AmountTextField.swift */; };
 		4BA53740A22BDA4BE58BB8A8 /* CaptureBookkeepingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61FEEF255C865D34F51F7B91 /* CaptureBookkeepingTests.swift */; };
@@ -80,10 +82,12 @@
 		E37461D086CDA7EFB0634484 /* UndoStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52F262C9AE91426858ADB810 /* UndoStack.swift */; };
 		EAB42C3D2592A69E61F4D393 /* AmountInputFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EBEBC7026B1A2D05767961 /* AmountInputFilter.swift */; };
 		EBD36511DF423247C3455D83 /* TapLogShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F616AC66CBCE53CF8CAB9A65 /* TapLogShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		EDAE63C361499BD772BB5803 /* TimeBucketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 890EC89BF216C1F34145CD4A /* TimeBucketTests.swift */; };
 		EF1BFBF97F6335E1AC0423E5 /* RecapMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C56A65200B9807EE40FEC45 /* RecapMath.swift */; };
 		F050097AF5EEECD6B7266F2B /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FC516F728D48F203896905E /* Theme.swift */; };
 		F3CCA6BC2DACB7FBAAA1A68D /* Money.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E288AE6E7A4297523866942 /* Money.swift */; };
 		FE0C41BD1EA95880437984EB /* ShareParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13A258162CA563136B4721E8 /* ShareParserTests.swift */; };
+		FEF818A35145A6C277821743 /* TimeBucket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DD6A7AF092AF09A67270576 /* TimeBucket.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -157,7 +161,9 @@
 		6C56A65200B9807EE40FEC45 /* RecapMath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecapMath.swift; sourceTree = "<group>"; };
 		6FCAFA2601272F61B499A280 /* OnboardingCategoriesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCategoriesView.swift; sourceTree = "<group>"; };
 		7867E24E221AC6122BCDA234 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
+		7DD6A7AF092AF09A67270576 /* TimeBucket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeBucket.swift; sourceTree = "<group>"; };
 		81FFDEB986BB922DED4CE884 /* OpenCaptureIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenCaptureIntent.swift; sourceTree = "<group>"; };
+		890EC89BF216C1F34145CD4A /* TimeBucketTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeBucketTests.swift; sourceTree = "<group>"; };
 		8AFDA712F13988B761C89CF1 /* SpendWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendWidget.swift; sourceTree = "<group>"; };
 		8AFDF5F905D85495CC043D15 /* IntentSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentSupport.swift; sourceTree = "<group>"; };
 		8CDF629996C6BC1B1C2D0187 /* OpenCaptureIntentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenCaptureIntentTests.swift; sourceTree = "<group>"; };
@@ -233,6 +239,7 @@
 				AC4A8904E421B41AB3B22AD0 /* RetentionManager.swift */,
 				F5D80F4F776E0564FC7F8201 /* ShareParser.swift */,
 				A781E9B64AAEA272FA487658 /* StoreLocator.swift */,
+				7DD6A7AF092AF09A67270576 /* TimeBucket.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -272,6 +279,7 @@
 				9380549822DEC6CE9FCD846D /* RetentionManagerTests.swift */,
 				13A258162CA563136B4721E8 /* ShareParserTests.swift */,
 				49755A7016E44B7F1042415C /* StoreLocatorTests.swift */,
+				890EC89BF216C1F34145CD4A /* TimeBucketTests.swift */,
 				EE5755275B1B7EDCCE0DC33B /* UndoStackTests.swift */,
 			);
 			path = TapLogTests;
@@ -590,6 +598,7 @@
 				3476CB7E522C20EE9E793A5B /* TapLogShortcutsProvider.swift in Sources */,
 				F050097AF5EEECD6B7266F2B /* Theme.swift in Sources */,
 				C53A160B200FB33F5DA734FA /* TileGrid.swift in Sources */,
+				FEF818A35145A6C277821743 /* TimeBucket.swift in Sources */,
 				E37461D086CDA7EFB0634484 /* UndoStack.swift in Sources */,
 				D080D8C375310E1E3F7670C3 /* UndoToast.swift in Sources */,
 				CED590693197D171DAE1BEFD /* WeeklyRecapView.swift in Sources */,
@@ -616,6 +625,7 @@
 				62EC609BE55A806E0181FD63 /* StoreLocator.swift in Sources */,
 				547769EC100751C7458552E2 /* TapLogControlWidget.swift in Sources */,
 				1932E41B91F45E46AA7B947E /* TapLogWidgetBundle.swift in Sources */,
+				101A6912F8C10D53F2E322B8 /* TimeBucket.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -635,6 +645,7 @@
 				C43E0B895B64A75176F53DAE /* RetentionManagerTests.swift in Sources */,
 				FE0C41BD1EA95880437984EB /* ShareParserTests.swift in Sources */,
 				918FC202598E02AC6F1027B9 /* StoreLocatorTests.swift in Sources */,
+				EDAE63C361499BD772BB5803 /* TimeBucketTests.swift in Sources */,
 				517CA2752492795FF822A77F /* UndoStackTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -653,6 +664,7 @@
 				32F0EE12DA061219B09071DA /* ShareViewController.swift in Sources */,
 				2DFADCEFE987ACAA518EE64E /* SpendCategory.swift in Sources */,
 				58044425907448C520D7A63D /* StoreLocator.swift in Sources */,
+				473818FD29C8AA1B87935510 /* TimeBucket.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

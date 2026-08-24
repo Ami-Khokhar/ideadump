@@ -45,11 +45,14 @@ struct LogHomeView: View {
     private var lookup: CategoryLookup { CategoryLookup(categories) }
 
     private var topCategories: [SpendCategory] {
-        categories
-            .filter { $0.key != SpendCategory.fallbackKey }
-            .sorted { $0.logCount > $1.logCount }
-            .prefix(4)
-            .map { $0 }
+        let keys = TimeBucket.blendedTopCategories(
+            entries: activeEntries,
+            categories: categories,
+            maxSlots: 4
+        )
+        return keys.compactMap { key in
+            categories.first { $0.key == key }
+        }
     }
 
     private var todayEntries: [Entry] {
