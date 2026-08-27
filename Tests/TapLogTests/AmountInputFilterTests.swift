@@ -263,6 +263,69 @@ final class AmountInputFilterTests: XCTestCase {
         XCTAssertNil(third.error)
     }
 
+    func testContinuousDigitTypingUsesNativeApplicationDecision() {
+        var current = ""
+
+        for digit in ["1", "2", "3", "4", "5"] {
+            let range = NSRange(location: current.utf16.count, length: 0)
+            let result = AmountInputFilter.filterEdit(
+                current: current,
+                range: range,
+                replacement: digit
+            )
+
+            XCTAssertTrue(
+                AmountTextField.Coordinator.shouldApplyEditNatively(
+                    current: current,
+                    editRange: range,
+                    replacement: digit,
+                    result: result
+                ),
+                "digit \(digit) should be applied natively for stable keyboard input"
+            )
+
+            current = (current as NSString).replacingCharacters(in: range, with: digit)
+            XCTAssertEqual(current, result.text)
+        }
+    }
+
+    func testRejectedTypedDigitDoesNotUseNativeApplicationDecision() {
+        let result = AmountInputFilter.filterEdit(
+            current: "12.34",
+            range: NSRange(location: 5, length: 0),
+            replacement: "5"
+        )
+
+        XCTAssertFalse(
+            AmountTextField.Coordinator.shouldApplyEditNatively(
+                current: "12.34",
+                editRange: NSRange(location: 5, length: 0),
+                replacement: "5",
+                result: result
+            )
+        )
+    }
+
+    func testDeletingFractionalDigitKeepsNativeEditingActive() {
+        let range = NSRange(location: 3, length: 1)
+        let result = AmountInputFilter.filterEdit(
+            current: "12.3",
+            range: range,
+            replacement: ""
+        )
+
+        XCTAssertEqual(result.text, "12.")
+        XCTAssertNil(result.error)
+        XCTAssertTrue(
+            AmountTextField.Coordinator.shouldApplyEditNatively(
+                current: "12.3",
+                editRange: range,
+                replacement: "",
+                result: result
+            )
+        )
+    }
+
     func testOversizedSelectionReplacementRemainsVisible() {
         let result = AmountInputFilter.filterEdit(
             current: "999999999", range: NSRange(location: 0, length: 9), replacement: "1000000000"

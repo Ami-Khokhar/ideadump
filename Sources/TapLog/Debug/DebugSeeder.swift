@@ -67,6 +67,25 @@ enum DebugSeeder {
             CaptureBookkeeping.apply(modelContext: context, categories: categories, categoryKey: categoryKey)
         }
 
+        // Budgets, so the grove has something to show. The targets are chosen to
+        // land on different tree states against the sample spend above: chai is
+        // comfortably inside its target, food is close to it, and transport is
+        // deliberately over so the clay "wilting" treatment is exercised.
+        let demoBudgets: [(key: String, target: Decimal, period: BudgetPeriod)] = [
+            ("chai", 40, .weekly),
+            ("food", 120, .weekly),
+            ("transport", 15, .weekly),
+            ("shopping", 200, .monthly),
+        ]
+        for budget in demoBudgets {
+            guard let category = categories.first(where: { $0.key == budget.key }) else { continue }
+            category.budgetTarget = budget.target
+            category.budgetPeriod = budget.period
+            // Backdate the baseline so the previous period counts as comparable
+            // and the recovery/steady states can actually appear.
+            category.budgetHealthResetDate = lastWeekStart.addingTimeInterval(-86400)
+        }
+
         do {
             try context.save()
         } catch {

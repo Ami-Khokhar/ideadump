@@ -35,6 +35,8 @@ struct ContentView: View {
 
     enum Route: String, Identifiable {
         case history
+        case categories
+        case budgets
         case recap
         case frontDoors
         case settings
@@ -79,6 +81,11 @@ struct ContentView: View {
                             route = .history
                         } label: {
                             Label("History", systemImage: "clock")
+                        }
+                        Button {
+                            route = .budgets
+                        } label: {
+                            Label("Budgets", systemImage: "leaf")
                         }
                         Button {
                             route = .recap
@@ -170,6 +177,10 @@ struct ContentView: View {
                 case .history:
                     EntryListView()
                         .environmentObject(undoStack)
+                case .categories:
+                    CategoryManageView()
+                case .budgets:
+                    BudgetsView()
                 case .recap:
                     WeeklyRecapView()
                 case .frontDoors:

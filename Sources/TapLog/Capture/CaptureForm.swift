@@ -78,6 +78,8 @@ struct CaptureForm: View {
                         }
                     )
                     .frame(maxWidth: .infinity, minHeight: 36)
+                    .contentShape(Rectangle())
+                    .onTapGesture { requestAmountFocus() }
                     if let error = amountFilterError {
                         Text(error)
                             .font(.footnote)
@@ -130,7 +132,12 @@ struct CaptureForm: View {
             }
             .onAppear {
                 resolveCategory()
-                amountFocused = true
+                requestAmountFocus()
+            }
+            .onChange(of: showingManageCategories) { _, isPresented in
+                if !isPresented {
+                    requestAmountFocus()
+                }
             }
             .sheet(isPresented: $showingManageCategories) {
                 CategoryManageView()
@@ -174,6 +181,7 @@ struct CaptureForm: View {
         let isSelected = selectedCategoryKey == category.key
         return Button {
             selectedCategoryKey = category.key
+            requestAmountFocus()
         } label: {
             VStack(spacing: 4) {
                 Text(category.emoji)
@@ -218,6 +226,7 @@ struct CaptureForm: View {
     private func save() {
         guard let amount = AmountInputFilter.parsedAmount(amountText) else {
             showAmountError = true
+            requestAmountFocus()
             return
         }
 
@@ -305,6 +314,12 @@ struct CaptureForm: View {
             onLogged()
         } else {
             dismiss()
+        }
+    }
+
+    private func requestAmountFocus() {
+        DispatchQueue.main.async {
+            self.amountFocused = true
         }
     }
 }

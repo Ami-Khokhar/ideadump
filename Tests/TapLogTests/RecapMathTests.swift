@@ -1,12 +1,22 @@
 import XCTest
 @testable import TapLog
 
-/// Deterministic coverage for the weekly recap math, using a fixed UTC calendar.
+/// Deterministic coverage for the weekly recap math, using fixed UTC calendars.
 final class RecapMathTests: XCTestCase {
     private var calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
         calendar.firstWeekday = 2 // Monday — matches the app's Monday-first week
         calendar.timeZone = TimeZone(identifier: "UTC")!
+        calendar.locale = Locale(identifier: "en_US_POSIX")
+        return calendar
+    }()
+
+    /// India/en_US-style Sunday-first week.
+    private var sundayFirstCalendar: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.firstWeekday = 1
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        calendar.locale = Locale(identifier: "en_US_POSIX")
         return calendar
     }()
 
@@ -48,7 +58,18 @@ final class RecapMathTests: XCTestCase {
         XCTAssertEqual(split.lastWeek.reduce(0) { $0 + $1.amount }, 7)
     }
 
-    // MARK: - dailyTotals (index 0 = Monday)
+    func testFutureEntryLaterInCurrentWeekIsExcluded() {
+        let futureFriday = date(2026, 8, 21)
+        let split = RecapMath.splitWeeks(
+            [makeEntry(10, on: now), makeEntry(25, on: futureFriday)],
+            calendar: calendar,
+            now: now
+        )
+
+        XCTAssertEqual(split.thisWeek.map(\.amount), [10])
+    }
+
+    // MARK: - dailyTotals (index 0 = calendar's first weekday)
 
     func testDailyTotalsBucketByDayOfWeek() {
         let entries = [
@@ -87,5 +108,36 @@ final class RecapMathTests: XCTestCase {
         XCTAssertEqual(RecapMath.todayIndex(calendar: calendar, now: date(2026, 8, 17)), 0) // Mon
         XCTAssertEqual(RecapMath.todayIndex(calendar: calendar, now: now), 2)               // Wed
         XCTAssertEqual(RecapMath.todayIndex(calendar: calendar, now: date(2026, 8, 23)), 6) // Sun
+    }
+
+    // MARK: - Sunday-first locales (en_IN / en_US)
+
+    func testSundayFirstDailyTotalsAlignWithWeekStart() {
+        let sundayNow = date(2026, 8, 26) // Wednesday inside the Sun 8/23 – Sat 8/29 week
+        let entries = [
+            makeEntry(45, on: date(2026, 8, 23)), // Sunday → index 0
+            makeEntry(10, on: date(2026, 8, 24)), // Monday → index 1
+            makeEntry(20, on: sundayNow),         // Wednesday → index 3
+            makeEntry(99, on: date(2026, 8, 22)), // Saturday before the week — excluded
+        ]
+        let totals = RecapMath.dailyTotals(entries, calendar: sundayFirstCalendar, now: sundayNow)
+        XCTAssertEqual(totals[0], 45) // Sunday money sits under the first bar
+        XCTAssertEqual(totals[1], 10)
+        XCTAssertEqual(totals[3], 20)
+        XCTAssertEqual(totals.reduce(0) { $0 + $1 }, Decimal(string: "75.0") ?? 75)
+    }
+
+    func testSundayFirstTodayIndexMatchesBucketIndices() {
+        XCTAssertEqual(RecapMath.todayIndex(calendar: sundayFirstCalendar, now: date(2026, 8, 23)), 0) // Sun
+        XCTAssertEqual(RecapMath.todayIndex(calendar: sundayFirstCalendar, now: date(2026, 8, 24)), 1) // Mon
+        XCTAssertEqual(RecapMath.todayIndex(calendar: sundayFirstCalendar, now: date(2026, 8, 26)), 3) // Wed
+        XCTAssertEqual(RecapMath.todayIndex(calendar: sundayFirstCalendar, now: date(2026, 8, 29)), 6) // Sat
+    }
+
+    // MARK: - weekdayLabels
+
+    func testWeekdayLabelsRotateWithFirstWeekday() {
+        XCTAssertEqual(RecapMath.weekdayLabels(calendar: calendar), ["M", "T", "W", "T", "F", "S", "S"])
+        XCTAssertEqual(RecapMath.weekdayLabels(calendar: sundayFirstCalendar), ["S", "M", "T", "W", "T", "F", "S"])
     }
 }

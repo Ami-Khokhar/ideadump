@@ -71,4 +71,40 @@ final class StoreLocatorTests: XCTestCase {
         // both the App Group path and its fallback produce a usable container.
         _ = StoreLocator.makeContainer()
     }
+
+    /// Regression test for the Action Button crash on free-provisioned devices:
+    /// `containerURL` returned a valid-looking group path the sandbox refused to
+    /// write to, and the old single-attempt `fatalError` turned that into
+    /// "TapLog quit unexpectedly". An unusable first candidate must now fall
+    /// through to the next location instead of crashing.
+    @MainActor
+    func testMakeContainerFallsBackToNextCandidateWhenFirstIsUnusable() throws {
+        let fm = FileManager.default
+
+        // A regular file occupying the store's parent path makes the first
+        // candidate unopenable, simulating the sandbox-denied group container.
+        let blocked = fm.temporaryDirectory
+            .appendingPathComponent("taplog-blocked-\(UUID().uuidString)")
+        try Data().write(to: blocked)
+        defer { try? fm.removeItem(at: blocked) }
+
+        let fallbackDirectory = fm.temporaryDirectory
+            .appendingPathComponent("taplog-fallback-\(UUID().uuidString)")
+        defer { try? fm.removeItem(at: fallbackDirectory) }
+
+        let container = StoreLocator.makeContainer(candidates: [
+            blocked.appendingPathComponent(StoreLocator.storeFileName),
+            fallbackDirectory.appendingPathComponent(StoreLocator.storeFileName),
+        ])
+
+        let context = container.mainContext
+        context.insert(Entry(
+            amount: Decimal(string: "1.25")!,
+            category: SpendCategory.fallbackKey,
+            note: "fallback regression"
+        ))
+        try context.save()
+
+        XCTAssertEqual(try context.fetch(FetchDescriptor<Entry>()).count, 1)
+    }
 }

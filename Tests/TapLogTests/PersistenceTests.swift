@@ -116,4 +116,83 @@ final class PersistenceTests: XCTestCase {
         XCTAssertEqual(lookup.emoji(for: "deleted-key"), "🏷️")
         XCTAssertNil(lookup.category(for: "deleted-key"))
     }
+
+    // MARK: - Budget field defaults & round-trip
+
+    func testCategoryDefaultsBudgetFieldsToNil() throws {
+        // Pre-budget categories were inserted via the original init; they must
+        // remain valid (no budget configured) after the lightweight migration.
+        let container = try makeContainer()
+        let context = container.mainContext
+        let category = SpendCategory(key: "chai", name: "Chai", emoji: "☕️")
+        XCTAssertNil(category.budgetTarget)
+        XCTAssertNil(category.budgetPeriod)
+
+        context.insert(category)
+        try context.save()
+        let fetched = try context.fetch(FetchDescriptor<SpendCategory>()).first!
+        XCTAssertNil(fetched.budgetTarget, "budget target must default to nil so existing categories stay valid")
+        XCTAssertNil(fetched.budgetPeriod, "budget period must default to nil so existing categories stay valid")
+    }
+
+    func testCategoryBudgetRoundTrips() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let category = SpendCategory(
+            key: "food",
+            name: "Food",
+            emoji: "🍽️",
+            budgetTarget: Decimal(string: "250.00"),
+            budgetPeriod: .monthly
+        )
+        context.insert(category)
+        try context.save()
+
+        let fetched = try context.fetch(FetchDescriptor<SpendCategory>()).first!
+        XCTAssertEqual(fetched.budgetTarget, Decimal(string: "250.00"))
+        XCTAssertEqual(fetched.budgetPeriod, .monthly)
+        XCTAssertNil(fetched.budgetHealthResetDate)
+    }
+
+    func testBudgetHealthResetDateRoundTrips() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let resetDate = Date(timeIntervalSince1970: 1_750_000_000)
+        let category = SpendCategory(
+            key: "food",
+            name: "Food",
+            emoji: "🍽️",
+            budgetTarget: Decimal(string: "250.00"),
+            budgetPeriod: .monthly,
+            budgetHealthResetDate: resetDate
+        )
+        context.insert(category)
+        try context.save()
+
+        let fetched = try context.fetch(FetchDescriptor<SpendCategory>()).first!
+        XCTAssertEqual(fetched.budgetHealthResetDate, resetDate)
+    }
+
+    func testEditCategorySnapshotRestoresAllEditedFields() {
+        let category = SpendCategory(
+            key: "food",
+            name: "Food",
+            emoji: "🍽️",
+            budgetTarget: Decimal(string: "250.00"),
+            budgetPeriod: .monthly
+        )
+        let original = EditCategorySnapshot(category: category)
+
+        category.name = "Dining"
+        category.emoji = "🍜"
+        category.budgetTarget = nil
+        category.budgetPeriod = nil
+
+        original.restore(to: category)
+
+        XCTAssertEqual(category.name, "Food")
+        XCTAssertEqual(category.emoji, "🍽️")
+        XCTAssertEqual(category.budgetTarget, Decimal(string: "250.00"))
+        XCTAssertEqual(category.budgetPeriod, .monthly)
+    }
 }

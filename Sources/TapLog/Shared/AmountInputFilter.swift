@@ -71,6 +71,18 @@ enum AmountInputFilter {
             return filterTypedEdit(candidate: candidate, current: current, replacement: replacement)
         }
 
+        // Deletion should remain fluid even if it temporarily leaves an
+        // incomplete value such as "12.". Final validity is checked when the
+        // user taps Log; showing an error while they are correcting the value
+        // makes the field feel as though it stopped accepting input.
+        if replacement.isEmpty {
+            return AmountEditResult(
+                text: numericCharacters(in: candidate),
+                error: nil,
+                restoresPrevious: false
+            )
+        }
+
         return filterWholeEdit(candidate)
     }
 

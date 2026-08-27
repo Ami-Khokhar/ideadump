@@ -30,6 +30,11 @@ enum Theme {
     /// Soft accent fill for selected chips.
     static let accentSoft = adaptive(light: 0x6B8F71, dark: 0x7FA085, alpha: 0.14)
 
+    /// Over-budget signal — warm clay, deliberately not red. The budget system's
+    /// premise is encouragement rather than judgment, so overspending should read
+    /// as tired, not as an alarm.
+    static let clay = adaptive(light: 0xB5836A, dark: 0xC08E70)
+
     /// Hairline dividers.
     static let hairline = adaptive(light: 0x1C1B1A, dark: 0xF0EEEB, alpha: 0.08)
 

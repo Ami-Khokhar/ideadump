@@ -1,6 +1,19 @@
 import SwiftUI
 import SwiftData
 
+/// Recap timespan selection: week or month.
+enum RecapSpan: String, CaseIterable {
+    case week
+    case month
+
+    var title: String {
+        switch self {
+        case .week: "Week"
+        case .month: "Month"
+        }
+    }
+}
+
 struct WeeklyRecapView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(RetentionManager.self) private var retention
@@ -19,18 +32,31 @@ struct WeeklyRecapView: View {
     /// Set true on first appear so the bars grow up from the baseline once.
     @State private var barsGrown = false
 
+    /// Current recap timespan selection.
+    @State private var span: RecapSpan = .week
+
     private var lookup: CategoryLookup { CategoryLookup(categories) }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                // Header with title and span toggle
+                HStack {
+                    Text("Recap")
+                        .font(.title2.weight(.bold))
+                    Spacer()
+                    spanToggle
+                }
+                .padding(.horizontal, 28)
+                .padding(.top, 16)
+                .padding(.bottom, 12)
+
                 if logsLogged >= 5 && !recapTeaseDismissed {
                     recapTeaseBanner
                 }
                 recapContent
             }
             .background(Theme.background)
-            .navigationTitle("Recap")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
@@ -46,19 +72,55 @@ struct WeeklyRecapView: View {
         }
     }
 
+    // MARK: - Header controls
+
+    private var spanToggle: some View {
+        HStack(spacing: 4) {
+            ForEach(RecapSpan.allCases, id: \.self) { option in
+                Button {
+                    withAnimation(Motion.gentleFast) {
+                        span = option
+                    }
+                } label: {
+                    Text(option.title)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(
+                            span == option ? Theme.textPrimary : Theme.textSecondary
+                        )
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 28)
+                        .background(
+                            span == option
+                                ? Theme.background
+                                : Color.clear,
+                            in: Capsule()
+                        )
+                }
+                .buttonStyle(ZenPress())
+            }
+        }
+        .padding(4)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+    }
+
     // MARK: - Recap content
 
     private var recapContent: some View {
-        let (thisWeek, lastWeek) = splitWeeks()
-        let thisTotals = totals(byCategory: thisWeek)
-        let thisTotal = thisWeek.reduce(Decimal(0)) { $0 + $1.amount }
-        let lastTotal = lastWeek.reduce(Decimal(0)) { $0 + $1.amount }
-        let dayTotals = dailyTotals(thisWeek)
+        // Compute data based on selected span
+        let (thisData, lastData, dayBars, barLabels) = span == .week
+            ? computeWeekData()
+            : computeMonthData()
+
+        let thisTotals = totals(byCategory: thisData)
+        let thisTotal = thisData.reduce(Decimal(0)) { $0 + $1.amount }
+        let lastTotal = lastData.reduce(Decimal(0)) { $0 + $1.amount }
+        let spanTitle = span == .week ? "This week" : "This month"
+        let compareTitle = span == .week ? "last week" : "last month"
 
         return ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("This week")
+                    Text(spanTitle)
                         .font(.footnote)
                         .foregroundStyle(Theme.textSecondary)
                         .entrance()
@@ -67,15 +129,36 @@ struct WeeklyRecapView: View {
                         .foregroundStyle(Theme.textPrimary)
                         .contentTransition(.numericText())
                         .entrance(delay: 0.08)
-                    if lastTotal > 0 && thisTotal != lastTotal {
-                        let pct = (thisTotal - lastTotal) / lastTotal
-                        let up = thisTotal > lastTotal
-                        Text("\(up ? "▲" : "▼") \(Money.percent(pct)) vs. last week")
-                            .font(.footnote.weight(.medium))
-                            .foregroundStyle(up ? Theme.accent : Theme.textSecondary)
-                            .monospacedDigit()
+                    if thisTotal != lastTotal {
+                        if lastTotal > 0 {
+                            // Guard against near-zero baselines producing absurd percentages
+                            let pct = (thisTotal - lastTotal) / lastTotal
+                            if pct > 9.99 {
+                                // Clamp: percentage > 999%, show no number
+                                let up = thisTotal > lastTotal
+                                Text("\(up ? "▲" : "▼") vs. \(compareTitle)")
+                                    .font(.footnote.weight(.medium))
+                                    .foregroundStyle(up ? Theme.accent : Theme.textSecondary)
+                                    .monospacedDigit()
+                            } else {
+                                // Normal case: show percentage
+                                let up = thisTotal > lastTotal
+                                // The arrow already carries the direction, so the
+                                // percentage is shown unsigned — "▼ -36%" reads as
+                                // a double negative.
+                                Text("\(up ? "▲" : "▼") \(Money.percent(abs(pct))) vs. \(compareTitle)")
+                                    .font(.footnote.weight(.medium))
+                                    .foregroundStyle(up ? Theme.accent : Theme.textSecondary)
+                                    .monospacedDigit()
+                            }
+                        } else {
+                            // First period tracked
+                            Text("First \(span == .week ? "week" : "month") tracked")
+                                .font(.footnote)
+                                .foregroundStyle(Theme.textSecondary)
+                        }
                     } else {
-                        Text("\(Money.format(lastTotal)) last week")
+                        Text("\(Money.format(lastTotal)) \(compareTitle)")
                             .font(.footnote)
                             .foregroundStyle(Theme.textSecondary)
                     }
@@ -86,14 +169,15 @@ struct WeeklyRecapView: View {
 
                 // Bars
                 HStack(alignment: .bottom, spacing: 8) {
-                    let maxDay = max(dayTotals.max() ?? 1, 1)
-                    ForEach(0..<7, id: \.self) { index in
-                        let value = dayTotals[index]
-                        let isFuture = index > todayIndex
-                        let isPast = index < todayIndex
+                    let maxBar = max(dayBars.max() ?? 1, 1)
+                    let barCount = dayBars.count
+                    ForEach(0..<barCount, id: \.self) { index in
+                        let value = dayBars[index]
+                        let isCurrent = span == .week ? (index == todayIndex) : (index == currentWeekIndexForMonth)
+                        let isFuture = span == .week ? (index > todayIndex) : (index > currentWeekIndexForMonth)
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(index == todayIndex ? Theme.accent : (isFuture ? Theme.surfaceStrong.opacity(0.4) : Theme.surfaceStrong))
-                            .frame(height: value == 0 ? 4 : max(10, CGFloat(NSDecimalNumber(decimal: value / maxDay).doubleValue) * 96))
+                            .fill(isCurrent ? Theme.accent : (isFuture ? Theme.surfaceStrong.opacity(0.4) : Theme.surfaceStrong))
+                            .frame(height: value == 0 ? 4 : max(10, CGFloat(NSDecimalNumber(decimal: value / maxBar).doubleValue) * 96))
                             .overlay(
                                 isFuture && value == 0 ?
                                     RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -113,12 +197,13 @@ struct WeeklyRecapView: View {
                 .padding(.top, 26)
 
                 HStack(spacing: 8) {
-                    ForEach(0..<7, id: \.self) { index in
-                        let isFuture = index > todayIndex
-                        Text(dayLetter(index))
+                    ForEach(0..<barLabels.count, id: \.self) { index in
+                        let isCurrent = span == .week ? (index == todayIndex) : (index == currentWeekIndexForMonth)
+                        let isFuture = span == .week ? (index > todayIndex) : (index > currentWeekIndexForMonth)
+                        Text(barLabels[index])
                             .font(.caption)
-                            .foregroundStyle(index == todayIndex ? Theme.accent : (isFuture ? Theme.textTertiary.opacity(0.4) : Theme.textTertiary))
-                            .fontWeight(index == todayIndex ? .semibold : .regular)
+                            .foregroundStyle(isCurrent ? Theme.accent : (isFuture ? Theme.textTertiary.opacity(0.4) : Theme.textTertiary))
+                            .fontWeight(isCurrent ? .semibold : .regular)
                             .frame(maxWidth: .infinity)
                     }
                 }
@@ -129,6 +214,14 @@ struct WeeklyRecapView: View {
                 consistencyCard
                     .padding(.horizontal, 28)
                     .padding(.top, 24)
+
+                // Budgets — only rendered when at least one category has a
+                // target + period configured. Closest-to-limit sorts first.
+                if !budgetReports.isEmpty {
+                    budgetsSection
+                        .padding(.horizontal, 28)
+                        .padding(.top, 28)
+                }
 
                 // By category
                 VStack(alignment: .leading, spacing: 0) {
@@ -220,6 +313,72 @@ struct WeeklyRecapView: View {
 
     /// Weekly-target ring plus streak and freeze status — the retention loop's
     /// payoff surface, so progress is visible and a freeze can be spent.
+    // MARK: - Budgets
+
+    /// One report per fully-configured budget (target > 0 and a period set) —
+    /// half-configured categories are skipped by the calculator itself.
+    private var budgetReports: [BudgetCalculator.Report] {
+        categories
+            .compactMap { BudgetCalculator.report(for: $0, entries: entries) }
+            .sorted {
+                ($0.utilization ?? 0) > ($1.utilization ?? 0)
+            }
+    }
+
+    private var budgetsSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("BUDGETS")
+                .font(.caption2.weight(.semibold))
+                .kerning(0.9)
+                .foregroundStyle(Theme.textTertiary)
+                .padding(.bottom, 4)
+
+            ForEach(budgetReports, id: \.categoryKey) { report in
+                budgetRow(report)
+                    .padding(.vertical, 10)
+                    .overlay(alignment: .bottom) {
+                        Rectangle()
+                            .fill(Theme.hairline)
+                            .frame(height: 1)
+                    }
+            }
+        }
+    }
+
+    private func budgetRow(_ report: BudgetCalculator.Report) -> some View {
+        let over = report.isOver
+        let fraction = min(1, max(0, NSDecimalNumber(decimal: report.utilization ?? 0).doubleValue))
+        let cadence = report.period == .monthly ? "month" : "week"
+        return HStack(spacing: 12) {
+            Text(lookup.emoji(for: report.categoryKey))
+                .font(.body)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text(lookup.name(for: report.categoryKey))
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(Theme.textPrimary)
+                    Spacer()
+                    Text("\(Money.format(report.currentSpent)) / \(Money.format(report.target))")
+                        .font(.footnote)
+                        .foregroundStyle(Theme.textSecondary)
+                        .monospacedDigit()
+                }
+                BudgetProgressBar(fraction: fraction, over: over)
+                Text(over
+                     ? "\(Money.format(-report.remaining)) over this \(cadence)"
+                     : "\(Money.format(report.remaining)) left this \(cadence)")
+                    .font(.caption)
+                    .foregroundStyle(over ? Theme.clay : Theme.textSecondary)
+                    .monospacedDigit()
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(
+            "\(lookup.name(for: report.categoryKey)): \(Money.format(report.currentSpent)) of \(Money.format(report.target)) per \(cadence). " +
+            (over ? "\(Money.format(-report.remaining)) over." : "\(Money.format(report.remaining)) left.")
+        )
+    }
+
     private var consistencyCard: some View {
         HStack(alignment: .top, spacing: 14) {
             WeeklyRingView(
@@ -269,8 +428,71 @@ struct WeeklyRecapView: View {
         RecapMath.todayIndex()
     }
 
+    /// Index of the current week within the current month (0-based).
+    private var currentWeekIndexForMonth: Int {
+        let calendar = Calendar.current
+        let now = Date.now
+        let monthStart = calendar.dateInterval(of: .month, for: now)!.start
+        let weekNumber = calendar.dateComponents([.weekOfMonth], from: monthStart, to: now).weekOfMonth ?? 0
+        return weekNumber
+    }
+
+    /// Compute week-based recap data: (thisWeek, lastWeek, barTotals, barLabels)
+    private func computeWeekData() -> ([Entry], [Entry], [Decimal], [String]) {
+        let (thisWeek, lastWeek) = splitWeeks()
+        let dayTotals = dailyTotals(thisWeek)
+        let dayLabels = RecapMath.weekdayLabels()
+        return (thisWeek, lastWeek, dayTotals, dayLabels)
+    }
+
+    /// Compute month-based recap data: (thisMonth, lastMonth, weekTotals, weekLabels)
+    /// The month is split into weeks (W1-W5) with only rendered bars for weeks that exist.
+    private func computeMonthData() -> ([Entry], [Entry], [Decimal], [String]) {
+        let calendar = Calendar.current
+        let now = Date.now
+
+        // Current month
+        let thisMonthInterval = calendar.dateInterval(of: .month, for: now)!
+        let thisMonth = entries.filter {
+            $0.date >= thisMonthInterval.start && $0.date < thisMonthInterval.end
+        }
+
+        // Previous month
+        let prevMonthStart = calendar.date(byAdding: .month, value: -1, to: thisMonthInterval.start)!
+        let prevMonthInterval = calendar.dateInterval(of: .month, for: prevMonthStart)!
+        let lastMonth = entries.filter {
+            $0.date >= prevMonthInterval.start && $0.date < prevMonthInterval.end
+        }
+
+        // Split current month into weeks
+        let weekTotals = monthlyWeekTotals(thisMonth, monthStart: thisMonthInterval.start, calendar: calendar)
+        let weekLabels = (1...weekTotals.count).map { "W\($0)" }
+
+        return (thisMonth, lastMonth, weekTotals, weekLabels)
+    }
+
+    /// Splits a month's entries into weeks and returns totals for each week.
+    /// Returns only as many arrays as the month actually has weeks.
+    private func monthlyWeekTotals(_ month: [Entry], monthStart: Date, calendar: Calendar) -> [Decimal] {
+        let monthInterval = calendar.dateInterval(of: .month, for: monthStart)!
+        let totalDays = calendar.dateComponents([.day], from: monthInterval.start, to: monthInterval.end).day ?? 28
+        let weeksInMonth = Int(ceil(Double(totalDays) / 7))
+
+        var result: [Decimal] = Array(repeating: Decimal(0), count: weeksInMonth)
+
+        for entry in month {
+            let daysSinceStart = calendar.dateComponents([.day], from: calendar.startOfDay(for: monthStart), to: calendar.startOfDay(for: entry.date)).day ?? 0
+            let weekIndex = daysSinceStart / 7
+            if weekIndex >= 0 && weekIndex < weeksInMonth {
+                result[weekIndex] += entry.amount
+            }
+        }
+
+        return result
+    }
+
     private func dayLetter(_ index: Int) -> String {
-        ["M", "T", "W", "T", "F", "S", "S"][index]
+        RecapMath.weekdayLabels()[index]
     }
 
     private func dailyTotals(_ week: [Entry]) -> [Decimal] {
@@ -295,5 +517,27 @@ extension Money {
         formatter.minimumFractionDigits = 0
         formatter.maximumFractionDigits = 1
         return formatter.string(from: NSDecimalNumber(decimal: value)) ?? "0%"
+    }
+}
+
+/// Thin horizontal budget bar — sage while under budget, clay once overspent.
+/// A tiny sliver stays visible even at zero so an untouched budget still reads
+/// as a bar, matching the day-chart baseline treatment.
+struct BudgetProgressBar: View {
+    let fraction: CGFloat
+    let over: Bool
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Theme.surfaceStrong)
+                Capsule()
+                    .fill(over ? Theme.clay : Theme.accent)
+                    .frame(width: max(4, geometry.size.width * fraction))
+            }
+        }
+        .frame(height: 5)
+        .accessibilityHidden(true)
     }
 }

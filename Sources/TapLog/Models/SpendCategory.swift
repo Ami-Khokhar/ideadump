@@ -1,6 +1,12 @@
 import Foundation
 import SwiftData
 
+/// How an optional `budgetTarget` on `SpendCategory` resets.
+enum BudgetPeriod: String, Codable, CaseIterable, Sendable {
+    case weekly
+    case monthly
+}
+
 /// A user-managed spending category. Entries reference categories by their stable
 /// `key` string, so renaming or deleting a category never breaks an entry — display
 /// simply falls back to "Other".
@@ -12,13 +18,52 @@ final class SpendCategory {
     var sortOrder: Int
     /// Number of times this category has been used — drives chip sort order and tile suggestions.
     var logCount: Int = 0
+    /// Optional per-period spend target. When nil, the category has no budget configured.
+    /// Backed by a Decimal so currency math stays exact; defaults to nil so categories
+    /// persisted before this field existed remain valid (SwiftData lightweight migration).
+    /// Changing either budget setting resets the tree-health baseline. This prevents a
+    /// new target from silently reclassifying a period that was resolved under the old
+    /// configuration.
+    var budgetTarget: Decimal? {
+        didSet {
+            if oldValue != budgetTarget {
+                budgetHealthResetDate = .now
+            }
+        }
+    }
+    /// Optional period (weekly or monthly) the target resets on. Must be set together with
+    /// `budgetTarget`; defaults to nil so existing categories round-trip cleanly.
+    var budgetPeriod: BudgetPeriod? {
+        didSet {
+            if oldValue != budgetPeriod {
+                budgetHealthResetDate = .now
+            }
+        }
+    }
+    /// The instant at which the current budget configuration became the health baseline.
+    /// A nil value preserves the original behavior for categories created before budget
+    /// editing was introduced. The field is persisted so a relaunch cannot resurrect
+    /// health derived from a superseded target or period.
+    var budgetHealthResetDate: Date?
 
-    init(key: String, name: String, emoji: String, sortOrder: Int = 0, logCount: Int = 0) {
+    init(
+        key: String,
+        name: String,
+        emoji: String,
+        sortOrder: Int = 0,
+        logCount: Int = 0,
+        budgetTarget: Decimal? = nil,
+        budgetPeriod: BudgetPeriod? = nil,
+        budgetHealthResetDate: Date? = nil
+    ) {
         self.key = key
         self.name = name
         self.emoji = emoji
         self.sortOrder = sortOrder
         self.logCount = logCount
+        self.budgetTarget = budgetTarget
+        self.budgetPeriod = budgetPeriod
+        self.budgetHealthResetDate = budgetHealthResetDate
     }
 }
 

@@ -28,11 +28,9 @@ struct LogHomeView: View {
     @State private var isPlanned = false
     @State private var showingCategoryPicker = false
     @State private var showingManageCategories = false
-    @State private var hasFocused = false
     @State private var amountError: String?
     /// Opening animation: 0 = logo visible, 1 = content visible
     @State private var openingPhase: CGFloat = 0
-    @FocusState private var amountFocused: Bool
 
     let isOnboarding: Bool
     let prefill: CapturePrefill?
@@ -81,10 +79,6 @@ struct LogHomeView: View {
         }
         .onAppear {
             applyPrefill()
-            if !hasFocused {
-                hasFocused = true
-                amountFocused = true
-            }
             if skipSplash || reduceMotion {
                 // Intent launch — skip straight to capture, no logo delay.
                 openingPhase = 1
@@ -112,7 +106,6 @@ struct LogHomeView: View {
                 withAnimation(reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 1.0)) {
                     openingPhase = 1
                 }
-                amountFocused = true
             }
         }
         .onChange(of: prefill) { applyPrefill() }
@@ -125,7 +118,6 @@ struct LogHomeView: View {
                 onSelect: { categoryKey in
                     selectedCategoryKey = categoryKey
                     showingCategoryPicker = false
-                    amountFocused = true
                 },
                 onManage: {
                     showingCategoryPicker = false
@@ -145,25 +137,31 @@ struct LogHomeView: View {
 
     // MARK: - Main Content
 
+    /// The keypad and Log button are pinned as a bottom inset so the two controls
+    /// that finish the task are always under the thumb, whatever the screen height.
+    /// Everything above them scrolls, which is what keeps this usable on a 4.7"
+    /// device where the keypad alone claims most of the viewport.
     private var mainContent: some View {
-        GeometryReader { geometry in
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 0) {
-                    statusBar
-                    Spacer(minLength: geometry.size.height < 650 ? 8 : 20)
-                    amountArea
-                    Spacer(minLength: geometry.size.height < 650 ? 8 : 20)
-                    categoryLine
-                    tileRow
-                    noteField
-                }
-                .frame(minHeight: geometry.size.height, alignment: .top)
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(spacing: 0) {
+                statusBar
+                Spacer(minLength: 20)
+                amountArea
+                Spacer(minLength: 20)
+                categoryLine
+                tileRow
+                noteField
             }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
+        }
+        .scrollBounceBehavior(.basedOnSize)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            VStack(spacing: 0) {
+                keypad
                 logButton
                     .padding(.bottom, 8)
                     .padding(.top, 4)
             }
+            .background(Theme.background)
         }
     }
 
@@ -220,60 +218,127 @@ struct LogHomeView: View {
 
     // MARK: - 2. Amount Area
 
+    /// The amount is a *display*, not a text field: entry happens on the in-app
+    /// keypad below. The system decimal pad used to animate in over the lower
+    /// third of this screen, so the layout had to reserve that space and sat
+    /// half-empty until the keyboard arrived — a visible pause on a task the app
+    /// advertises as taking five seconds. Owning the keypad removes the pause and
+    /// puts the amount, the tiles and Log inside one thumb arc.
     private var amountArea: some View {
         VStack(spacing: 8) {
-            if amountText.isEmpty && !amountFocused {
-                Text("Type the amount, tap Log.")
+            if amountText.isEmpty {
+                Text("Tap the amount, then Log.")
                     .font(.subheadline)
                     .foregroundStyle(Theme.textTertiary)
                     .transition(.opacity)
-                    .animation(.easeInOut(duration: 0.3), value: amountFocused)
             }
-            GeometryReader { geometry in
-                let fontSize = AmountFont.fontSize(for: amountText, dynamicTypeSize: dynamicTypeSize)
-                let fieldHeight = AmountLayout.fieldHeight(fontSize: fontSize)
-                let symbolWidth = (Money.currencySymbol as NSString).size(
-                    withAttributes: [.font: UIFont.systemFont(ofSize: fontSize * 0.5, weight: .semibold)]
-                ).width
-                let maxFieldWidth = max(44, geometry.size.width - symbolWidth - 34)
-                let fieldWidth = AmountLayout.fieldWidth(
-                    text: amountText,
-                    fontSize: fontSize,
-                    maxWidth: maxFieldWidth
-                )
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(Money.currencySymbol)
-                        .font(AmountFont.symbolFont(for: amountText, dynamicTypeSize: dynamicTypeSize))
-                        .foregroundStyle(Theme.textTertiary)
-                        .accessibilityHidden(true)
-                    AmountTextField(
-                        text: $amountText,
-                        isFocused: $amountFocused,
-                        fontSize: fontSize,
-                        minimumFontSize: AmountLayout.minimumFontSize(
-                            text: amountText,
-                            fontSize: fontSize,
-                            availableWidth: fieldWidth
-                        ),
-                        onErrorChanged: { error in setAmountError(error) }
-                    )
-                    .frame(width: fieldWidth, height: fieldHeight)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+
+            let fontSize = AmountFont.fontSize(for: amountText, dynamicTypeSize: dynamicTypeSize)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(Money.currencySymbol)
+                    .font(AmountFont.symbolFont(for: amountText, dynamicTypeSize: dynamicTypeSize))
+                    .foregroundStyle(Theme.textTertiary)
+                    .accessibilityHidden(true)
+                Text(amountText.isEmpty ? "0" : amountText)
+                    .font(Theme.amount(fontSize))
+                    .foregroundStyle(amountText.isEmpty ? Theme.textTertiary : Theme.textPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .contentTransition(.numericText())
             }
-            .frame(height: AmountLayout.heroHeight(fontSize: AmountFont.fontSize(
-                for: amountText,
-                dynamicTypeSize: dynamicTypeSize
-            )))
+            .frame(height: AmountLayout.heroHeight(fontSize: fontSize))
+            .animation(reduceMotion ? nil : Motion.gentleFast, value: amountText)
 
             if let error = amountError {
                 Text(error)
                     .font(.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Theme.clay)
                     .multilineTextAlignment(.center)
             }
         }
-        .accessibilityElement(children: .contain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(
+            amountText.isEmpty
+                ? "Amount, empty"
+                : "Amount \(Money.format(AmountInputFilter.parsedAmount(amountText) ?? 0))"
+        )
+    }
+
+    // MARK: - 2b. Keypad
+
+    /// Digits laid out as a phone keypad. The decimal separator follows the
+    /// user's locale so the glyph on the key matches what `Money.parse` expects.
+    private var keypadKeys: [String] {
+        let separator = Locale.current.decimalSeparator ?? "."
+        return ["1", "2", "3", "4", "5", "6", "7", "8", "9", separator, "0", ""]
+    }
+
+    private var keypad: some View {
+        LazyVGrid(
+            columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3),
+            spacing: 10
+        ) {
+            ForEach(Array(keypadKeys.enumerated()), id: \.offset) { _, key in
+                if key.isEmpty {
+                    keypadButton(label: nil, action: deleteAmountCharacter)
+                        .accessibilityLabel("Delete")
+                } else {
+                    keypadButton(label: key) { appendAmountCharacter(key) }
+                }
+            }
+        }
+        .padding(.horizontal, 24)
+    }
+
+    private func keypadButton(label: String?, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Group {
+                if let label {
+                    Text(label)
+                        .font(Theme.amount(26, weight: .medium))
+                        .foregroundStyle(Theme.textPrimary)
+                } else {
+                    Image(systemName: "delete.left")
+                        .font(.title3)
+                        .foregroundStyle(Theme.textSecondary)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 56)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(ZenPress())
+    }
+
+    // MARK: - Keypad input
+
+    /// Routes a key press through the same `AmountInputFilter.filterEdit` path the
+    /// UIKit field uses, so separator rules, the two-decimal cap and the maximum
+    /// amount stay in one tested place rather than being re-implemented here.
+    private func appendAmountCharacter(_ character: String) {
+        let result = AmountInputFilter.filterEdit(
+            current: amountText,
+            range: NSRange(location: (amountText as NSString).length, length: 0),
+            replacement: character
+        )
+        setAmountError(result.error)
+        guard !result.restoresPrevious else {
+            UISelectionFeedbackGenerator().selectionChanged()
+            return
+        }
+        amountText = result.text
+    }
+
+    private func deleteAmountCharacter() {
+        guard !amountText.isEmpty else { return }
+        let length = (amountText as NSString).length
+        let result = AmountInputFilter.filterEdit(
+            current: amountText,
+            range: NSRange(location: length - 1, length: 1),
+            replacement: ""
+        )
+        setAmountError(result.error)
+        amountText = result.text
     }
 
     // MARK: - 3. Category + Planned Line
@@ -327,7 +392,6 @@ struct LogHomeView: View {
         let isSelected = selectedCategoryKey == category.key
         return Button {
             selectedCategoryKey = category.key
-            amountFocused = true
         } label: {
             VStack(spacing: 4) {
                 Text(category.emoji)
@@ -423,13 +487,16 @@ struct LogHomeView: View {
             }) {
                 selectedCategoryKey = match.key
             } else {
-                resolveLastUsedCategoryIfNeeded()
+                // The requested category doesn't exist (deleted or renamed) —
+                // land on the fallback so the miss is visible instead of
+                // silently keeping the previous selection and mis-tagging.
+                // Lookup and save render a missing fallback object as "Other".
+                selectedCategoryKey = SpendCategory.fallbackKey
             }
         } else {
             resolveLastUsedCategoryIfNeeded()
         }
         if prefill.amountText != nil || prefill.note != nil {
-            amountFocused = true
         }
         onPrefillConsumed?()
     }
@@ -484,11 +551,11 @@ struct LogHomeView: View {
         amountText = ""
         note = ""
         isPlanned = false
-        amountFocused = true
 
         amountError = nil
         onLogged?()
     }
+
 
     private func setAmountError(_ error: String?) {
         if reduceMotion {

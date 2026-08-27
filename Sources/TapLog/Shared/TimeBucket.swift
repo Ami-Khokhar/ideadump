@@ -49,76 +49,110 @@ enum TimeBucket: Int, CaseIterable, Sendable {
 
     // MARK: - Time-Aware Category Learning
 
-    /// Minimum number of total logs before time-aware suggestions activate.
+    /// Minimum number of windowed logs before time-aware suggestions activate.
     static let activationThreshold = 5
+    /// Rolling window in days — only entries within this period influence suggestions.
+    static let windowDays = 60
+    /// Pseudo-observation count for the global prior in Bayesian blending.
+    static let bayesianK = 3.0
 
     /// Computes the blended top categories for the current time bucket.
     ///
     /// Strategy:
-    /// 1. Count `(category, bucket)` pairs from all non-archived entries.
-    /// 2. For the current bucket, sort categories by frequency.
-    /// 3. Fill `maxSlots` tiles: time-aware categories first, then global top-up.
-    /// 4. If total logs < `activationThreshold`, return only global top categories.
+    /// 1. Restrict to a 60-day rolling window so stale habits don't crowd out new ones.
+    /// 2. Split entries into weekday / weekend to avoid surfacing commute categories
+    ///    on Saturdays and leisure categories on Monday mornings.
+    /// 3. Count (category, bucket) pairs from the matching partition.
+    /// 4. Rank with a Bayesian blend: global-frequency prior (k=3 pseudo-observations)
+    ///    + bucket evidence. Low bucket counts stay anchored near the global ranking
+    ///    instead of flipping tiles on a single log.
+    /// 5. If windowed logs < activationThreshold, return plain global top categories.
     ///
     /// - Parameters:
     ///   - entries: All active (non-archived, non-pending) entries.
     ///   - categories: All SpendCategory objects (for name/emoji lookup).
     ///   - maxSlots: Maximum number of tiles to show (default 4).
+    ///   - referenceDate: Point-in-time for bucket and weekday/weekend derivation (default .now).
     /// - Returns: An ordered array of category keys to display as tiles.
     static func blendedTopCategories(
         entries: [Entry],
         categories: [SpendCategory],
-        maxSlots: Int = 4
+        maxSlots: Int = 4,
+        referenceDate: Date = .now
     ) -> [String] {
-        // Need enough data before time-aware kicks in.
-        guard entries.count >= activationThreshold else {
-            return globalTopCategories(entries: entries, categories: categories, limit: maxSlots)
+        let calendar = Calendar.current
+        let windowStart = calendar.date(byAdding: .day, value: -windowDays, to: referenceDate)!
+        let windowedEntries = entries.filter { $0.date >= windowStart }
+
+        guard windowedEntries.count >= activationThreshold else {
+            return globalTopCategories(entries: windowedEntries, categories: categories, limit: maxSlots)
         }
 
-        let currentBucket = TimeBucket.forDate(.now)
+        let currentBucket = TimeBucket.forDate(referenceDate)
+        let todayIsWeekend = calendar.isDateInWeekend(referenceDate)
 
-        // Count (category, bucket) pairs.
-        var bucketCounts: [String: Int] = [:]    // category key → count in current bucket
-        var globalCounts: [String: Int] = [:]    // category key → total count across all buckets
+        var bucketCounts: [String: Int] = [:]
+        var globalCounts: [String: Int] = [:]
 
-        for entry in entries {
+        for entry in windowedEntries {
             let key = entry.category
             globalCounts[key, default: 0] += 1
-            if TimeBucket.forDate(entry.date) == currentBucket {
+            // Only count bucket matches from the same weekday/weekend partition.
+            if calendar.isDateInWeekend(entry.date) == todayIsWeekend,
+               TimeBucket.forDate(entry.date) == currentBucket {
                 bucketCounts[key, default: 0] += 1
             }
         }
 
-        // Sort categories by bucket frequency, then by global frequency as tiebreaker.
-        let sortedByBucket = bucketCounts.sorted { a, b in
-            if a.value != b.value { return a.value > b.value }
-            return (globalCounts[a.key] ?? 0) > (globalCounts[b.key] ?? 0)
+        // Bayesian blend: score = bucket evidence + global prior scaled to k pseudo-observations.
+        // When bucket data is thin, the prior keeps the ranking close to the global top;
+        // as bucket evidence accumulates it outweighs the prior naturally.
+        let totalGlobal = max(1, globalCounts.values.reduce(0, +))
+        // Deterministic final tie-break: display order, then key. Without it,
+        // equal scores (e.g. an empty bucket collapsing everything to the prior)
+        // sort by raw dictionary order and the tiles reshuffle every launch.
+        let displayOrder = Dictionary(uniqueKeysWithValues: categories.map { ($0.key, $0.sortOrder) })
+
+        func ranksHigher(_ lhs: String, than rhs: String, score lhsScore: Double, rhsScore: Double) -> Bool {
+            if lhsScore != rhsScore { return lhsScore > rhsScore }
+            let lhsOrder = displayOrder[lhs] ?? Int.max
+            let rhsOrder = displayOrder[rhs] ?? Int.max
+            if lhsOrder != rhsOrder { return lhsOrder < rhsOrder }
+            return lhs < rhs
         }
 
-        // Start with time-aware picks (exclude "other" unless it's the only option).
-        var result: [String] = []
-        for (key, _) in sortedByBucket {
-            guard result.count < maxSlots else { break }
-            if key != SpendCategory.fallbackKey || result.isEmpty {
-                result.append(key)
+        let scored = globalCounts.keys
+            .filter { $0 != SpendCategory.fallbackKey }
+            .map { key -> (key: String, score: Double) in
+                let bc = Double(bucketCounts[key] ?? 0)
+                let gc = Double(globalCounts[key] ?? 0)
+                return (key, bc + gc / Double(totalGlobal) * bayesianK)
             }
+            .sorted {
+                ranksHigher($0.key, than: $1.key, score: $0.score, rhsScore: $1.score)
+            }
+
+        var result = Array(scored.prefix(maxSlots).map(\.key))
+
+        // If no non-fallback categories exist, pass through the fallback.
+        if result.isEmpty {
+            return globalTopCategories(entries: windowedEntries, categories: categories, limit: maxSlots)
         }
 
-        // Fill remaining slots with global top categories not already included.
+        // Fill any remaining slots with global top categories not already present.
         if result.count < maxSlots {
-            let global = globalTopCategories(entries: entries, categories: categories, limit: maxSlots)
-            for key in global {
+            let global = globalTopCategories(entries: windowedEntries, categories: categories, limit: maxSlots)
+            for key in global where !result.contains(key) {
                 guard result.count < maxSlots else { break }
-                if !result.contains(key) {
-                    result.append(key)
-                }
+                result.append(key)
             }
         }
 
         return result
     }
 
-    /// Pure global top categories by frequency (no time awareness).
+    /// Pure global top categories by frequency within the provided entry set.
+    /// Ties break on display order, then key, so the result is deterministic.
     private static func globalTopCategories(
         entries: [Entry],
         categories: [SpendCategory],
@@ -128,9 +162,16 @@ enum TimeBucket: Int, CaseIterable, Sendable {
         for entry in entries {
             counts[entry.category, default: 0] += 1
         }
+        let displayOrder = Dictionary(uniqueKeysWithValues: categories.map { ($0.key, $0.sortOrder) })
         return counts
-            .sorted { $0.value > $1.value }
+            .sorted { lhs, rhs in
+                if lhs.value != rhs.value { return lhs.value > rhs.value }
+                let lhsOrder = displayOrder[lhs.key] ?? Int.max
+                let rhsOrder = displayOrder[rhs.key] ?? Int.max
+                if lhsOrder != rhsOrder { return lhsOrder < rhsOrder }
+                return lhs.key < rhs.key
+            }
             .prefix(limit)
-            .map { $0.key }
+            .map(\.key)
     }
 }

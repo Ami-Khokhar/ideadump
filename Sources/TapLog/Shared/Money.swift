@@ -39,11 +39,19 @@ enum Money {
     }
 
     /// Display symbol for the capture hero ("$", "€", "¥", …).
+    ///
+    /// The fallback derives the symbol from the *same* formatter `format(_:)` uses,
+    /// so the hero symbol can never disagree with the amounts rendered elsewhere.
+    /// The previous fallback built a `Locale` from a currency code — `Locale(identifier:
+    /// "INR")` is not a locale, so it yielded no symbol and silently landed on "$"
+    /// while every other amount on screen rendered as ₹.
     static var currencySymbol: String {
         if let match = supportedCurrencies.first(where: { $0.code == currencyCode }) {
             return match.symbol
         }
-        return Locale(identifier: currencyCode).currencySymbol ?? "$"
+        let rendered = Decimal(0).formatted(.currency(code: currencyCode))
+        let symbol = rendered.filter { !$0.isNumber && $0 != "." && $0 != "," && !$0.isWhitespace }
+        return symbol.isEmpty ? currencyCode : symbol
     }
 
     /// The amount format used everywhere — follows the user's currency setting.
