@@ -200,16 +200,14 @@ enum TimeBucket: Int, CaseIterable, Sendable {
 
         let budgeted = budgetedKeys(in: categories)
 
-        // Cold start: nothing logged yet means nothing to rank, and an empty result
-        // leaves the very first log with no tiles to tap. The whole category list
-        // joins as zero-score candidates so display order can fill the row. They are
-        // only candidates — scoring below still runs, so a budget set before the first
-        // log leads the row rather than being short-circuited by display order.
-        let coldStartFill = counts.isEmpty
-            ? categories.map(\.key).filter { $0 != SpendCategory.fallbackKey }
-            : []
+        // Every category joins as a zero-score candidate so the row always offers
+        // `limit` tiles. Filling only when nothing was logged made the row collapse
+        // from four tiles to one the moment the first entry landed. They are only
+        // candidates — scoring below still runs, so usage and budgets rank above
+        // them and display order fills whatever slots are left over.
+        let fill = categories.map(\.key).filter { $0 != SpendCategory.fallbackKey }
 
-        return Set(counts.keys).union(budgeted).union(coldStartFill)
+        return Set(counts.keys).union(budgeted).union(fill)
             .map { key -> (key: String, score: Double) in
                 (key, Double(counts[key] ?? 0) + (budgeted.contains(key) ? budgetIntentWeight : 0))
             }

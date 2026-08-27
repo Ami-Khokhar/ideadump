@@ -370,16 +370,33 @@ final class TimeBucketTests: XCTestCase {
 
     func testBudgetWithoutPeriodIsNotTreatedAsIntent() {
         // A target with no period is an incomplete budget — CategoryManageView
-        // requires both — so it must not buy a slot.
+        // requires both — so it must not be weighted as intent. Every category
+        // now fills a slot, so absence no longer proves that; rank does. A real
+        // budget scores 1.5 and would outrank the single snacks log, so chai
+        // landing *below* snacks is what shows it earned no boost.
         let ref = weekdayAt(hour: 8)
         let categories = [
             SpendCategory(key: "chai", name: "Chai", emoji: "☕️", sortOrder: 0, budgetTarget: 300),
             SpendCategory(key: "food", name: "Food", emoji: "🍽️", sortOrder: 1),
+            SpendCategory(key: "snacks", name: "Snacks", emoji: "🍿", sortOrder: 2),
         ]
-        let entries = (0..<6).map { _ in makeEntry(category: "food", hour: 8, referenceDay: ref) }
+        var entries = (0..<6).map { _ in makeEntry(category: "food", hour: 8, referenceDay: ref) }
+        entries.append(makeEntry(category: "snacks", hour: 8, referenceDay: ref))
 
         let result = TimeBucket.blendedTopCategories(entries: entries, categories: categories, maxSlots: 4, referenceDate: ref)
-        XCTAssertEqual(result, ["food"])
+        XCTAssertEqual(result, ["food", "snacks", "chai"])
+    }
+
+    func testEveryCategoryFillsTheRowOnceSomethingIsLogged() {
+        // The row must not shrink as soon as the first entry lands: logging one
+        // category used to collapse it from four tiles to one.
+        let ref = weekdayAt(hour: 8)
+        let categories = seedCategories()
+        let entries = [makeEntry(category: "chai", hour: 8, referenceDay: ref)]
+
+        let result = TimeBucket.blendedTopCategories(entries: entries, categories: categories, maxSlots: 4, referenceDate: ref)
+        XCTAssertEqual(result.count, 4)
+        XCTAssertEqual(result.first, "chai")
     }
 
     func testHeavyUsageOutranksNeverLoggedBudget() {
