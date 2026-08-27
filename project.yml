@@ -8,6 +8,8 @@ settings:
   base:
     SWIFT_VERSION: "5.0"
     CODE_SIGN_STYLE: Automatic
+    # Set here rather than in Xcode so it survives `xcodegen generate`.
+    DEVELOPMENT_TEAM: FKM4DL483M
     CURRENT_PROJECT_VERSION: 1
     MARKETING_VERSION: 0.1.0
 targets:

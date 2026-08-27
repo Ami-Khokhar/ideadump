@@ -14,7 +14,9 @@ enum RecapMath {
         let thisInterval = calendar.dateInterval(of: .weekOfYear, for: now)!
         let thisStart = thisInterval.start
         let lastStart = calendar.date(byAdding: .day, value: -7, to: thisStart)!
-        let thisWeek = entries.filter { $0.date >= thisStart && $0.date < thisInterval.end }
+        // Future-dated entries sit inside the current week interval but haven't
+        // happened yet, so they must not inflate this week's total.
+        let thisWeek = entries.filter { $0.date >= thisStart && $0.date < thisInterval.end && $0.date <= now }
         let lastWeek = entries.filter { $0.date >= lastStart && $0.date < thisStart }
         return (thisWeek, lastWeek)
     }
@@ -30,6 +32,11 @@ enum RecapMath {
         let start = calendar.dateInterval(of: .weekOfYear, for: now)!.start
         var result = Array(repeating: Decimal(0), count: 7)
         for entry in week {
+            // Same future cut-off `splitWeeks` applies. Without it a
+            // future-dated entry was left out of the week's total yet still
+            // drew a bar in the chart above it — the two halves of one recap
+            // disagreeing about whether the money had been spent.
+            guard entry.date <= now else { continue }
             // Compare day boundaries: raw dateComponents truncate toward zero,
             // so an entry hours before the week start would round up to 0 and
             // leak into the first bar.
