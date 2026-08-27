@@ -255,7 +255,227 @@ final class TimeBucketTests: XCTestCase {
         XCTAssertEqual(result[1], "zeta")
     }
 
+    // MARK: - Cold start
+
+    func testEmptyEntriesReturnDefaultCategoriesBySortOrder() {
+        // A fresh install has no history to rank. Returning nothing left the very
+        // first log with an empty tile row, so the display order seeds it instead.
+        let ref = weekdayAt(hour: 8)
+        let result = TimeBucket.blendedTopCategories(
+            entries: [],
+            categories: seedCategories(),
+            maxSlots: 4,
+            referenceDate: ref
+        )
+        XCTAssertEqual(result, ["chai", "food", "transport", "metro"])
+    }
+
+    func testEmptyEntriesExcludeFallbackFromDefaultSet() {
+        // The capture row renders its own "Other" tile; seeding it here duplicates it.
+        let ref = weekdayAt(hour: 8)
+        let categories = [
+            SpendCategory(key: SpendCategory.fallbackKey, name: "Other", emoji: "📦", sortOrder: 0),
+            SpendCategory(key: "chai", name: "Chai", emoji: "☕️", sortOrder: 1),
+        ]
+        let result = TimeBucket.blendedTopCategories(entries: [], categories: categories, maxSlots: 4, referenceDate: ref)
+        XCTAssertEqual(result, ["chai"])
+    }
+
+    func testEmptyEntriesCapDefaultSetAtMaxSlots() {
+        let ref = weekdayAt(hour: 8)
+        let result = TimeBucket.blendedTopCategories(
+            entries: [],
+            categories: seedCategories(),
+            maxSlots: 2,
+            referenceDate: ref
+        )
+        XCTAssertEqual(result, ["chai", "food"])
+    }
+
+    // MARK: - Budget intent
+
+    func testBudgetedCategoryWithNoLogsStillEarnsATile() {
+        // The chicken-and-egg case from the simulator: a ₹300/month budget on chai
+        // that has never been logged. Frequency alone can never surface it.
+        let ref = weekdayAt(hour: 8)
+        let categories = [
+            SpendCategory(key: "chai", name: "Chai", emoji: "☕️", sortOrder: 0,
+                          budgetTarget: 300, budgetPeriod: .monthly),
+            SpendCategory(key: "food", name: "Food", emoji: "🍽️", sortOrder: 1),
+        ]
+        let entries = (0..<6).map { _ in makeEntry(category: "food", hour: 8, referenceDay: ref) }
+
+        let result = TimeBucket.blendedTopCategories(entries: entries, categories: categories, maxSlots: 4, referenceDate: ref)
+        XCTAssertTrue(result.contains("chai"), "a budgeted category must be eligible with zero logs")
+        XCTAssertEqual(result.first, "food", "six logs in this bucket still outrank a never-logged budget")
+    }
+
+    func testBudgetedCategoryLeadsColdStartWhenSortOrderIsOutsideTheRow() {
+        // The simulator repro: fresh install, zero entries, first budget set on a
+        // category that sits outside the first four by display order. Ranking the
+        // cold-start row on sortOrder alone buried it forever.
+        let ref = weekdayAt(hour: 8)
+        let categories = fullSeedCategories()
+        setBudget(on: categories, key: "snacks", target: 50, period: .weekly)
+
+        let result = TimeBucket.blendedTopCategories(entries: [], categories: categories, maxSlots: 4, referenceDate: ref)
+        XCTAssertEqual(result, ["snacks", "chai", "food", "transport"])
+    }
+
+    func testColdStartCapsBudgetsAtMaxSlotsDeterministically() {
+        // Six budgets, four slots: the four lowest sortOrder budgets win and the
+        // order never changes between calls.
+        let ref = weekdayAt(hour: 8)
+        let categories = fullSeedCategories()
+        for key in ["snacks", "bills", "groceries", "shopping", "metro", "lunch"] {
+            setBudget(on: categories, key: key, target: 100, period: .monthly)
+        }
+
+        let result = TimeBucket.blendedTopCategories(entries: [], categories: categories, maxSlots: 4, referenceDate: ref)
+        XCTAssertEqual(result, ["metro", "lunch", "groceries", "shopping"])
+        for _ in 0..<50 {
+            XCTAssertEqual(
+                TimeBucket.blendedTopCategories(entries: [], categories: categories, maxSlots: 4, referenceDate: ref),
+                result
+            )
+        }
+    }
+
+    func testColdStartWithoutBudgetsIsUnchanged() {
+        // No budgets anywhere: the row is still the plain display-order default set.
+        let ref = weekdayAt(hour: 8)
+        let result = TimeBucket.blendedTopCategories(
+            entries: [],
+            categories: fullSeedCategories(),
+            maxSlots: 4,
+            referenceDate: ref
+        )
+        XCTAssertEqual(result, ["chai", "food", "transport", "metro"])
+    }
+
+    func testBudgetedCategorySurfacesBelowActivationThreshold() {
+        // Same repro on a near-fresh install: only 2 logs, so the plain global
+        // ranking runs. It has to honor budgets too or the tile never appears.
+        let ref = weekdayAt(hour: 8)
+        let categories = [
+            SpendCategory(key: "chai", name: "Chai", emoji: "☕️", sortOrder: 0,
+                          budgetTarget: 300, budgetPeriod: .monthly),
+            SpendCategory(key: "food", name: "Food", emoji: "🍽️", sortOrder: 1),
+        ]
+        let entries = (0..<2).map { _ in makeEntry(category: "food", hour: 8, referenceDay: ref) }
+
+        let result = TimeBucket.blendedTopCategories(entries: entries, categories: categories, maxSlots: 4, referenceDate: ref)
+        XCTAssertEqual(result, ["food", "chai"])
+    }
+
+    func testBudgetWithoutPeriodIsNotTreatedAsIntent() {
+        // A target with no period is an incomplete budget — CategoryManageView
+        // requires both — so it must not buy a slot.
+        let ref = weekdayAt(hour: 8)
+        let categories = [
+            SpendCategory(key: "chai", name: "Chai", emoji: "☕️", sortOrder: 0, budgetTarget: 300),
+            SpendCategory(key: "food", name: "Food", emoji: "🍽️", sortOrder: 1),
+        ]
+        let entries = (0..<6).map { _ in makeEntry(category: "food", hour: 8, referenceDay: ref) }
+
+        let result = TimeBucket.blendedTopCategories(entries: entries, categories: categories, maxSlots: 4, referenceDate: ref)
+        XCTAssertEqual(result, ["food"])
+    }
+
+    func testHeavyUsageOutranksNeverLoggedBudget() {
+        // Two slots, three contenders. Budgets are weighted evidence, not a pin —
+        // a user with more budgets than slots keeps their real habits on screen.
+        let ref = weekdayAt(hour: 8)
+        let categories = [
+            SpendCategory(key: "chai", name: "Chai", emoji: "☕️", sortOrder: 0,
+                          budgetTarget: 300, budgetPeriod: .monthly),
+            SpendCategory(key: "food", name: "Food", emoji: "🍽️", sortOrder: 1),
+            SpendCategory(key: "metro", name: "Metro", emoji: "🚇", sortOrder: 2),
+        ]
+        var entries: [Entry] = []
+        for _ in 0..<6 { entries.append(makeEntry(category: "food", hour: 8, referenceDay: ref)) }
+        for _ in 0..<4 { entries.append(makeEntry(category: "metro", hour: 8, referenceDay: ref)) }
+
+        let result = TimeBucket.blendedTopCategories(entries: entries, categories: categories, maxSlots: 2, referenceDate: ref)
+        XCTAssertEqual(result, ["food", "metro"])
+        XCTAssertFalse(result.contains("chai"), "a never-logged budget must not displace heavy usage")
+    }
+
+    func testBudgetOutranksASingleIncidentalLog() {
+        // The calibration point: gift scores 1 + (1/10)*3 = 1.3, below the 1.5
+        // credited to a declared budget. chai sorts later than gift, so score —
+        // not display order — is what puts it in the second slot.
+        let ref = weekdayAt(hour: 8)
+        let categories = [
+            SpendCategory(key: "gift", name: "Gift", emoji: "🎁", sortOrder: 1),
+            SpendCategory(key: "food", name: "Food", emoji: "🍽️", sortOrder: 2),
+            SpendCategory(key: "chai", name: "Chai", emoji: "☕️", sortOrder: 5,
+                          budgetTarget: 300, budgetPeriod: .monthly),
+        ]
+        var entries: [Entry] = []
+        for _ in 0..<9 { entries.append(makeEntry(category: "food", hour: 14, referenceDay: ref)) }
+        entries.append(makeEntry(category: "gift", hour: 8, referenceDay: ref))
+
+        let result = TimeBucket.blendedTopCategories(entries: entries, categories: categories, maxSlots: 2, referenceDate: ref)
+        XCTAssertEqual(result, ["food", "chai"])
+    }
+
+    func testBudgetBlendIsStableAcrossRepeatedCalls() {
+        // Budgets widen the candidate set to a Set union — the sort must still be
+        // total, or tiles reshuffle between launches with no data change.
+        let ref = weekdayAt(hour: 8)
+        let categories = seedCategories()
+        setBudget(on: categories, key: "chai", target: 300, period: .monthly)
+        setBudget(on: categories, key: "metro", target: 900, period: .weekly)
+
+        var entries: [Entry] = []
+        for _ in 0..<3 { entries.append(makeEntry(category: "food", hour: 8, referenceDay: ref)) }
+        for _ in 0..<3 { entries.append(makeEntry(category: "shopping", hour: 14, referenceDay: ref)) }
+        for _ in 0..<2 { entries.append(makeEntry(category: "transport", hour: 20, referenceDay: ref)) }
+
+        let first = TimeBucket.blendedTopCategories(entries: entries, categories: categories, maxSlots: 4, referenceDate: ref)
+        XCTAssertEqual(first.count, 4)
+        for _ in 0..<50 {
+            XCTAssertEqual(
+                TimeBucket.blendedTopCategories(entries: entries, categories: categories, maxSlots: 4, referenceDate: ref),
+                first
+            )
+        }
+    }
+
     // MARK: - Helpers
+
+    /// The full seed list in its shipped display order, plus the fallback.
+    private func fullSeedCategories() -> [SpendCategory] {
+        let seeds: [(String, Int)] = [
+            ("chai", 0), ("food", 1), ("transport", 2), ("metro", 3), ("lunch", 4),
+            ("groceries", 5), ("shopping", 6), ("bills", 7), ("snacks", 8),
+            (SpendCategory.fallbackKey, 12),
+        ]
+        return seeds.map { SpendCategory(key: $0.0, name: $0.0, emoji: "•", sortOrder: $0.1) }
+    }
+
+    /// SpendCategory is a reference type, so this mutates the object the array holds.
+    private func setBudget(on categories: [SpendCategory], key: String, target: Decimal, period: BudgetPeriod) {
+        guard let category = categories.first(where: { $0.key == key }) else {
+            XCTFail("no category named \(key)")
+            return
+        }
+        category.budgetTarget = target
+        category.budgetPeriod = period
+    }
+
+    /// Five categories in seed display order plus the fallback.
+    private func seedCategories() -> [SpendCategory] {
+        [
+            SpendCategory(key: "chai", name: "Chai", emoji: "☕️", sortOrder: 0),
+            SpendCategory(key: "food", name: "Food", emoji: "🍽️", sortOrder: 1),
+            SpendCategory(key: "transport", name: "Transport", emoji: "🚌", sortOrder: 2),
+            SpendCategory(key: "metro", name: "Metro", emoji: "🚇", sortOrder: 3),
+            SpendCategory(key: "shopping", name: "Shopping", emoji: "🛍️", sortOrder: 4),
+            SpendCategory(key: SpendCategory.fallbackKey, name: "Other", emoji: "📦", sortOrder: 99),
+        ]
+    }
 
     private func weekdayAt(hour: Int) -> Date {
         nextWeekday(hour: hour)
