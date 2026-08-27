@@ -32,12 +32,18 @@ struct ContentView: View {
     @State private var activeDeferredPrompt: DeferredPrompt?
     @State private var loggedInCurrentSession = false
     @State private var suppressDeferredPromptsThisSession = false
+    /// Destination to open once a first-run explainer is dismissed. Set only by
+    /// `openRoute`, so the explainer and the screen it describes are presented
+    /// one after the other rather than stacked as two sheets.
+    @State private var routeAfterExplainer: Route?
 
     enum Route: String, Identifiable {
         case history
         case categories
         case budgets
         case recap
+        case budgetsExplainer
+        case recapExplainer
         case frontDoors
         case settings
 
@@ -83,12 +89,17 @@ struct ContentView: View {
                             Label("History", systemImage: "clock")
                         }
                         Button {
-                            route = .budgets
+                            openRoute(.budgets)
                         } label: {
                             Label("Budgets", systemImage: "leaf")
                         }
                         Button {
-                            route = .recap
+                            route = .categories
+                        } label: {
+                            Label("Categories", systemImage: "tag")
+                        }
+                        Button {
+                            openRoute(.recap)
                         } label: {
                             Label("Recap", systemImage: "chart.bar")
                         }
@@ -171,7 +182,7 @@ struct ContentView: View {
             guard let prefill = CapturePrefill(url: url) else { return }
             routeToDirectCapture(prefill: prefill, recordDirectUse: true)
         }
-        .sheet(item: $route) { route in
+        .sheet(item: $route, onDismiss: continueAfterExplainer) { route in
             Group {
                 switch route {
                 case .history:
@@ -183,6 +194,10 @@ struct ContentView: View {
                     BudgetsView()
                 case .recap:
                     WeeklyRecapView()
+                case .budgetsExplainer:
+                    FeatureExplainerView.budgets
+                case .recapExplainer:
+                    FeatureExplainerView.recap
                 case .frontDoors:
                     SetupFrontDoorsView(onDone: {
                         OnboardingFlow.dismissFasterWays()
@@ -192,6 +207,11 @@ struct ContentView: View {
                 }
             }
             .applyAppearanceOverride()
+            // The root `.tint` above is applied *inside* this `.sheet` modifier, so
+            // presented routes start from the environment's default blue rather than
+            // sage — which is why the capture screen's category picker looked themed
+            // while the same List opened from the menu did not. Re-apply it here.
+            .tint(Theme.accent)
         }
         .fullScreenCover(item: $onboardingStep, onDismiss: {
             onboardingStep = nil
@@ -234,6 +254,33 @@ struct ContentView: View {
 
     /// Consumes a persisted pending activation. Only changes routing state when
     /// the result is `.open`; an ordinary launch (`.none`) is a no-op.
+    /// Opens `destination`, showing its one-time explainer first when the user
+    /// has not seen it. The explainer is presented as the only sheet; dismissing
+    /// it continues on to `destination` from `continueAfterExplainer`.
+    private func openRoute(_ destination: Route) {
+        switch destination {
+        case .budgets where OnboardingFlow.shouldShowExplainer(OnboardingFlow.budgetsExplainerSeenKey):
+            OnboardingFlow.markExplainerSeen(OnboardingFlow.budgetsExplainerSeenKey)
+            routeAfterExplainer = destination
+            route = .budgetsExplainer
+        case .recap where OnboardingFlow.shouldShowExplainer(OnboardingFlow.recapExplainerSeenKey):
+            OnboardingFlow.markExplainerSeen(OnboardingFlow.recapExplainerSeenKey)
+            routeAfterExplainer = destination
+            route = .recapExplainer
+        default:
+            route = destination
+        }
+    }
+
+    /// Continues to the screen an explainer was standing in front of. Presenting
+    /// straight from `onDismiss` races the dismissal animation, so the next sheet
+    /// is scheduled once the current one has actually gone away.
+    private func continueAfterExplainer() {
+        guard let next = routeAfterExplainer else { return }
+        routeAfterExplainer = nil
+        DispatchQueue.main.async { route = next }
+    }
+
     private func consumePendingIntent() {
         let activation = OpenCaptureIntent.consumePendingActivation()
         guard case .open(let pendingPrefill) = activation else { return }

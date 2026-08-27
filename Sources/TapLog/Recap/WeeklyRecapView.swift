@@ -31,6 +31,7 @@ struct WeeklyRecapView: View {
 
     /// Set true on first appear so the bars grow up from the baseline once.
     @State private var barsGrown = false
+    @State private var showingExplainer = false
 
     /// Current recap timespan selection.
     @State private var span: RecapSpan = .week
@@ -58,10 +59,22 @@ struct WeeklyRecapView: View {
             }
             .background(Theme.background)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showingExplainer = true
+                    } label: {
+                        Image(systemName: "info.circle")
+                    }
+                    .accessibilityLabel("How to read this recap")
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
                         .fontWeight(.semibold)
                 }
+            }
+            .sheet(isPresented: $showingExplainer) {
+                FeatureExplainerView.recap
+                    .applyAppearanceOverride()
             }
             .onAppear {
                 // Let the sheet settle before the bars rise.
@@ -325,12 +338,23 @@ struct WeeklyRecapView: View {
             }
     }
 
+    /// The one section that does *not* follow the span toggle. A budget resets on
+    /// its own weekly or monthly cycle, and re-slicing a monthly target into a
+    /// week would mean inventing a prorated figure the user never set — so the
+    /// rows keep their real period and say so instead, both here and on every
+    /// row's numbers.
     private var budgetsSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("BUDGETS")
                 .font(.caption2.weight(.semibold))
                 .kerning(0.9)
                 .foregroundStyle(Theme.textTertiary)
+
+            Text("Each runs on its own cycle, not the one selected above.")
+                .font(.caption2)
+                .foregroundStyle(Theme.textTertiary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 2)
                 .padding(.bottom, 4)
 
             ForEach(budgetReports, id: \.categoryKey) { report in
@@ -358,10 +382,15 @@ struct WeeklyRecapView: View {
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(Theme.textPrimary)
                     Spacer()
-                    Text("\(Money.format(report.currentSpent)) / \(Money.format(report.target))")
+                    // The cadence rides along with the numbers: a bare
+                    // "₹75.00 / ₹200.00" under a "Week" heading reads as the
+                    // week's, even when it's a monthly target.
+                    Text("\(Money.format(report.currentSpent)) / \(Money.format(report.target)) a \(cadence)")
                         .font(.footnote)
                         .foregroundStyle(Theme.textSecondary)
                         .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 }
                 BudgetProgressBar(fraction: fraction, over: over)
                 Text(over

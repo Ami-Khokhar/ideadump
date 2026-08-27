@@ -35,7 +35,7 @@ struct CategoryManageView: View {
                                             .font(.title3)
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text(category.name)
-                                                .foregroundStyle(.primary)
+                                                .foregroundStyle(Theme.textPrimary)
                                             if let subtitle = budgetSubtitle(for: category) {
                                                 Text(subtitle)
                                                     .font(.caption)
@@ -50,11 +50,18 @@ struct CategoryManageView: View {
                                     }
                                 }
                             }
+                            // `onDelete` needs the ForEach itself, so it has to come
+                            // before any modifier that erases it to `some View`.
                             .onDelete(perform: deleteCategories)
+                            .listRowBackground(Theme.surface)
                         } footer: {
                             Text("Tap a category to rename it or set a weekly/monthly budget. Swipe left to remove a category — existing entries keep their data and show as Other.")
+                                .foregroundStyle(Theme.textSecondary)
                         }
                     }
+                    .scrollContentBackground(.hidden)
+                    .floatingToolbarScrollEdge()
+                    .background(Theme.background)
                 }
             }
             .navigationTitle("Categories")
@@ -130,9 +137,6 @@ struct EditCategorySheet: View {
     @State private var period: BudgetPeriod = .weekly
     @State private var errorMessage: String?
     @State private var loaded = false
-    @State private var previewState: TreeHealthMark = .noBudget
-
-    @Query(filter: #Predicate<Entry> { !$0.isArchived && !$0.isPending }, sort: \Entry.date) private var entries: [Entry]
 
     private static let emojiSuggestions = ["☕️", "🍽️", "🚌", "🏠", "🛍️", "🧾", "🎉", "💊", "🎮", "🐶", "✈️", "📦"]
 
@@ -165,83 +169,11 @@ struct EditCategorySheet: View {
                     }
                 }
                 Section {
-                    // Stepper row with minus/plus buttons
-                    HStack(spacing: 12) {
-                        Button {
-                            let step: Decimal = (period == .weekly) ? 50 : 250
-                            budgetAmount = max(0, budgetAmount - step)
-                            updatePreview()
-                        } label: {
-                            Image(systemName: "minus")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(Theme.textPrimary)
-                                .frame(width: 52, height: 52)
-                                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 18))
-                        }
-                        .buttonStyle(.plain)
-
-                        Spacer()
-                        if budgetAmount > 0 {
-                            Text(Money.format(budgetAmount))
-                                .font(Theme.amount(38))
-                                .foregroundStyle(Theme.textPrimary)
-                        } else {
-                            Text("None")
-                                .font(Theme.amount(38))
-                                .foregroundStyle(Theme.textTertiary)
-                        }
-                        Spacer()
-
-                        Button {
-                            let step: Decimal = (period == .weekly) ? 50 : 250
-                            budgetAmount = min(999999, budgetAmount + step)
-                            updatePreview()
-                        } label: {
-                            Image(systemName: "plus")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(Theme.textPrimary)
-                                .frame(width: 52, height: 52)
-                                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 18))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .frame(height: 52)
-
-                    Picker("Resets", selection: $period) {
-                        Text("Weekly").tag(BudgetPeriod.weekly)
-                        Text("Monthly").tag(BudgetPeriod.monthly)
-                    }
-                    .pickerStyle(.segmented)
-                    .onChange(of: period) { _, _ in
-                        updatePreview()
-                    }
-
-                    // Preview card
-                    VStack(spacing: 16) {
-                        HStack(spacing: 16) {
-                            TreeMark(state: previewState, color: treeColor(for: previewState))
-                                .frame(width: 60, height: 75)
-
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(stateWord(for: previewState))
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(treeColor(for: previewState))
-                                Text(stateExplanation(for: previewState, spent: previewSpend))
-                                    .font(.footnote)
-                                    .foregroundStyle(Theme.textSecondary)
-                            }
-
-                            Spacer()
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(20)
-                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 20))
-                    .transition(.opacity)
-
-                    Text("Changing the target starts the tree over; past periods stay in history but stop counting toward this tree.")
-                        .font(.footnote)
-                        .foregroundStyle(Theme.textTertiary)
+                    BudgetTargetEditor(
+                        categoryKey: category.key,
+                        amount: $budgetAmount,
+                        period: $period
+                    )
                 } header: {
                     Text("Budget")
                 } footer: {
@@ -276,7 +208,6 @@ struct EditCategorySheet: View {
                     budgetAmount = target
                 }
                 period = category.budgetPeriod ?? .weekly
-                updatePreview()
             }
         }
     }
@@ -307,83 +238,6 @@ struct EditCategorySheet: View {
         } catch {
             original.restore(to: category)
             errorMessage = "Could not save: \(error.localizedDescription)"
-        }
-    }
-
-    /// Spend in the period the user is *currently choosing*, not the one last saved.
-    /// The preview has to answer "what will this budget do?", so it cannot go through
-    /// `report(for:)` — that reads the persisted target and period.
-    private var previewSpend: Decimal {
-        let brackets = BudgetCalculator.intervals(for: period, calendar: .current, referenceDate: .now)
-        let matches = BudgetCalculator.activeEntries(entries, matching: category.key, in: brackets.current)
-        return BudgetCalculator.total(of: matches)
-    }
-
-    private func updatePreview() {
-        guard budgetAmount > 0 else {
-            withAnimation(Motion.gentle) {
-                previewState = .noBudget
-            }
-            return
-        }
-
-        let spent = previewSpend
-
-        let state: TreeHealthMark
-        if spent > budgetAmount {
-            state = .wilting
-        } else if budgetAmount >= spent * 3 {
-            state = .growing
-        } else {
-            state = .sprout
-        }
-
-        withAnimation(Motion.gentle) {
-            previewState = state
-        }
-    }
-
-    private func treeColor(for state: TreeHealthMark) -> Color {
-        switch state {
-        case .wilting:
-            return Theme.clay
-        case .noBudget:
-            return Theme.textTertiary
-        default:
-            return Theme.accent
-        }
-    }
-
-    private func stateWord(for state: TreeHealthMark) -> String {
-        switch state {
-        case .noBudget:
-            return "No budget"
-        case .wilting:
-            let cadence = period == .monthly ? "month" : "week"
-            return "Over this \(cadence)"
-        case .growing:
-            return "Steady"
-        case .sprout:
-            return "Recovering"
-        default:
-            return "Growing"
-        }
-    }
-
-    private func stateExplanation(for state: TreeHealthMark, spent: Decimal) -> String {
-        switch state {
-        case .noBudget:
-            return "This category will still log normally, it just won't grow a tree."
-        case .wilting:
-            let overspent = spent - budgetAmount
-            return "You've spent \(Money.format(overspent)) over the budget."
-        case .growing:
-            return "This is a comfortable target — great pace."
-        case .sprout:
-            let remaining = budgetAmount - spent
-            return "Recover this period by staying within the remaining \(Money.format(remaining))."
-        default:
-            return "Your spending is on track."
         }
     }
 }

@@ -19,6 +19,9 @@ struct BudgetsView: View {
 
     private var lookup: CategoryLookup { CategoryLookup(categories) }
 
+    @State private var showingExplainer = false
+    @State private var showingBudgetSetup = false
+
     private var budgetReports: [BudgetCalculator.Report] {
         categories
             .compactMap { BudgetCalculator.report(for: $0, entries: entries) }
@@ -31,12 +34,7 @@ struct BudgetsView: View {
         NavigationStack {
             Group {
                 if budgetReports.isEmpty {
-                    ContentUnavailableView(
-                        "No budgets yet",
-                        systemImage: "leaf",
-                        description: Text("Set a target on any category to start growing a tree.")
-                    )
-                    .background(Theme.background)
+                    emptyState
                 } else {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 0) {
@@ -61,18 +59,114 @@ struct BudgetsView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .scrollContentBackground(.hidden)
+                    .floatingToolbarScrollEdge()
                     .background(Theme.background)
                 }
             }
             .navigationTitle("Budgets")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showingExplainer = true
+                    } label: {
+                        Image(systemName: "info.circle")
+                    }
+                    .accessibilityLabel("What the trees mean")
+                }
+                // Only offered once the grove exists: the empty state already has a
+                // full-width call to action, and two "add" affordances on one screen
+                // would compete rather than help.
+                if !budgetReports.isEmpty {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            showingBudgetSetup = true
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                        .accessibilityLabel("Add a budget")
+                    }
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
                         .fontWeight(.semibold)
                 }
             }
+            .sheet(isPresented: $showingExplainer) {
+                FeatureExplainerView.budgets
+                    .applyAppearanceOverride()
+                    .tint(Theme.accent)
+            }
+            .sheet(isPresented: $showingBudgetSetup) {
+                BudgetSetupView()
+                    .applyAppearanceOverride()
+                    .tint(Theme.accent)
+            }
         }
+    }
+
+    // MARK: - Empty State
+
+    /// The empty state *is* the budgets onboarding: it names the idea, shows the
+    /// three trees the metaphor turns on, and hands over the action. The previous
+    /// version told the user to "set a target on any category" and then offered no
+    /// way to do it — the screen that asks for a budget must also be able to open
+    /// the place budgets are set.
+    private var emptyState: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                HStack(alignment: .bottom, spacing: 18) {
+                    TreeMark(state: .seedling, color: Theme.accent)
+                        .frame(width: 52, height: 65)
+                    TreeMark(state: .growing, color: Theme.accent)
+                        .frame(width: 68, height: 85)
+                    TreeMark(state: .wilting, color: Theme.clay)
+                        .frame(width: 52, height: 65)
+                }
+                .padding(.top, 36)
+                .entrance()
+
+                Text("Budgets grow trees")
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(Theme.textPrimary)
+                    .padding(.top, 26)
+                    .entrance(delay: 0.08)
+
+                Text("Give a category a weekly or monthly target and it grows a tree that reflects how you're doing. Go over and it thins out — it never dies.")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 34)
+                    .padding(.top, 10)
+                    .entrance(delay: 0.14)
+
+                Button {
+                    showingBudgetSetup = true
+                } label: {
+                    Text("Set your first budget")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(Theme.accent, in: Capsule())
+                        .foregroundStyle(Color.white)
+                }
+                .buttonStyle(ZenPress())
+                .padding(.horizontal, 28)
+                .padding(.top, 30)
+                .entrance(delay: 0.2)
+
+                Button("How the trees work") { showingExplainer = true }
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.accent)
+                    .padding(.top, 16)
+                    .entrance(delay: 0.24)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.bottom, 40)
+        }
+        .floatingToolbarScrollEdge()
+        .background(Theme.background)
     }
 
     // MARK: - Grove Band
@@ -113,22 +207,28 @@ struct BudgetsView: View {
     }
 
     /// Groups the six health states into the two things a glance actually asks:
-    /// how many trees are alive and growing, and how many are over their target.
-    /// Naming each state here would pluralise badly ("2 sprouts, 1 seedlings")
-    /// and say less than the split does.
+    /// how many trees are inside their target, and how many are past it. Naming
+    /// each state here would pluralise badly ("2 sprouts, 1 seedlings") and say
+    /// less than the split does.
+    ///
+    /// The wording is deliberately *not* a tree state. This line used to read
+    /// "1 growing" over a single tree the row below labelled "New" — "Growing"
+    /// is one specific state in the legend, so using it as a headcount claimed a
+    /// state the grove didn't have. "Within target" and "over target" describe
+    /// the split without borrowing a name from the legend.
     private func computeGroveSummary() -> String {
-        var growing = 0
-        var over = 0
+        var withinTarget = 0
+        var overTarget = 0
         for report in budgetReports {
             switch report.health {
-            case .seedling, .sprout, .growing: growing += 1
-            case .wilting, .resting: over += 1
+            case .seedling, .sprout, .growing: withinTarget += 1
+            case .wilting, .resting: overTarget += 1
             case .noBudget: break
             }
         }
         var parts: [String] = []
-        if growing > 0 { parts.append("\(growing) growing") }
-        if over > 0 { parts.append("\(over) over budget") }
+        if withinTarget > 0 { parts.append("\(withinTarget) within target") }
+        if overTarget > 0 { parts.append("\(overTarget) over target") }
         return parts.isEmpty ? "" : parts.joined(separator: " · ")
     }
 
