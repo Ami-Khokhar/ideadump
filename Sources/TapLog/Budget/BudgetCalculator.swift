@@ -84,6 +84,58 @@ enum BudgetCalculator {
         entries.reduce(Decimal(0)) { $0 + $1.amount }
     }
 
+    // MARK: - Targets
+
+    /// Largest target the editor accepts. Well past any real category budget, and
+    /// small enough that the amount still renders on one line.
+    static let maxTarget: Decimal = 999_999
+
+    /// Stepper increment for a cadence. Weekly and monthly targets live on
+    /// different grids so either one takes a similar number of taps to dial in.
+    /// It is only the `−`/`+` step: typed and converted amounts are never snapped
+    /// onto it, so an exact target the user chose stays exact.
+    static func step(for period: BudgetPeriod) -> Decimal {
+        period == .weekly ? 50 : 250
+    }
+
+    /// A month averages 52 ÷ 12 ≈ 4.33 weeks — the honest ratio between the two
+    /// cadences, rather than the "4 weeks" that would quietly shrink a budget.
+    private static let weeksPerMonth = Decimal(52) / Decimal(12)
+
+    /// Re-expresses a target in a different cadence, preserving what the user
+    /// actually chose: how much they may spend over time.
+    ///
+    /// Switching the picker used to leave the number alone, so ₹50/week silently
+    /// became ₹50/month — a 4.3× cut to a figure the user deliberately set. The
+    /// amount is therefore scaled proportionally and kept exact: ₹50/week becomes
+    /// ₹216.67/month. Rounding that to a "tidier" ₹250 would be the same class of
+    /// silent rewrite this function exists to prevent.
+    ///
+    /// Zero passes through untouched — "no budget" means the same thing in both
+    /// cadences, and there is no allowance to preserve.
+    static func convertTarget(
+        _ amount: Decimal,
+        from source: BudgetPeriod,
+        to destination: BudgetPeriod
+    ) -> Decimal {
+        guard source != destination, amount > 0 else { return amount }
+
+        let scaled = destination == .monthly
+            ? amount * weeksPerMonth
+            : amount / weeksPerMonth
+
+        // Convert exactly rather than snapping to the stepper's increment. The
+        // amount is the user's number; rounding ₹34,666.67 up to ₹34,750 hands
+        // them a target they never chose, which is the same silent rewrite the
+        // conversion exists to prevent. Two places is currency precision and
+        // stops 52/12 leaving a repeating tail.
+        var rounded = Decimal()
+        var unrounded = scaled
+        NSDecimalRound(&rounded, &unrounded, 2, .plain)
+
+        return min(maxTarget, rounded)
+    }
+
     // MARK: - Report
 
     /// Compact, non-moralizing health for a budget. The tree metaphor stays

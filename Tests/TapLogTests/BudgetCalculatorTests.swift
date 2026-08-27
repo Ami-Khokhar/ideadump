@@ -394,4 +394,65 @@ final class BudgetCalculatorTests: XCTestCase {
         XCTAssertFalse(report.wasPreviouslyOver)
         XCTAssertEqual(report.health, .seedling)
     }
+
+    // MARK: - Target conversion across cadences
+
+    func testWeeklyTargetScalesUpExactly() {
+        // 50 × 52/12 = 216.666…, kept as 216.67 rather than snapped to a 250 grid.
+        XCTAssertEqual(BudgetCalculator.convertTarget(50, from: .weekly, to: .monthly), dec("216.67"))
+        XCTAssertEqual(BudgetCalculator.convertTarget(500, from: .weekly, to: .monthly), dec("2166.67"))
+        XCTAssertEqual(BudgetCalculator.convertTarget(8000, from: .weekly, to: .monthly), dec("34666.67"))
+    }
+
+    func testMonthlyTargetScalesDownExactly() {
+        XCTAssertEqual(BudgetCalculator.convertTarget(250, from: .monthly, to: .weekly), dec("57.69"))
+        XCTAssertEqual(BudgetCalculator.convertTarget(8000, from: .monthly, to: .weekly), dec("1846.15"))
+    }
+
+    func testConversionPreservesArbitraryTypedAmounts() {
+        // A typed target is not on either stepper grid; it must survive a cadence
+        // switch unrounded, which is the whole point of dropping the snap.
+        XCTAssertEqual(BudgetCalculator.convertTarget(8137, from: .weekly, to: .monthly), dec("35260.33"))
+        XCTAssertEqual(BudgetCalculator.convertTarget(1234, from: .monthly, to: .weekly), dec("284.77"))
+    }
+
+    func testConversionRoundTripReturnsToTheOriginalWeeklyTarget() {
+        for weekly in [Decimal(50), 100, 150, 250, 500, 1000, 1850, 5000, 8137] {
+            let monthly = BudgetCalculator.convertTarget(weekly, from: .weekly, to: .monthly)
+            let back = BudgetCalculator.convertTarget(monthly, from: .monthly, to: .weekly)
+            XCTAssertEqual(back, weekly, "\(weekly)/wk → \(monthly)/mo → \(back)/wk drifted")
+        }
+    }
+
+    func testZeroTargetIsNotConverted() {
+        // Zero means "no budget", which reads identically in either cadence —
+        // there is no allowance to preserve, so scaling it would invent one.
+        XCTAssertEqual(BudgetCalculator.convertTarget(0, from: .weekly, to: .monthly), 0)
+        XCTAssertEqual(BudgetCalculator.convertTarget(0, from: .monthly, to: .weekly), 0)
+    }
+
+    func testConvertingToTheSamePeriodLeavesTheTargetAlone() {
+        XCTAssertEqual(BudgetCalculator.convertTarget(175, from: .weekly, to: .weekly), 175)
+        XCTAssertEqual(BudgetCalculator.convertTarget(175, from: .monthly, to: .monthly), 175)
+    }
+
+    func testSmallMonthlyTargetNeverConvertsAwayToNoBudget() {
+        // 50/month is 11.54 a week. Exact conversion keeps it positive on its own,
+        // so a small target can never read as "budget deleted".
+        XCTAssertEqual(BudgetCalculator.convertTarget(50, from: .monthly, to: .weekly), dec("11.54"))
+    }
+
+    /// Decimal's float-literal initializer goes through Double, which cannot hold
+    /// these values exactly — parse from string so the expectations are the
+    /// figures actually being asserted.
+    private func dec(_ value: String) -> Decimal {
+        Decimal(string: value)!
+    }
+
+    func testConvertedTargetStaysWithinTheEditorCap() {
+        XCTAssertEqual(
+            BudgetCalculator.convertTarget(BudgetCalculator.maxTarget, from: .weekly, to: .monthly),
+            BudgetCalculator.maxTarget
+        )
+    }
 }

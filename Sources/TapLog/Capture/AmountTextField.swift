@@ -12,6 +12,15 @@ struct AmountTextField: UIViewRepresentable {
     var minimumFontSize: CGFloat = AmountFont.minFontSize
     var textColor: UIColor = .label
     var tintColor: UIColor = .systemBlue
+    /// Left by default so the capture form's amount lines up with the rest of the
+    /// form; the budget stepper centers it between its − and + buttons instead.
+    var textAlignment: NSTextAlignment = .left
+    /// Puts a Done bar above the keypad. The decimal pad has no return key, so a
+    /// field whose screen has nothing else to tap needs its own way out. Off by
+    /// default: the capture form dismisses the keypad by logging or cancelling.
+    /// A SwiftUI `.toolbar(placement: .keyboard)` cannot do this job — SwiftUI
+    /// only wires that up for its own text inputs, not for a hosted UITextField.
+    var showsDoneAccessory: Bool = false
     var onErrorChanged: (String?) -> Void
 
     func makeCoordinator() -> Coordinator {
@@ -25,7 +34,7 @@ struct AmountTextField: UIViewRepresentable {
         field.text = text
         field.placeholder = placeholder
         field.keyboardType = .decimalPad
-        field.textAlignment = .left
+        field.textAlignment = textAlignment
         field.font = .monospacedDigitSystemFont(ofSize: fontSize, weight: .medium)
         field.textColor = textColor
         field.tintColor = tintColor
@@ -35,6 +44,9 @@ struct AmountTextField: UIViewRepresentable {
         field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         field.accessibilityLabel = "Amount"
         field.accessibilityValue = text.isEmpty ? "No amount" : text
+        if showsDoneAccessory {
+            field.inputAccessoryView = context.coordinator.makeDoneAccessory(tintColor: tintColor)
+        }
         return field
     }
 
@@ -61,6 +73,9 @@ struct AmountTextField: UIViewRepresentable {
         if uiView.tintColor != tintColor {
             uiView.tintColor = tintColor
         }
+        if uiView.textAlignment != textAlignment {
+            uiView.textAlignment = textAlignment
+        }
         let accessibilityValue = text.isEmpty ? "No amount" : text
         if uiView.accessibilityValue != accessibilityValue {
             uiView.accessibilityValue = accessibilityValue
@@ -77,6 +92,29 @@ struct AmountTextField: UIViewRepresentable {
 
         init(parent: AmountTextField) {
             self.parent = parent
+        }
+
+        /// Built in UIKit rather than with `.toolbar(placement: .keyboard)`
+        /// because SwiftUI only wires that placement up for its own text inputs,
+        /// leaving a hosted UITextField with no way to dismiss the decimal pad.
+        func makeDoneAccessory(tintColor: UIColor) -> UIToolbar {
+            let bar = UIToolbar()
+            bar.sizeToFit()
+            bar.tintColor = tintColor
+            bar.items = [
+                UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil),
+                UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(doneTapped)),
+            ]
+            return bar
+        }
+
+        /// Resigns whatever holds first responder rather than clearing the focus
+        /// binding: the field deliberately only *acquires* focus from that binding,
+        /// so setting it to false would leave the keypad up.
+        @objc private func doneTapped() {
+            UIApplication.shared.sendAction(
+                #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil
+            )
         }
 
         @objc func editingChanged(_ textField: UITextField) {
