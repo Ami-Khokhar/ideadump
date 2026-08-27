@@ -26,13 +26,62 @@ enum StoreLocator {
 
     private static let resolvedCandidates: [URL] = candidateStoreURLs()
 
+    enum StoreError: LocalizedError {
+        case noUsableStore
+
+        var errorDescription: String? {
+            "TapLog could not open its expense store."
+        }
+    }
+
+    /// One container per process, opened once.
+    ///
+    /// This memoisation is load-bearing, not an optimisation. `TapLogApp.init`
+    /// opens a container at launch, and `LogExpenseIntent` declares
+    /// `openAppWhenRun = false` while living only in the app target — so when Siri
+    /// runs it, iOS boots *the app's own process* in the background and `perform()`
+    /// executes alongside the container the app already opened. Opening a second
+    /// `ModelContainer` on the same store file throws; the candidate loop then ran
+    /// out of locations and hit `fatalError`, killing the process. That crash is
+    /// what Siri reports as "something went wrong".
+    ///
+    /// `static let` gives lazy, once-only, thread-safe initialisation, so every
+    /// caller in a process now shares the container — which also means a Siri log
+    /// lands in the same store the UI is observing instead of a second file.
+    private static let cachedContainer: Result<ModelContainer, Error> = {
+        do { return .success(try openContainer(candidates: resolvedCandidates)) }
+        catch { return .failure(error) }
+    }()
+
+    /// Throwing accessor for App Intents. A store that cannot be opened has to
+    /// surface as a spoken Siri error, never as a crash.
+    static func container() throws -> ModelContainer {
+        try cachedContainer.get()
+    }
+
+    /// App-launch accessor. A store we cannot open at all leaves nothing to show,
+    /// so failing loudly at launch is still the right behaviour here.
     static func makeContainer() -> ModelContainer {
-        makeContainer(candidates: resolvedCandidates)
+        do {
+            return try container()
+        } catch {
+            fatalError("Failed to create ModelContainer at any candidate location: \(error)")
+        }
+    }
+
+    /// Test seam: opens a fresh, uncached container from an explicit candidate
+    /// list, so the fallback chain can be exercised against real directories.
+    static func makeContainer(candidates: [URL]) -> ModelContainer {
+        do {
+            return try openContainer(candidates: candidates)
+        } catch {
+            fatalError("Failed to create ModelContainer at any candidate location: \(error)")
+        }
     }
 
     /// Opens the store at the first candidate SwiftData can actually use. A sandbox-denied
     /// or half-created store is skipped instead of fatal — a stranded store beats a crash.
-    static func makeContainer(candidates: [URL]) -> ModelContainer {
+    private static func openContainer(candidates: [URL]) throws -> ModelContainer {
         for url in candidates {
             do {
                 let configuration = ModelConfiguration(url: url)
@@ -44,7 +93,7 @@ enum StoreLocator {
                 print("TapLog: SwiftData store unusable at \(url.path): \(error) — trying next location")
             }
         }
-        fatalError("Failed to create ModelContainer at any candidate location")
+        throw StoreError.noUsableStore
     }
 
     /// Group-container store first (only when writable), Application Support last.

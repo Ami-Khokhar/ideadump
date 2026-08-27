@@ -16,17 +16,25 @@ struct LogExpenseIntent: AppIntent {
     @Parameter(title: "Note")
     var note: String?
 
+    /// An entity rather than a String so it can appear in an `AppShortcut` phrase
+    /// ("Log chai in TapLog") — phrases only interpolate `AppEntity`/`AppEnum`.
     @Parameter(title: "Category")
-    var category: String?
+    var category: CategoryEntity?
 
     @MainActor
     func perform() async throws -> some IntentResult {
         let validatedAmount = try TapLogIntentAmountValidator.validate(amount)
-        let container = StoreLocator.makeContainer()
+        // Reuses the process-wide container. Siri runs this intent inside the
+        // app's own process, where a container is already open.
+        let container = try StoreLocator.container()
         let context = container.mainContext
         let categories = (try? context.fetch(FetchDescriptor<SpendCategory>())) ?? []
 
-        let categoryKey = Self.resolveCategoryKey(category, categories: categories)
+        let categoryKey = Self.resolvedKey(
+            entity: category,
+            categories: categories,
+            lastUsed: UserDefaults.standard.string(forKey: "lastUsedCategory")
+        )
 
         let entry = Entry(amount: validatedAmount, category: categoryKey, note: note)
         context.insert(entry)
@@ -44,6 +52,27 @@ struct LogExpenseIntent: AppIntent {
         return .result(dialog: "Logged \(Money.format(validatedAmount)) in \(categoryName).")
     }
 
+    /// Voice logging used to file everything under "Other". `category` was an
+    /// optional `String`, and Siri never prompts for optional parameters, so it
+    /// always arrived nil and fell straight through to the fallback key. When
+    /// nothing is spoken we now reuse the category the user last logged — the same
+    /// one the capture screen preselects — before giving up on "Other".
+    static func resolvedKey(
+        entity: CategoryEntity?,
+        categories: [SpendCategory],
+        lastUsed: String?
+    ) -> String {
+        if let entity, categories.contains(where: { $0.key == entity.id }) {
+            return entity.id
+        }
+        if let lastUsed, categories.contains(where: { $0.key == lastUsed }) {
+            return lastUsed
+        }
+        return SpendCategory.fallbackKey
+    }
+
+    /// String-based resolution, kept for callers that only have text (deep links,
+    /// Shortcuts actions built before categories were an entity).
     static func resolveCategoryKey(_ raw: String?, categories: [SpendCategory]) -> String {
         guard let raw = raw?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
             return SpendCategory.fallbackKey

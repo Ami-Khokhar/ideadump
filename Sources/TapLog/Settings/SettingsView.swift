@@ -91,6 +91,7 @@ struct SettingsView: View {
 #endif
             }
             .scrollContentBackground(.hidden)
+            .floatingToolbarScrollEdge()
             .background(Theme.background)
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)

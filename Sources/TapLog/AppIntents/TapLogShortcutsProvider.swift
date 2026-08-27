@@ -29,15 +29,23 @@ struct TapLogShortcutsProvider: AppShortcutsProvider {
 
         // MARK: - Log Expense (secondary — headless voice logging)
 
-        // The phrases intentionally omit the $amount parameter. AppShortcuts
-        // metadata only allows AppEntity/AppEnum types in phrase interpolation,
-        // and Double is rejected. When the user says one of these phrases, Siri
-        // matches the intent and then resolves the required `amount` parameter
-        // through its standard parameter-collection flow ("How much?").
+        // The amount can never appear in a phrase: AppShortcuts metadata only
+        // allows AppEntity/AppEnum types in phrase interpolation, and Double is
+        // rejected outright. So "log 40 on chai" is not expressible as a
+        // registered phrase, however it is written.
+        //
+        // The *category* is expressible, because `CategoryEntity` is an AppEntity.
+        // The category-carrying phrases come first so Siri prefers them when a
+        // category is spoken; the bare phrases stay for the quick path, where the
+        // intent falls back to the last-used category. Either way Siri collects
+        // the required `amount` afterwards ("How much?").
         // LogExpenseIntent.openAppWhenRun = false, so it logs silently.
         AppShortcut(
             intent: LogExpenseIntent(),
             phrases: [
+                "Log \(\.$category) in \(.applicationName)",
+                "Log a \(\.$category) expense in \(.applicationName)",
+                "Add \(\.$category) spending in \(.applicationName)",
                 "Log an expense in \(.applicationName)",
                 "Log a purchase in \(.applicationName)",
                 "Record an expense in \(.applicationName)",

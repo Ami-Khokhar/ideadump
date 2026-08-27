@@ -24,7 +24,9 @@ struct QuickLogIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult {
         let validatedAmount = try TapLogIntentAmountValidator.validate(amount)
-        let container = StoreLocator.makeContainer()
+        // Reuses the process-wide container. Siri runs this intent inside the
+        // app's own process, where a container is already open.
+        let container = try StoreLocator.container()
         let context = container.mainContext
         let categories = (try? context.fetch(FetchDescriptor<SpendCategory>())) ?? []
         let categoryKey = categories.first { $0.key == category }?.key

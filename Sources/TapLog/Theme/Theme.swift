@@ -144,6 +144,29 @@ extension View {
     }
 }
 
+/// Pins scrolling content to the underside of a sheet's floating toolbar.
+///
+/// Every sheet here paints its own cream background and lets content scroll
+/// beneath a floating Cancel/Save (or Done) bar. The system's default edge
+/// treatment only *blurs* what passes under that bar, which is enough for a
+/// photo and not nearly enough for dark text on a flat background — the "Which
+/// category?" header stayed readable behind the Cancel pill, half of it poking
+/// out to one side. The hard style paints the edge instead of blurring it, so
+/// content leaves the screen at the toolbar rather than lingering behind it.
+///
+/// A no-op below iOS 26, where the navigation bar is a solid strip that already
+/// hides what scrolls under it.
+extension View {
+    @ViewBuilder
+    func floatingToolbarScrollEdge() -> some View {
+        if #available(iOS 26.0, *) {
+            scrollEdgeEffectStyle(.hard, for: .top)
+        } else {
+            self
+        }
+    }
+}
+
 // MARK: - Responsive Amount Font
 
 /// Computes an adaptive font size that shrinks gracefully as the amount string grows,

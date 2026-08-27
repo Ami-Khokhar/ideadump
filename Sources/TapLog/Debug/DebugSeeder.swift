@@ -59,7 +59,7 @@ enum DebugSeeder {
             (18.00, "food", "takeout",           lastWeekStart.addingTimeInterval(6 * 86400)),   // last week Sun
         ]
 
-        var categories: [SpendCategory] = (try? context.fetch(FetchDescriptor<SpendCategory>())) ?? []
+        let categories: [SpendCategory] = (try? context.fetch(FetchDescriptor<SpendCategory>())) ?? []
 
         for (amount, categoryKey, note, date) in samples {
             let entry = Entry(amount: amount, category: categoryKey, note: note, date: date)

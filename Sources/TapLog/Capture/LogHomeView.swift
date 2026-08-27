@@ -4,7 +4,7 @@ import SwiftData
 /// The capture-first home screen. Minimal — 6 elements, zero clutter.
 ///
 /// Flow: tap tile → type amount → tap Log. Two taps for a daily repeat.
-/// One-off: type amount → tap "+ Other" → pick category.
+/// One-off: type amount → tap "+ More" → pick category.
 struct LogHomeView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
@@ -158,8 +158,8 @@ struct LogHomeView: View {
             VStack(spacing: 0) {
                 keypad
                 logButton
-                    .padding(.bottom, 8)
-                    .padding(.top, 4)
+                    .padding(.bottom, CaptureBottomBar.logButtonBottomPadding)
+                    .padding(.top, CaptureBottomBar.logButtonLiftPadding)
             }
             .background(Theme.background)
         }
@@ -227,7 +227,7 @@ struct LogHomeView: View {
     private var amountArea: some View {
         VStack(spacing: 8) {
             if amountText.isEmpty {
-                Text("Tap the amount, then Log.")
+                Text("Use the keypad, then Log.")
                     .font(.subheadline)
                     .foregroundStyle(Theme.textTertiary)
                     .transition(.opacity)
@@ -275,8 +275,8 @@ struct LogHomeView: View {
 
     private var keypad: some View {
         LazyVGrid(
-            columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3),
-            spacing: 10
+            columns: Array(repeating: GridItem(.flexible(), spacing: CaptureBottomBar.keySpacing), count: 3),
+            spacing: CaptureBottomBar.keySpacing
         ) {
             ForEach(Array(keypadKeys.enumerated()), id: \.offset) { _, key in
                 if key.isEmpty {
@@ -304,7 +304,7 @@ struct LogHomeView: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 56)
+            .frame(height: CaptureBottomBar.keyHeight)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(ZenPress())
@@ -382,7 +382,7 @@ struct LogHomeView: View {
                 ForEach(topCategories) { category in
                     tileButton(category)
                 }
-                otherTile
+                moreTile
             }
             .padding(.horizontal, 24)
         }
@@ -415,7 +415,11 @@ struct LogHomeView: View {
         .buttonStyle(.plain)
     }
 
-    private var otherTile: some View {
+    /// Opens the full category picker. Labelled "More" rather than "Other" because
+    /// "Other" is also a real category that usually sits in the row right beside
+    /// this tile — the same word for a category and for the way to reach every
+    /// category read as the list simply repeating itself.
+    private var moreTile: some View {
         Button {
             showingCategoryPicker = true
         } label: {
@@ -423,7 +427,7 @@ struct LogHomeView: View {
                 Image(systemName: "plus")
                     .font(.title3)
                     .fontWeight(.light)
-                Text("Other")
+                Text("More")
                     .font(.caption)
                     .foregroundStyle(Theme.textSecondary)
             }
@@ -454,7 +458,7 @@ struct LogHomeView: View {
             Text("Log")
                 .font(.headline)
                 .frame(maxWidth: .infinity)
-                .frame(height: 52)
+                .frame(height: CaptureBottomBar.logButtonHeight)
                 .background(
                     canLog ? Theme.accent : Theme.surfaceStrong,
                     in: Capsule()
@@ -464,7 +468,7 @@ struct LogHomeView: View {
         .buttonStyle(ZenPress())
         .disabled(!canLog)
         .padding(.horizontal, 28)
-        .padding(.top, 8)
+        .padding(.top, CaptureBottomBar.logButtonTopPadding)
     }
 
     // MARK: - Actions
@@ -566,4 +570,36 @@ struct LogHomeView: View {
             }
         }
     }
+}
+
+/// Fixed geometry of the capture screen's pinned bottom bar — the keypad grid
+/// plus the Log pill.
+///
+/// These live outside the view because the undo toast has to float clear of the
+/// bar and cannot measure it: the toast is an overlay on the app root, so it
+/// sits outside the safe-area inset that holds these controls. The toast used to
+/// carry its own hardcoded offset, which was correct when the Log pill was the
+/// only thing down here and silently wrong the moment the keypad arrived —
+/// "Undo" ended up sitting on the backspace key. Deriving both from the same
+/// numbers is what keeps them from drifting apart again.
+enum CaptureBottomBar {
+    static let keyHeight: CGFloat = 56
+    static let keySpacing: CGFloat = 10
+    static let keyRows: CGFloat = 4
+    static let logButtonHeight: CGFloat = 52
+    /// Gap between the keypad and the Log pill.
+    static let logButtonTopPadding: CGFloat = 8
+    /// Extra lift applied to the pill inside the inset stack.
+    static let logButtonLiftPadding: CGFloat = 4
+    /// Gap between the Log pill and the bottom safe-area edge.
+    static let logButtonBottomPadding: CGFloat = 8
+
+    /// Total height of the bar, measured up from the bottom safe-area edge.
+    static let height: CGFloat =
+        keyHeight * keyRows
+        + keySpacing * (keyRows - 1)
+        + logButtonTopPadding
+        + logButtonLiftPadding
+        + logButtonHeight
+        + logButtonBottomPadding
 }

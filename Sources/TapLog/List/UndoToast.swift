@@ -28,10 +28,11 @@ struct UndoToast: View {
                 .background(Theme.toast, in: Capsule())
                 .overlay(Capsule().strokeBorder(Theme.hairline))
                 .padding(.horizontal, 16)
-                // Sits above the home screen's Log button (safe-area inset =
-                // 52pt pill + 12pt padding), not on top of it — an overlapping
-                // toast blocked back-to-back logging for its full 5s window.
-                .padding(.bottom, 70)
+                // Clears the home screen's whole pinned bottom bar — keypad and
+                // Log pill both — rather than just the pill: an overlapping
+                // toast blocked back-to-back logging for its full 5s window,
+                // and "Undo" landed squarely on the backspace key.
+                .padding(.bottom, CaptureBottomBar.height + 10)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }

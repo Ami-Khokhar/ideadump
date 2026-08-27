@@ -128,6 +128,7 @@ struct EntryListView: View {
                     }
                     .listStyle(.plain)
                     .scrollContentBackground(.hidden)
+                    .floatingToolbarScrollEdge()
                 }
             }
             .navigationTitle("History")

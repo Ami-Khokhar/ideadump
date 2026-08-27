@@ -129,6 +129,53 @@ final class OnboardingFlowTests: XCTestCase {
         )
     }
 
+    // MARK: - Siri category resolution
+
+    private var siriCategories: [SpendCategory] {
+        [
+            SpendCategory(key: "chai", name: "Chai", emoji: "☕️"),
+            SpendCategory(key: "metro", name: "Metro", emoji: "🚇"),
+        ]
+    }
+
+    func testSpokenCategoryWins() {
+        XCTAssertEqual(
+            LogExpenseIntent.resolvedKey(
+                entity: CategoryEntity(id: "metro", name: "Metro", emoji: "🚇"),
+                categories: siriCategories,
+                lastUsed: "chai"
+            ),
+            "metro",
+            "a category named in the phrase must beat the last-used fallback"
+        )
+    }
+
+    func testSilentCategoryFallsBackToLastUsedNotOther() {
+        // The regression this pins: `category` was an optional String, Siri never
+        // prompts for optional parameters, so every voice log landed in "Other".
+        XCTAssertEqual(
+            LogExpenseIntent.resolvedKey(entity: nil, categories: siriCategories, lastUsed: "chai"),
+            "chai"
+        )
+    }
+
+    func testDeletedCategoriesFallThroughToOther() {
+        // A shortcut built against a category the user has since deleted, and a
+        // stale last-used key, must both degrade rather than resurrect the key.
+        XCTAssertEqual(
+            LogExpenseIntent.resolvedKey(
+                entity: CategoryEntity(id: "removed", name: "Removed", emoji: "❓"),
+                categories: siriCategories,
+                lastUsed: "alsoRemoved"
+            ),
+            SpendCategory.fallbackKey
+        )
+        XCTAssertEqual(
+            LogExpenseIntent.resolvedKey(entity: nil, categories: siriCategories, lastUsed: nil),
+            SpendCategory.fallbackKey
+        )
+    }
+
     func testAmountLayoutRemainsBoundedAndGrowsWithText() {
         let short = AmountLayout.fieldWidth(text: "12", fontSize: 56, maxWidth: 260)
         let long = AmountLayout.fieldWidth(text: "999999999.99", fontSize: 34, maxWidth: 260)

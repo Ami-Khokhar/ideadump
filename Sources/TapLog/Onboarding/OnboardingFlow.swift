@@ -12,6 +12,14 @@ enum OnboardingFlow {
     static let coreCompleteKey = "onboarding.coreComplete"
     static let awaitingFirstConfirmedLogKey = "onboarding.awaitingFirstConfirmedLog"
 
+    /// Feature explainers are shown once, the first time the user opens the
+    /// feature itself, and are reachable from its toolbar afterwards. They are
+    /// deliberately not part of the `DeferredPrompt` machinery: those interrupt
+    /// the capture screen, these only ever appear on a screen the user chose to
+    /// open, so they cost nothing to a user who never goes looking.
+    static let budgetsExplainerSeenKey = "onboarding.budgetsExplainerSeen"
+    static let recapExplainerSeenKey = "onboarding.recapExplainerSeen"
+
     static let openCaptureUsedKey = "intent.openCaptureUsed"
     static let logExpenseUsedKey = "intent.logExpenseUsed"
     static let directCaptureUsedKey = "intent.directCaptureUsed"
@@ -146,6 +154,15 @@ enum OnboardingFlow {
 
     static func dismissFasterWays(defaults: UserDefaults = .standard) {
         defaults.set(true, forKey: fasterPromptDismissedKey)
+    }
+
+    /// True until the explainer for `key` has been shown once.
+    static func shouldShowExplainer(_ key: String, defaults: UserDefaults = .standard) -> Bool {
+        !defaults.bool(forKey: key)
+    }
+
+    static func markExplainerSeen(_ key: String, defaults: UserDefaults = .standard) {
+        defaults.set(true, forKey: key)
     }
 
     static func recordIntentUse(_ key: String, defaults: UserDefaults = StoreLocator.sharedDefaults) {

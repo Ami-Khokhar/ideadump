@@ -85,6 +85,33 @@ final class RecapMathTests: XCTestCase {
         XCTAssertEqual(totals.reduce(0) { $0 + $1 }, Decimal(string: "17.25")!)
     }
 
+    /// The chart and the total have to agree: `splitWeeks` drops future-dated
+    /// entries, so a bar must not appear for one either.
+    func testDailyTotalsExcludeFutureDaysInCurrentWeek() {
+        let futureFriday = date(2026, 8, 21) // still inside the current week
+        let totals = RecapMath.dailyTotals(
+            [makeEntry(10, on: now), makeEntry(25, on: futureFriday)],
+            calendar: calendar,
+            now: now
+        )
+        XCTAssertEqual(totals[2], 10) // Wednesday, today
+        XCTAssertEqual(totals[4], 0)  // Friday, not yet spent
+        XCTAssertEqual(totals.reduce(0) { $0 + $1 }, 10)
+    }
+
+    /// Later the same day still counts — the cut-off is "after now", not
+    /// "after today", so an entry timestamped this evening isn't dropped from
+    /// today's bar the moment the clock passes it.
+    func testDailyTotalsKeepEarlierEntriesOnToday() {
+        let thisMorning = date(2026, 8, 19, hour: 9)
+        let totals = RecapMath.dailyTotals(
+            [makeEntry(6, on: thisMorning), makeEntry(4, on: now)],
+            calendar: calendar,
+            now: now
+        )
+        XCTAssertEqual(totals[2], 10)
+    }
+
     // MARK: - totals(byCategory)
 
     func testCategoryTotalsMergeEntriesByKey() {
