@@ -13,6 +13,14 @@ struct LogHomeView: View {
     @Environment(RetentionManager.self) private var retention
     @EnvironmentObject private var undoStack: UndoStack
 
+    /// Whether the note field holds keyboard focus.
+    ///
+    /// The in-app keypad and the system keyboard both want the bottom ~330pt of
+    /// the screen, and the system keyboard wins by drawing over everything. That
+    /// put the note field the user was typing into *underneath* the keypad —
+    /// invisible and unreachable for as long as they typed.
+    @FocusState private var noteFocused: Bool
+
     @AppStorage("lastUsedCategory") private var lastUsedCategoryKey: String = SpendCategory.fallbackKey
 
     @Query(sort: \SpendCategory.sortOrder) private var categories: [SpendCategory]
@@ -189,7 +197,15 @@ struct LogHomeView: View {
         .scrollBounceBehavior(.basedOnSize)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 0) {
-                keypad
+                // Yield the bottom to the system keyboard rather than fight it.
+                // The inset shrinks, SwiftUI lifts the scrolling content clear of
+                // the keyboard, and the note stays visible while it is typed.
+                if !noteFocused {
+                    keypad
+                }
+                // The Log pill stays either way: a note is usually the last thing
+                // added before logging, and hiding the finish button behind a
+                // keyboard dismissal would add a step to the app's whole point.
                 logButton
                     .padding(.bottom, CaptureBottomBar.logButtonBottomPadding)
                     .padding(.top, CaptureBottomBar.logButtonLiftPadding)
@@ -571,6 +587,11 @@ struct LogHomeView: View {
             .foregroundStyle(Theme.textTertiary)
             .padding(.vertical, 6)
             .padding(.horizontal, 40)
+            .focused($noteFocused)
+            // Return dismisses rather than inserting a newline the note has no
+            // room to show, which also brings the keypad straight back.
+            .submitLabel(.done)
+            .onSubmit { noteFocused = false }
     }
 
     // MARK: - 6. Log Button
@@ -689,6 +710,9 @@ struct LogHomeView: View {
         amountText = ""
         note = ""
         intent = nil
+        // Logging finishes the note too; without this the keypad would stay
+        // hidden behind a keyboard focused on a field that is now empty.
+        noteFocused = false
 
         amountError = nil
         onLogged?()
