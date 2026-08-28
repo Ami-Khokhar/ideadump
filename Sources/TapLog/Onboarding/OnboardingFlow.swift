@@ -3,9 +3,6 @@ import Foundation
 /// Durable, versioned first-run state. The core capture loop is intentionally
 /// separate from optional education prompts so a prompt can never block logging.
 enum OnboardingFlow {
-    static let currentVersion = 2
-
-    static let versionKey = "onboardingVersion"
     static let categoryPromptPendingKey = "onboarding.categoryPromptPending"
     static let categoryPromptDismissedKey = "onboarding.categoryPromptDismissed"
     static let fasterPromptDismissedKey = "onboarding.fasterPromptDismissed"
@@ -25,32 +22,6 @@ enum OnboardingFlow {
     static let logExpenseUsedKey = "intent.logExpenseUsed"
     static let directCaptureUsedKey = "intent.directCaptureUsed"
     static let coreCompletionNotification = Notification.Name("OnboardingFlow.coreCompleted")
-
-    static func migrate(defaults: UserDefaults = .standard) {
-        let storedVersion = defaults.integer(forKey: versionKey)
-        guard storedVersion < currentVersion else { return }
-
-        let active = defaults.bool(forKey: "onboardingActive")
-        let rawStep = defaults.integer(forKey: "onboardingStepRaw")
-        if active {
-            switch OnboardingStep(rawValue: rawStep) {
-            case .categories:
-                defaults.set(true, forKey: coreCompleteKey)
-                defaults.set(true, forKey: categoryPromptPendingKey)
-                defaults.set(false, forKey: categoryPromptDismissedKey)
-                defaults.set(false, forKey: "onboardingActive")
-            case .frontDoors:
-                defaults.set(true, forKey: coreCompleteKey)
-                defaults.set(false, forKey: categoryPromptPendingKey)
-                defaults.set(false, forKey: "onboardingActive")
-                defaults.set(false, forKey: fasterPromptDismissedKey)
-            default:
-                break
-            }
-        }
-
-        defaults.set(currentVersion, forKey: versionKey)
-    }
 
     static func markCoreComplete(defaults: UserDefaults = .standard) {
         let wasComplete = defaults.bool(forKey: coreCompleteKey)

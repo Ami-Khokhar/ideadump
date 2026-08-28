@@ -296,7 +296,6 @@ enum StoreLocator {
             // `init` stamps a fresh `createdAt` and clears the legacy flag; both
             // are the source row's to keep.
             copy.createdAt = entry.createdAt
-            copy.isPlanned = entry.isPlanned
             into.insert(copy)
             result.entries += 1
         }

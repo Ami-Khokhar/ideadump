@@ -42,29 +42,6 @@ final class OnboardingFlowTests: XCTestCase {
         XCTAssertTrue(defaults.bool(forKey: OnboardingFlow.categoryPromptDismissedKey))
     }
 
-    func testOldCategoryStepMigratesToDeferredPromptWithoutRemainingActive() {
-        defaults.set(true, forKey: "onboardingActive")
-        defaults.set(OnboardingStep.categories.rawValue, forKey: "onboardingStepRaw")
-
-        OnboardingFlow.migrate(defaults: defaults)
-
-        XCTAssertFalse(defaults.bool(forKey: "onboardingActive"))
-        XCTAssertTrue(defaults.bool(forKey: OnboardingFlow.categoryPromptPendingKey))
-        XCTAssertEqual(defaults.integer(forKey: OnboardingFlow.versionKey), OnboardingFlow.currentVersion)
-    }
-
-    func testOldFrontDoorStepDoesNotMutateCategoryState() {
-        defaults.set(true, forKey: "onboardingActive")
-        defaults.set(OnboardingStep.frontDoors.rawValue, forKey: "onboardingStepRaw")
-        defaults.set(true, forKey: "categoryWasCustomized")
-
-        OnboardingFlow.migrate(defaults: defaults)
-
-        XCTAssertFalse(defaults.bool(forKey: "onboardingActive"))
-        XCTAssertTrue(defaults.bool(forKey: "categoryWasCustomized"))
-        XCTAssertFalse(defaults.bool(forKey: OnboardingFlow.fasterPromptDismissedKey))
-    }
-
     func testFasterWaysRequiresTwoLogsAndAnotherSession() {
         XCTAssertFalse(OnboardingFlow.shouldOfferFasterWays(
             confirmedLogCount: 1,
@@ -290,43 +267,6 @@ final class OnboardingFlowTests: XCTestCase {
         ))
         XCTAssertFalse(defaults.bool(forKey: OnboardingFlow.coreCompleteKey))
         XCTAssertTrue(defaults.bool(forKey: OnboardingFlow.awaitingFirstConfirmedLogKey))
-    }
-
-    func testLegacyFrontDoorsMigrationPrecedesConfirmedReconciliation() {
-        defaults.set(true, forKey: "onboardingActive")
-        defaults.set(OnboardingStep.frontDoors.rawValue, forKey: "onboardingStepRaw")
-
-        OnboardingFlow.migrate(defaults: defaults)
-
-        XCTAssertTrue(defaults.bool(forKey: OnboardingFlow.coreCompleteKey))
-        XCTAssertFalse(defaults.bool(forKey: OnboardingFlow.categoryPromptPendingKey))
-        XCTAssertFalse(defaults.bool(forKey: OnboardingFlow.fasterPromptDismissedKey))
-
-        XCTAssertFalse(OnboardingFlow.reconcileCoreIfNeeded(
-            confirmedLogCount: 1,
-            onboardingActive: false,
-            defaults: defaults
-        ))
-        XCTAssertTrue(OnboardingFlow.shouldOfferFasterWays(
-            confirmedLogCount: 2,
-            isFirstLogSession: false,
-            defaults: defaults
-        ))
-    }
-
-    func testLegacyCategoriesMigrationPreservesCategoryPromptAfterReconciliation() {
-        defaults.set(true, forKey: "onboardingActive")
-        defaults.set(OnboardingStep.categories.rawValue, forKey: "onboardingStepRaw")
-
-        OnboardingFlow.migrate(defaults: defaults)
-
-        XCTAssertTrue(defaults.bool(forKey: OnboardingFlow.categoryPromptPendingKey))
-        XCTAssertFalse(OnboardingFlow.reconcileCoreIfNeeded(
-            confirmedLogCount: 1,
-            onboardingActive: false,
-            defaults: defaults
-        ))
-        XCTAssertTrue(defaults.bool(forKey: OnboardingFlow.categoryPromptPendingKey))
     }
 
     func testReconciliationIgnoresZeroOrAlreadyCompleteState() {

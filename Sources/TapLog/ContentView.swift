@@ -149,9 +149,6 @@ struct ContentView: View {
         .applyAppearanceOverride()
         .tint(Theme.accent)
         .onAppear {
-            // Legacy onboarding state must be migrated before any confirmed-entry
-            // reconciliation can change the live/core flags.
-            OnboardingFlow.migrate()
             // Consume any pending intent activation written before the UI was ready.
             consumePendingIntent()
             // Reconcile durable SwiftData truth before deciding whether to show
@@ -188,7 +185,6 @@ struct ContentView: View {
         // Handle warm/background activation: the scene becomes active after the
         // intent wrote its payload while the app was suspended.
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-            OnboardingFlow.migrate()
             consumePendingIntent()
             reconcileOnboarding(with: confirmedEntries.count)
             handleLaunchFlow()
