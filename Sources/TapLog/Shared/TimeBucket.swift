@@ -19,34 +19,6 @@ enum TimeBucket: Int, CaseIterable, Sendable {
         return TimeBucket(rawValue: hour / 3) ?? .earlyMorning
     }
 
-    /// Human-readable label for the bucket.
-    var label: String {
-        switch self {
-        case .earlyMorning: return "Late Night"
-        case .morning:      return "Early Morning"
-        case .commute:      return "Commute"
-        case .midday:       return "Midday"
-        case .afternoon:    return "Afternoon"
-        case .lateAfternoon: return "Late Afternoon"
-        case .evening:      return "Evening"
-        case .night:        return "Night"
-        }
-    }
-
-    /// SF Symbol hint for the bucket.
-    var icon: String {
-        switch self {
-        case .earlyMorning: return "moon.zzz"
-        case .morning:      return "sunrise"
-        case .commute:      return "car.fill"
-        case .midday:       return "sun.max.fill"
-        case .afternoon:    return "sun.min"
-        case .lateAfternoon: return "sun.haze"
-        case .evening:      return "sunset"
-        case .night:        return "moon.stars"
-        }
-    }
-
     // MARK: - Time-Aware Category Learning
 
     /// Minimum number of windowed logs before time-aware suggestions activate.

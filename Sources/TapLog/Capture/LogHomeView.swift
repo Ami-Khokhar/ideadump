@@ -650,8 +650,6 @@ struct LogHomeView: View {
         } else {
             resolveLastUsedCategoryIfNeeded()
         }
-        if prefill.amountText != nil || prefill.note != nil {
-        }
         onPrefillConsumed?()
     }
 
