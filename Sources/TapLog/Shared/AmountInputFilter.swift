@@ -21,45 +21,6 @@ enum AmountInputFilter {
     /// Maximum number of fractional (decimal) digits allowed when typing.
     static let maxFractionalDigits = 2
 
-    // MARK: - Input Filtering
-
-    /// Filters raw input for the legacy SwiftUI `onChange` callers. New amount
-    /// fields use `filterEdit`, which receives the actual UIKit edit metadata.
-    ///
-    /// - Parameters:
-    ///   - raw: The raw text the user typed or pasted.
-    ///   - current: The current (pre-edit) text.
-    public static func filter(_ raw: String, current: String) -> FilterResult {
-        let trimmed = raw.trimmingCharacters(in: .whitespaces)
-
-        // Empty is always valid (shows placeholder "0").
-        guard !trimmed.isEmpty else {
-            return .accepted("")
-        }
-
-        // Strip to raw numeric content (digits, separators, leading minus).
-        let stripped = trimmed.filter { $0.isNumber || $0 == "." || $0 == "," || $0 == "-" }
-        let currentStripped = current.filter { $0.isNumber || $0 == "." || $0 == "," || $0 == "-" }
-
-        // Structural change detection (replaces the old length-growth heuristic):
-        // A paste or selection-replacement is any edit where the stripped content
-        // changes separator count or total length by more than one — i.e. it's not
-        // a simple single-digit append.
-        let isPaste: Bool = {
-            let strippedDiff = abs(stripped.count - currentStripped.count)
-            let currentSeparators = currentStripped.filter { $0 == "." || $0 == "," }.count
-            let newSeparators = stripped.filter { $0 == "." || $0 == "," }.count
-            let separatorChanged = newSeparators != currentSeparators
-            return separatorChanged || strippedDiff > 1
-        }()
-
-        if isPaste {
-            return filterPaste(stripped)
-        } else {
-            return filterTyped(stripped, current: currentStripped)
-        }
-    }
-
     /// Applies one concrete text-field edit. `replacement` and `range` come
     /// from `UITextFieldDelegate`, so a selection replacement is never guessed
     /// from string lengths (which cannot distinguish typing from paste).
@@ -230,109 +191,6 @@ enum AmountInputFilter {
         return stripped.replacingOccurrences(of: String(separator), with: "")
     }
 
-    // MARK: - Paste / Replacement Handling
-
-    /// Validates pasted or replaced input as a whole. Preserves the raw text if
-    /// it parses correctly via `Money.parse`; rejects with an error if it doesn't.
-    private static func filterPaste(_ stripped: String) -> FilterResult {
-        // Too long — reject.
-        if stripped.count > maxDisplayLength {
-            return .rejected(
-                error: "Maximum amount is \(Money.format(Money.maxAmount))."
-            )
-        }
-
-        // Validate through Money.parse (handles grouping/decimal heuristics).
-        if validSeparatorSyntax(stripped), let amount = Money.parse(stripped) {
-            if amount < 0 {
-                return .rejected(error: "Amount must be positive.")
-            }
-            if amount > Money.maxAmount {
-                return .rejected(
-                    error: "Maximum amount is \(Money.format(Money.maxAmount))."
-                )
-            }
-            // Parsed successfully — accept the stripped text (separators preserved).
-            return .accepted(stripped)
-        }
-
-        // Money.parse rejected it — detect oversized values that have too many digits.
-        if errorMessage(for: stripped) != nil {
-            return .rejected(
-                error: "Maximum amount is \(Money.format(Money.maxAmount))."
-            )
-        }
-
-        // Malformed paste that doesn't parse — reject.
-        return .rejected(error: "Invalid amount format.")
-    }
-
-    // MARK: - Typed Input Handling
-
-    /// Filters single-character typed input. Keeps only valid characters and
-    /// enforces the two-decimal-digit limit.
-    private static func filterTyped(_ stripped: String, current: String) -> FilterResult {
-        // Determine the decimal separator used in the current text.
-        let currentHasDot = current.contains(".")
-        let currentHasComma = current.contains(",")
-        let decimalSep: Character? = currentHasDot ? "." : (currentHasComma ? "," : nil)
-
-        var allowed = ""
-        var hasSep = false
-        var fractionalCount = 0
-        var inFractional = false
-
-        for (i, ch) in stripped.enumerated() {
-            if ch == "-" && i == 0 {
-                allowed.append(ch)
-                continue
-            }
-            if ch == "." || ch == "," {
-                // Determine if this separator is the decimal point.
-                let isDecimal: Bool
-                if let ds = decimalSep {
-                    isDecimal = (ch == ds)
-                } else {
-                    // No existing separator — this is the first one, treat as decimal.
-                    isDecimal = true
-                }
-                if isDecimal {
-                    if hasSep { continue } // already have a decimal separator
-                    hasSep = true
-                    inFractional = true
-                    allowed.append(ch)
-                } else {
-                    // Grouping separator — allow it (Money.parse handles it).
-                    allowed.append(ch)
-                }
-                continue
-            }
-            if ch.isNumber {
-                if inFractional {
-                    fractionalCount += 1
-                    if fractionalCount > maxFractionalDigits {
-                        // Third decimal digit — drop it.
-                        continue
-                    }
-                }
-                allowed.append(ch)
-                continue
-            }
-            // Skip any other character (currency symbols, spaces, etc.)
-        }
-
-        // Final check: reject if the typed result exceeds the max amount.
-        // Money.parse returns nil for oversized values, so detect them by
-        // checking if the text is a valid number that's simply too large.
-        if Money.parse(allowed) == nil && looksLikeNumeric(allowed) {
-            return .rejected(
-                error: "Maximum amount is \(Money.format(Money.maxAmount))."
-            )
-        }
-
-        return .accepted(allowed)
-    }
-
     /// Returns true if the string contains at least one digit and only
     /// valid numeric characters (digits, separators, optional leading minus).
     private static func looksLikeNumeric(_ s: String) -> Bool {
@@ -381,27 +239,6 @@ enum AmountInputFilter {
             return "Maximum amount is \(Money.format(Money.maxAmount))."
         }
         return nil
-    }
-}
-
-// MARK: - Filter Result
-
-enum FilterResult {
-    case accepted(String)
-    case rejected(error: String)
-
-    var text: String {
-        switch self {
-        case .accepted(let t): return t
-        case .rejected: return ""
-        }
-    }
-
-    var error: String? {
-        switch self {
-        case .accepted: return nil
-        case .rejected(let e): return e
-        }
     }
 }
 
