@@ -68,7 +68,7 @@ final class TimeBucketTests: XCTestCase {
         let entries = [
             makeEntry(category: "chai", hour: 8, referenceDay: ref),
             makeEntry(category: "chai", hour: 8, referenceDay: ref),
-            makeEntry(category: "food", hour: 12, referenceDay: ref),
+            makeEntry(category: "food", hour: 12, on: weekEarlier(ref)),
         ]
         let result = TimeBucket.blendedTopCategories(entries: entries, categories: [], maxSlots: 4, referenceDate: ref)
         XCTAssertEqual(result.first, "chai")
@@ -81,7 +81,7 @@ final class TimeBucketTests: XCTestCase {
         let ref = weekdayAt(hour: 8)
         var entries: [Entry] = []
         for _ in 0..<5 { entries.append(makeEntry(category: "chai", hour: 8, referenceDay: ref)) }
-        for _ in 0..<5 { entries.append(makeEntry(category: "food", hour: 14, referenceDay: ref)) }
+        for _ in 0..<5 { entries.append(makeEntry(category: "food", hour: 14, on: weekEarlier(ref))) }
 
         let result = TimeBucket.blendedTopCategories(entries: entries, categories: [], maxSlots: 4, referenceDate: ref)
         XCTAssertEqual(result.first, "chai", "chai dominates the commute bucket so it should rank first")
@@ -93,7 +93,7 @@ final class TimeBucketTests: XCTestCase {
         let ref = weekdayAt(hour: 8)
         var entries: [Entry] = []
         for _ in 0..<4 { entries.append(makeEntry(category: "chai", hour: 8, referenceDay: ref)) }
-        for _ in 0..<4 { entries.append(makeEntry(category: "food", hour: 14, referenceDay: ref)) }
+        for _ in 0..<4 { entries.append(makeEntry(category: "food", hour: 14, on: weekEarlier(ref))) }
 
         let result = TimeBucket.blendedTopCategories(entries: entries, categories: [], maxSlots: 4, referenceDate: ref)
         XCTAssertEqual(result.count, 2, "only 2 distinct categories exist")
@@ -188,7 +188,7 @@ final class TimeBucketTests: XCTestCase {
         let ref = weekdayAt(hour: 8)
         var entries: [Entry] = []
         entries.append(makeEntry(category: "chai", hour: 8, referenceDay: ref))    // 1 bucket, 1 global
-        for _ in 0..<4 { entries.append(makeEntry(category: "food", hour: 14, referenceDay: ref)) } // 0 bucket, 4 global
+        for _ in 0..<4 { entries.append(makeEntry(category: "food", hour: 14, on: weekEarlier(ref))) } // 0 bucket, 4 global
 
         let result = TimeBucket.blendedTopCategories(entries: entries, categories: [], maxSlots: 4, referenceDate: ref)
         XCTAssertEqual(result.first, "food", "global prior should outweigh a single stray bucket hit")
@@ -228,8 +228,8 @@ final class TimeBucketTests: XCTestCase {
         let ref = weekdayAt(hour: 8)
         var entries: [Entry] = []
         for _ in 0..<3 { entries.append(makeEntry(category: "chai", hour: 8, referenceDay: ref)) }
-        for _ in 0..<3 { entries.append(makeEntry(category: "food", hour: 14, referenceDay: ref)) }
-        for _ in 0..<2 { entries.append(makeEntry(category: "metro", hour: 20, referenceDay: ref)) }
+        for _ in 0..<3 { entries.append(makeEntry(category: "food", hour: 14, on: weekEarlier(ref))) }
+        for _ in 0..<2 { entries.append(makeEntry(category: "metro", hour: 20, on: weekEarlier(ref))) }
 
         let first = TimeBucket.blendedTopCategories(entries: entries, categories: [], maxSlots: 4, referenceDate: ref)
         for _ in 0..<50 {
@@ -246,9 +246,9 @@ final class TimeBucketTests: XCTestCase {
         let ref = weekdayAt(hour: 8)
         let entries = [
             makeEntry(category: "zeta", hour: 8, referenceDay: ref),
-            makeEntry(category: "alpha", hour: 12, referenceDay: ref),
-            makeEntry(category: "alpha", hour: 14, referenceDay: ref),
-            makeEntry(category: "zeta", hour: 16, referenceDay: ref),
+            makeEntry(category: "alpha", hour: 12, on: weekEarlier(ref)),
+            makeEntry(category: "alpha", hour: 14, on: weekEarlier(ref)),
+            makeEntry(category: "zeta", hour: 16, on: weekEarlier(ref)),
         ]
         let result = TimeBucket.blendedTopCategories(entries: entries, categories: [], maxSlots: 4, referenceDate: ref)
         XCTAssertEqual(result.first, "alpha")
@@ -430,7 +430,7 @@ final class TimeBucketTests: XCTestCase {
                           budgetTarget: 300, budgetPeriod: .monthly),
         ]
         var entries: [Entry] = []
-        for _ in 0..<9 { entries.append(makeEntry(category: "food", hour: 14, referenceDay: ref)) }
+        for _ in 0..<9 { entries.append(makeEntry(category: "food", hour: 14, on: weekEarlier(ref))) }
         entries.append(makeEntry(category: "gift", hour: 8, referenceDay: ref))
 
         let result = TimeBucket.blendedTopCategories(entries: entries, categories: categories, maxSlots: 2, referenceDate: ref)
@@ -492,6 +492,14 @@ final class TimeBucketTests: XCTestCase {
             SpendCategory(key: "shopping", name: "Shopping", emoji: "🛍️", sortOrder: 4),
             SpendCategory(key: SpendCategory.fallbackKey, name: "Other", emoji: "📦", sortOrder: 99),
         ]
+    }
+
+    /// The same weekday one week earlier. Entries in a *different* time bucket
+    /// have to sit in the past, not later the same day: a later hour on the
+    /// reference day is future-dated relative to the reference date, and
+    /// suggestions are ranked only on spend that has happened.
+    private func weekEarlier(_ date: Date) -> Date {
+        Calendar.current.date(byAdding: .day, value: -7, to: date)!
     }
 
     private func weekdayAt(hour: Int) -> Date {

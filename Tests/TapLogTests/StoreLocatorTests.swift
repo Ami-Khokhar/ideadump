@@ -113,62 +113,107 @@ final class StoreLocatorTests: XCTestCase {
     private let groupStore = URL(fileURLWithPath: "/group/TapLog.store")
     private let fallbackStore = URL(fileURLWithPath: "/support/TapLog.store")
 
+    private func ordered(
+        _ candidates: [URL],
+        pinned: URL? = nil,
+        withData: Set<URL> = [],
+        existing: Set<URL> = []
+    ) -> [URL] {
+        // A store holding history necessarily exists, so callers never have to
+        // state it twice.
+        let onDisk = existing.union(withData)
+        return StoreLocator.orderedCandidates(
+            candidates,
+            pinned: pinned,
+            hasData: { withData.contains($0) },
+            storeExists: { onDisk.contains($0) }
+        )
+    }
+
     /// Plain preference order, with nothing pinned and nothing on disk.
     func testGroupStoreIsPreferredOnAFirstRun() {
-        let ordered = StoreLocator.orderedCandidates(
-            [groupStore, fallbackStore], pinned: nil, storeExists: { _ in false }
-        )
-        XCTAssertEqual(ordered.first, groupStore)
+        XCTAssertEqual(ordered([groupStore, fallbackStore]).first, groupStore)
     }
 
     /// The regression this ordering exists for: history accumulated in the
     /// fallback while the App Group was unprovisioned must not be abandoned the
     /// day the entitlement lands.
     func testACandidateHoldingDataWinsOverAnEmptyPreferredOne() {
-        let ordered = StoreLocator.orderedCandidates(
-            [groupStore, fallbackStore],
-            pinned: nil,
-            storeExists: { $0 == self.fallbackStore }
-        )
-        XCTAssertEqual(ordered.first, fallbackStore)
-        XCTAssertEqual(ordered.count, 2, "the other location stays available as a fallback")
+        let result = ordered([groupStore, fallbackStore], withData: [fallbackStore])
+        XCTAssertEqual(result.first, fallbackStore)
+        XCTAssertEqual(result.count, 2, "the other location stays available as a fallback")
     }
 
-    func testPinIsHonouredWhenItsStoreStillExists() {
-        let ordered = StoreLocator.orderedCandidates(
+    /// The narrower hole: an empty-but-valid store file already sitting in the
+    /// group container. File presence alone would promote it and hide the
+    /// fallback history behind it.
+    func testAnEmptyStoreFileNeverOutranksOneHoldingData() {
+        let result = ordered(
             [groupStore, fallbackStore],
-            pinned: fallbackStore,
-            storeExists: { _ in true }
+            withData: [fallbackStore],
+            existing: [groupStore]
         )
-        XCTAssertEqual(ordered.first, fallbackStore)
+        XCTAssertEqual(result.first, fallbackStore)
+    }
+
+    /// Both hold history: preference order decides, and nothing is lost either
+    /// way because neither is empty.
+    func testWhenBothHoldDataThePreferredLocationWins() {
+        let result = ordered([groupStore, fallbackStore], withData: [groupStore, fallbackStore])
+        XCTAssertEqual(result.first, groupStore)
+    }
+
+    func testPinIsHonouredWhenItsStoreHoldsData() {
+        let result = ordered([groupStore, fallbackStore], pinned: fallbackStore, withData: [fallbackStore])
+        XCTAssertEqual(result.first, fallbackStore)
+    }
+
+    /// A pin is not a trump card. Pointing it at an empty store while the other
+    /// location holds the user's history must not strand that history.
+    func testPinNamingAnEmptyStoreLosesToOneHoldingData() {
+        let result = ordered(
+            [groupStore, fallbackStore],
+            pinned: groupStore,
+            withData: [fallbackStore],
+            existing: [groupStore]
+        )
+        XCTAssertEqual(result.first, fallbackStore)
     }
 
     /// Honouring a pin whose file is gone would have SwiftData create a fresh
     /// empty store there — indistinguishable from data loss.
     func testPinNamingADeletedStoreIsIgnored() {
-        let ordered = StoreLocator.orderedCandidates(
-            [groupStore, fallbackStore],
-            pinned: fallbackStore,
-            storeExists: { $0 == self.groupStore }
-        )
-        XCTAssertEqual(ordered.first, groupStore, "fall through to the location that has data")
+        let result = ordered([groupStore, fallbackStore], pinned: fallbackStore, existing: [groupStore])
+        XCTAssertEqual(result.first, groupStore, "fall through to the location that has a store")
     }
 
     /// A pin left behind by a location that is no longer offered at all.
     func testPinNamingAnUnavailableLocationIsIgnored() {
-        let ordered = StoreLocator.orderedCandidates(
-            [fallbackStore], pinned: groupStore, storeExists: { _ in true }
-        )
-        XCTAssertEqual(ordered, [fallbackStore])
+        XCTAssertEqual(ordered([fallbackStore], pinned: groupStore, existing: [groupStore]), [fallbackStore])
     }
 
-    func testOrderingNeverDropsOrDuplicatesACandidate() {
-        let ordered = StoreLocator.orderedCandidates(
-            [groupStore, fallbackStore],
-            pinned: fallbackStore,
-            storeExists: { _ in true }
-        )
-        XCTAssertEqual(Set(ordered), Set([groupStore, fallbackStore]))
-        XCTAssertEqual(ordered.count, 2)
+    /// Both processes see the same filesystem, so they reach the same answer
+    /// even if their pins disagree — which is what keeps a racing app and
+    /// widget from opening different stores.
+    func testDisagreeingPinsStillResolveToTheStoreHoldingData() {
+        let asApp = ordered([groupStore, fallbackStore], pinned: groupStore, withData: [fallbackStore], existing: [groupStore])
+        let asWidget = ordered([groupStore, fallbackStore], pinned: fallbackStore, withData: [fallbackStore], existing: [groupStore])
+        XCTAssertEqual(asApp.first, fallbackStore)
+        XCTAssertEqual(asWidget, asApp, "both processes must land on the same store")
+    }
+
+    func testOrderingReturnsEveryCandidateExactlyOnce() {
+        for pinned: URL? in [nil, groupStore, fallbackStore] {
+            for withData in [Set<URL>(), [groupStore], [fallbackStore], [groupStore, fallbackStore]] {
+                let result = ordered([groupStore, fallbackStore], pinned: pinned, withData: withData)
+                XCTAssertEqual(result.count, 2, "pinned: \(String(describing: pinned)), data: \(withData)")
+                XCTAssertEqual(Set(result), [groupStore, fallbackStore])
+            }
+        }
+    }
+
+    func testSingleCandidateIsReturnedUnchanged() {
+        XCTAssertEqual(ordered([fallbackStore], withData: [fallbackStore]), [fallbackStore])
+        XCTAssertEqual(ordered([fallbackStore]), [fallbackStore])
     }
 }
