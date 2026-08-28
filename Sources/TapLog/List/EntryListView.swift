@@ -174,7 +174,7 @@ struct EntryListView: View {
                     .presentationDetents([.medium, .large])
             }
             .sheet(item: $editingEntry) { entry in
-                CaptureForm(mode: .edit(entry))
+                CaptureForm(entry: entry)
                     .environmentObject(undoStack)
             }
             .confirmationDialog(
