@@ -92,15 +92,23 @@ struct EntryListView: View {
         NavigationStack {
             Group {
                 if displayedEntries.isEmpty && pendingEntries.isEmpty {
-                    ContentUnavailableView(
-                        showingArchived ? "No archived entries" : "No expenses yet",
-                        systemImage: showingArchived ? "archivebox" : "plus.circle",
-                        description: Text(
-                            showingArchived
-                                ? "Archived entries appear here."
-                                : "Log your first expense on the Log tab — it takes about 5 seconds."
+                    if showingArchived {
+                        // The archive keeps the plain system treatment. It is a
+                        // drawer the user reached by filtering, not a garden
+                        // waiting to be planted — a seedling here would promise
+                        // growth for entries that have already been put away.
+                        ContentUnavailableView(
+                            "No archived entries",
+                            systemImage: "archivebox",
+                            description: Text("Archived entries appear here.")
                         )
-                    )
+                    } else {
+                        SeedlingEmptyState(
+                            title: "Nothing logged yet",
+                            message: "Log your first expense on the Log tab — it takes about 5 seconds."
+                        )
+                        .frame(maxHeight: .infinity)
+                    }
                 } else {
                     List {
                         if !showingArchived && !pendingEntries.isEmpty {

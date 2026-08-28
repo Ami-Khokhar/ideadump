@@ -195,7 +195,7 @@ struct LogHomeView: View {
 
     private var statusBar: some View {
         HStack(spacing: 10) {
-            miniRing
+            miniWreath
 
             Text(Date.now.formatted(.dateTime.weekday(.abbreviated)))
                 .font(.subheadline)
@@ -229,17 +229,21 @@ struct LogHomeView: View {
         .animation(reduceMotion ? nil : Motion.stateChange, value: todayTotal)
     }
 
-    private var miniRing: some View {
-        ZStack {
-            Circle()
-                .stroke(Theme.surfaceStrong, lineWidth: 2.5)
-                .frame(width: 16, height: 16)
-            Circle()
-                .trim(from: 0, to: retention.ringFraction)
-                .stroke(Theme.accent, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
-                .frame(width: 16, height: 16)
-                .rotationEffect(.degrees(-90))
-        }
+    /// This week's streak, as the wreath rather than the abstract ring that used
+    /// to sit here. The grove is a few points below it on this same screen, so
+    /// the mark had to be botanical *and* unmistakably not a tree — see
+    /// `WreathArt` for why a wreath and not a small plant.
+    ///
+    /// Costs the same as the ring did: `daysLoggedThisWeek` and `weeklyTarget`
+    /// are exactly the two values the ring's fraction was derived from, and the
+    /// mark is a handful of paths in one `Canvas`.
+    private var miniWreath: some View {
+        let logged = retention.daysLoggedThisWeek
+        let target = retention.weeklyTarget
+        return WreathMark(daysLogged: logged, target: target, color: Theme.accent)
+            .frame(width: 24, height: 24)
+            .accessibilityElement()
+            .accessibilityLabel("Logged \(logged) of \(target) days this week")
     }
 
     // MARK: - 2. Amount Area
