@@ -21,6 +21,14 @@ struct BudgetsView: View {
 
     @State private var showingExplainer = false
     @State private var showingBudgetSetup = false
+    @State private var showingPaywall = false
+
+    private var pro = ProStore.shared
+
+    /// Budgets that actually exist, which is what the free limit counts. Derived
+    /// from the same reports the grove draws, so the number the gate sees is the
+    /// number of trees the user can see.
+    private var budgetCount: Int { budgetReports.count }
 
     private var budgetReports: [BudgetCalculator.Report] {
         categories
@@ -87,7 +95,16 @@ struct BudgetsView: View {
                 if !budgetReports.isEmpty {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
-                            showingBudgetSetup = true
+                            // The paywall stands in front of the *next* tree, never
+                            // in front of the ones already growing.
+                            if ProGate.canPlantAnotherTree(
+                                existingBudgetCount: budgetCount,
+                                isPro: pro.isPro
+                            ) {
+                                showingBudgetSetup = true
+                            } else {
+                                showingPaywall = true
+                            }
                         } label: {
                             Image(systemName: "plus")
                         }
@@ -106,6 +123,11 @@ struct BudgetsView: View {
             }
             .sheet(isPresented: $showingBudgetSetup) {
                 BudgetSetupView()
+                    .applyAppearanceOverride()
+                    .tint(Theme.accent)
+            }
+            .sheet(isPresented: $showingPaywall) {
+                PaywallView(reason: .secondTree)
                     .applyAppearanceOverride()
                     .tint(Theme.accent)
             }

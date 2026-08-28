@@ -35,6 +35,9 @@ struct WeeklyRecapView: View {
 
     /// Current recap timespan selection.
     @State private var span: RecapSpan = .week
+    @State private var showingPaywall = false
+
+    private var pro = ProStore.shared
 
     private var lookup: CategoryLookup { CategoryLookup(categories) }
 
@@ -76,6 +79,11 @@ struct WeeklyRecapView: View {
                 FeatureExplainerView.recap
                     .applyAppearanceOverride()
             }
+            .sheet(isPresented: $showingPaywall) {
+                PaywallView(reason: .monthlyRecap)
+                    .applyAppearanceOverride()
+                    .tint(Theme.accent)
+            }
             .onAppear {
                 // Let the sheet settle before the bars rise.
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -98,6 +106,14 @@ struct WeeklyRecapView: View {
         HStack(spacing: 4) {
             ForEach(RecapSpan.allCases, id: \.self) { option in
                 Button {
+                    // The month view is the paid half of the recap. The selection
+                    // is left where it was rather than flicked to Month and back:
+                    // showing the data for a second and taking it away is a worse
+                    // answer than not showing it.
+                    guard option == .week || ProGate.canUseMonthlyRecap(isPro: pro.isPro) else {
+                        showingPaywall = true
+                        return
+                    }
                     withAnimation(Motion.gentleFast) {
                         span = option
                     }

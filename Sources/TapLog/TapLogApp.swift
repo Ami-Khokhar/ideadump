@@ -23,6 +23,10 @@ struct TapLogApp: App {
         // who handles a tap if the user ever grants it. The ask itself is
         // deliberately nowhere near launch; see `RecapNotificationPolicy`.
         UNUserNotificationCenter.current().delegate = RecapNotifier.shared
+        // Starts the entitlement listener before any screen can ask `isPro`, so
+        // a paying user never sees a locked screen for the moment it takes
+        // StoreKit to answer.
+        ProStore.shared.start()
     }
 
     var body: some Scene {

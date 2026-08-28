@@ -15,12 +15,11 @@ struct SettingsView: View {
 
     @AppStorage("appearanceMode") private var appearanceMode = "system"
 
-#if DEBUG
-    @AppStorage("isProDemo") private var isPro = false
-#endif
+    private var pro = ProStore.shared
 
     @State private var showingClearConfirmation = false
     @State private var showingFrontDoors = false
+    @State private var showingPaywall = false
 
     var body: some View {
         NavigationStack {
@@ -104,6 +103,35 @@ struct SettingsView: View {
 #endif
 
                 Section {
+                    if pro.isPro {
+                        Label {
+                            Text("TapLog Pro is unlocked")
+                        } icon: {
+                            Image(systemName: "checkmark.seal.fill")
+                                .foregroundStyle(Theme.accent)
+                        }
+                    } else {
+                        Button("TapLog Pro") { showingPaywall = true }
+                    }
+                    // Always offered, unlocked or not: someone reinstalling on a
+                    // new phone arrives here locked out and looking for exactly
+                    // this, and hiding it behind the paywall would make them buy
+                    // a thing they already own.
+                    Button("Restore purchase") {
+                        Task { await pro.restore() }
+                    }
+                    .disabled(pro.isWorking)
+                } header: {
+                    Text("Pro")
+                } footer: {
+                    if let failure = pro.failureMessage {
+                        Text(failure).foregroundStyle(Theme.clay)
+                    } else {
+                        Text("One payment unlocks a target for every category and the monthly recap.")
+                    }
+                }
+
+                Section {
                     Button("Delete all entries", role: .destructive) {
                         showingClearConfirmation = true
                     }
@@ -113,13 +141,6 @@ struct SettingsView: View {
                     Text("This permanently removes your history and resets your consistency progress.")
                 }
 
-#if DEBUG
-                Section("Preview build") {
-                    Button(isPro ? "Turn Pro off (demo)" : "Turn Pro on (demo)") {
-                        isPro.toggle()
-                    }
-                }
-#endif
             }
             .scrollContentBackground(.hidden)
             .floatingToolbarScrollEdge()
@@ -131,6 +152,10 @@ struct SettingsView: View {
                     Button("Done") { dismiss() }
                         .fontWeight(.semibold)
                 }
+            }
+            .sheet(isPresented: $showingPaywall) {
+                PaywallView(reason: .secondTree)
+                    .tint(Theme.accent)
             }
             .sheet(isPresented: $showingFrontDoors) {
                 SetupFrontDoorsView(onDone: { showingFrontDoors = false })

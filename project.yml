@@ -120,6 +120,9 @@ schemes:
         TapLog: all
     run:
       config: Debug
+      # Local StoreKit testing: the simulator serves the product from this file,
+      # so the paywall can be driven end to end without App Store Connect.
+      storeKitConfiguration: Configs/TapLog.storekit
     test:
       config: Debug
       targets:

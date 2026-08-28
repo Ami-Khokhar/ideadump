@@ -22,7 +22,6 @@ struct EntryListView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(RetentionManager.self) private var retention
 
-    @AppStorage("isProDemo") private var isPro = false
 
     @Query(filter: #Predicate<Entry> { !$0.isArchived && !$0.isPending }, sort: \Entry.date, order: .reverse)
     private var activeEntries: [Entry]
@@ -197,7 +196,6 @@ struct EntryListView: View {
     private var debugMenu: some View {
         Menu {
             Button("Seed sample data") { DebugSeeder.seed(context: modelContext) }
-            Button(isPro ? "Turn Pro off (demo)" : "Turn Pro on (demo)") { isPro.toggle() }
             Divider()
             Button("Delete all entries", role: .destructive) { showingClearConfirmation = true }
         } label: {

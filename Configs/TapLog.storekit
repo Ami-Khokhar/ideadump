@@ -1,0 +1,41 @@
+{
+  "identifier" : "B1F0A9C4",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : true,
+      "internalID" : "6A2C77E1",
+      "localizations" : [
+        {
+          "description" : "Plant a target for every category, and add the monthly recap to the weekly one. One payment, yours for good.",
+          "displayName" : "TapLog Pro",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "dev.amteshwar.taplog.pro.lifetime",
+      "referenceName" : "TapLog Pro (lifetime)",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_askToBuyEnabled" : false,
+    "_billingIssuesEnabled" : false,
+    "_disableDialogs" : false,
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+
+    ]
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}
