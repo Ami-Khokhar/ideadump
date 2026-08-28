@@ -155,8 +155,11 @@ final class TimeBucketTests: XCTestCase {
     func testWeekdayBucketCountsIgnoreWeekendEntries() {
         // chai logged heavily on weekends; food logged on weekdays.
         // When the reference date is a weekday, food should rank first in the commute bucket.
+        // The weekend entries sit before the reference weekday: nextWeekend walks
+        // back from *today*, so on a weekend run it would land after the reference
+        // and the bounded window would silently drop the whole chai partition.
         let weekday = nextWeekday(hour: 8)
-        let weekend = nextWeekend(hour: 8)
+        let weekend = weekendBefore(weekday)
         var entries: [Entry] = []
         for _ in 0..<8 { entries.append(makeEntry(category: "chai", hour: 8, on: weekend)) }
         for _ in 0..<3 { entries.append(makeEntry(category: "food", hour: 8, on: weekday)) }
@@ -168,8 +171,10 @@ final class TimeBucketTests: XCTestCase {
     func testWeekendBucketCountsIgnoreWeekdayEntries() {
         // metro logged heavily on weekdays; shopping logged on weekends.
         // When the reference date is a weekend, shopping should rank first.
-        let weekday = nextWeekday(hour: 8)
+        // The weekday entries sit before the reference weekend for the same
+        // reason as above — on a weekday run they would post-date the reference.
         let weekend = nextWeekend(hour: 8)
+        let weekday = weekdayBefore(weekend)
         var entries: [Entry] = []
         for _ in 0..<8 { entries.append(makeEntry(category: "metro", hour: 8, on: weekday)) }
         for _ in 0..<3 { entries.append(makeEntry(category: "shopping", hour: 8, on: weekend)) }
@@ -251,8 +256,9 @@ final class TimeBucketTests: XCTestCase {
             makeEntry(category: "zeta", hour: 16, on: weekEarlier(ref)),
         ]
         let result = TimeBucket.blendedTopCategories(entries: entries, categories: [], maxSlots: 4, referenceDate: ref)
-        XCTAssertEqual(result.first, "alpha")
-        XCTAssertEqual(result[1], "zeta")
+        // Whole-array equality, not `result[1]`: a subscript on a short result
+        // traps and takes down the entire test process instead of failing here.
+        XCTAssertEqual(result, ["alpha", "zeta"])
     }
 
     // MARK: - Cold start
@@ -447,8 +453,8 @@ final class TimeBucketTests: XCTestCase {
 
         var entries: [Entry] = []
         for _ in 0..<3 { entries.append(makeEntry(category: "food", hour: 8, referenceDay: ref)) }
-        for _ in 0..<3 { entries.append(makeEntry(category: "shopping", hour: 14, referenceDay: ref)) }
-        for _ in 0..<2 { entries.append(makeEntry(category: "transport", hour: 20, referenceDay: ref)) }
+        for _ in 0..<3 { entries.append(makeEntry(category: "shopping", hour: 14, on: weekEarlier(ref))) }
+        for _ in 0..<2 { entries.append(makeEntry(category: "transport", hour: 20, on: weekEarlier(ref))) }
 
         let first = TimeBucket.blendedTopCategories(entries: entries, categories: categories, maxSlots: 4, referenceDate: ref)
         XCTAssertEqual(first.count, 4)
@@ -500,6 +506,27 @@ final class TimeBucketTests: XCTestCase {
     /// suggestions are ranked only on spend that has happened.
     private func weekEarlier(_ date: Date) -> Date {
         Calendar.current.date(byAdding: .day, value: -7, to: date)!
+    }
+
+    /// The closest weekend day strictly before `date`. The hour component is
+    /// irrelevant — makeEntry re-stamps the hour on whatever day this returns.
+    private func weekendBefore(_ date: Date) -> Date {
+        let cal = Calendar.current
+        var day = cal.date(byAdding: .day, value: -1, to: date)!
+        while !cal.isDateInWeekend(day) {
+            day = cal.date(byAdding: .day, value: -1, to: day)!
+        }
+        return day
+    }
+
+    /// The closest weekday strictly before `date`.
+    private func weekdayBefore(_ date: Date) -> Date {
+        let cal = Calendar.current
+        var day = cal.date(byAdding: .day, value: -1, to: date)!
+        while cal.isDateInWeekend(day) {
+            day = cal.date(byAdding: .day, value: -1, to: day)!
+        }
+        return day
     }
 
     private func weekdayAt(hour: Int) -> Date {
