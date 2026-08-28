@@ -113,20 +113,37 @@ final class StoreLocatorTests: XCTestCase {
     private let groupStore = URL(fileURLWithPath: "/group/TapLog.store")
     private let fallbackStore = URL(fileURLWithPath: "/support/TapLog.store")
 
+    /// `withData` and `existing` are stated independently on purpose. An earlier
+    /// version of this helper unioned them, on the reasoning that a store
+    /// holding history must exist — which made the one state that actually
+    /// carried a bug, a marker outliving its store, impossible to write down.
+    /// Callers that want the ordinary case pass `marked:`.
     private func ordered(
         _ candidates: [URL],
         pinned: URL? = nil,
         withData: Set<URL> = [],
         existing: Set<URL> = []
     ) -> [URL] {
-        // A store holding history necessarily exists, so callers never have to
-        // state it twice.
-        let onDisk = existing.union(withData)
-        return StoreLocator.orderedCandidates(
+        StoreLocator.orderedCandidates(
             candidates,
             pinned: pinned,
             hasData: { withData.contains($0) },
-            storeExists: { onDisk.contains($0) }
+            storeExists: { existing.contains($0) }
+        )
+    }
+
+    /// The ordinary case: these locations hold history, and so are also on disk.
+    private func ordered(
+        _ candidates: [URL],
+        pinned: URL? = nil,
+        marked: Set<URL>,
+        alsoExisting: Set<URL> = []
+    ) -> [URL] {
+        ordered(
+            candidates,
+            pinned: pinned,
+            withData: marked,
+            existing: marked.union(alsoExisting)
         )
     }
 
@@ -139,7 +156,7 @@ final class StoreLocatorTests: XCTestCase {
     /// fallback while the App Group was unprovisioned must not be abandoned the
     /// day the entitlement lands.
     func testACandidateHoldingDataWinsOverAnEmptyPreferredOne() {
-        let result = ordered([groupStore, fallbackStore], withData: [fallbackStore])
+        let result = ordered([groupStore, fallbackStore], marked: [fallbackStore])
         XCTAssertEqual(result.first, fallbackStore)
         XCTAssertEqual(result.count, 2, "the other location stays available as a fallback")
     }
@@ -150,8 +167,8 @@ final class StoreLocatorTests: XCTestCase {
     func testAnEmptyStoreFileNeverOutranksOneHoldingData() {
         let result = ordered(
             [groupStore, fallbackStore],
-            withData: [fallbackStore],
-            existing: [groupStore]
+            marked: [fallbackStore],
+            alsoExisting: [groupStore]
         )
         XCTAssertEqual(result.first, fallbackStore)
     }
@@ -159,12 +176,12 @@ final class StoreLocatorTests: XCTestCase {
     /// Both hold history: preference order decides, and nothing is lost either
     /// way because neither is empty.
     func testWhenBothHoldDataThePreferredLocationWins() {
-        let result = ordered([groupStore, fallbackStore], withData: [groupStore, fallbackStore])
+        let result = ordered([groupStore, fallbackStore], marked: [groupStore, fallbackStore])
         XCTAssertEqual(result.first, groupStore)
     }
 
     func testPinIsHonouredWhenItsStoreHoldsData() {
-        let result = ordered([groupStore, fallbackStore], pinned: fallbackStore, withData: [fallbackStore])
+        let result = ordered([groupStore, fallbackStore], pinned: fallbackStore, marked: [fallbackStore])
         XCTAssertEqual(result.first, fallbackStore)
     }
 
@@ -174,8 +191,8 @@ final class StoreLocatorTests: XCTestCase {
         let result = ordered(
             [groupStore, fallbackStore],
             pinned: groupStore,
-            withData: [fallbackStore],
-            existing: [groupStore]
+            marked: [fallbackStore],
+            alsoExisting: [groupStore]
         )
         XCTAssertEqual(result.first, fallbackStore)
     }
@@ -196,8 +213,8 @@ final class StoreLocatorTests: XCTestCase {
     /// even if their pins disagree — which is what keeps a racing app and
     /// widget from opening different stores.
     func testDisagreeingPinsStillResolveToTheStoreHoldingData() {
-        let asApp = ordered([groupStore, fallbackStore], pinned: groupStore, withData: [fallbackStore], existing: [groupStore])
-        let asWidget = ordered([groupStore, fallbackStore], pinned: fallbackStore, withData: [fallbackStore], existing: [groupStore])
+        let asApp = ordered([groupStore, fallbackStore], pinned: groupStore, marked: [fallbackStore], alsoExisting: [groupStore])
+        let asWidget = ordered([groupStore, fallbackStore], pinned: fallbackStore, marked: [fallbackStore], alsoExisting: [groupStore])
         XCTAssertEqual(asApp.first, fallbackStore)
         XCTAssertEqual(asWidget, asApp, "both processes must land on the same store")
     }
@@ -205,15 +222,46 @@ final class StoreLocatorTests: XCTestCase {
     func testOrderingReturnsEveryCandidateExactlyOnce() {
         for pinned: URL? in [nil, groupStore, fallbackStore] {
             for withData in [Set<URL>(), [groupStore], [fallbackStore], [groupStore, fallbackStore]] {
-                let result = ordered([groupStore, fallbackStore], pinned: pinned, withData: withData)
+                let result = ordered([groupStore, fallbackStore], pinned: pinned, marked: withData)
                 XCTAssertEqual(result.count, 2, "pinned: \(String(describing: pinned)), data: \(withData)")
                 XCTAssertEqual(Set(result), [groupStore, fallbackStore])
             }
         }
     }
 
+    /// A marker can outlive the store it describes — the store file is deleted
+    /// or corrupted while the zero-byte marker beside it survives. Treating the
+    /// marker alone as evidence would promote a location SwiftData is about to
+    /// recreate empty, hiding the history that survived elsewhere.
+    func testAMarkerWithoutItsStoreIsNotEvidenceOfHistory() {
+        let result = ordered(
+            [groupStore, fallbackStore],
+            withData: [groupStore],          // marker survives
+            existing: [fallbackStore]        // but only the fallback still has a store
+        )
+        XCTAssertEqual(result.first, fallbackStore)
+    }
+
+    /// The same rule applies when the stale marker is the pinned location.
+    func testAPinnedMarkerWithoutItsStoreIsIgnored() {
+        let result = ordered(
+            [groupStore, fallbackStore],
+            pinned: groupStore,
+            withData: [groupStore],
+            existing: [fallbackStore]
+        )
+        XCTAssertEqual(result.first, fallbackStore)
+    }
+
+    /// Nothing on disk at all: fall through to preference order rather than
+    /// trusting a marker with no store anywhere behind it.
+    func testStaleMarkersWithNoStoresFallBackToPreferenceOrder() {
+        let result = ordered([groupStore, fallbackStore], withData: [fallbackStore])
+        XCTAssertEqual(result.first, groupStore)
+    }
+
     func testSingleCandidateIsReturnedUnchanged() {
-        XCTAssertEqual(ordered([fallbackStore], withData: [fallbackStore]), [fallbackStore])
+        XCTAssertEqual(ordered([fallbackStore], marked: [fallbackStore]), [fallbackStore])
         XCTAssertEqual(ordered([fallbackStore]), [fallbackStore])
     }
 }

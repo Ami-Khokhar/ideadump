@@ -151,8 +151,14 @@ enum StoreLocator {
             return ordered
         }
 
-        if let pinned, ordered.contains(pinned), hasData(pinned) { return promote(pinned) }
-        if let populated = ordered.first(where: hasData) { return promote(populated) }
+        // A marker only counts alongside the store it describes. A marker that
+        // outlived its store would otherwise promote a location SwiftData is
+        // about to recreate empty, hiding the history that survived elsewhere —
+        // the exact failure the marker exists to prevent.
+        func holdsHistory(_ url: URL) -> Bool { storeExists(url) && hasData(url) }
+
+        if let pinned, ordered.contains(pinned), holdsHistory(pinned) { return promote(pinned) }
+        if let populated = ordered.first(where: holdsHistory) { return promote(populated) }
         if let pinned, ordered.contains(pinned), storeExists(pinned) { return promote(pinned) }
         if let existing = ordered.first(where: storeExists) { return promote(existing) }
         return ordered
@@ -188,7 +194,17 @@ enum StoreLocator {
         descriptor.fetchLimit = 1
         let context = ModelContext(container)
         guard let found = try? context.fetch(descriptor), !found.isEmpty else { return }
-        FileManager.default.createFile(atPath: dataMarkerURL(for: url).path, contents: Data())
+
+        // A failed write leaves a populated store looking empty, which is how it
+        // would lose a later ordering decision to a genuinely empty one. There
+        // is nothing to do about it here beyond saying so — but the attempt
+        // repeats on every launch until it lands, so a transient failure heals
+        // itself, and a permanently unwritable directory could not have hosted
+        // this store in the first place.
+        let marker = dataMarkerURL(for: url)
+        if !FileManager.default.createFile(atPath: marker.path, contents: Data()) {
+            print("TapLog: could not record the history marker at \(marker.path) — store selection will fall back to file presence")
+        }
     }
 
     /// Defaults key holding the store location this install settled on.
@@ -217,8 +233,9 @@ enum StoreLocator {
         let pins = pinSuites
             .compactMap { $0.string(forKey: pinnedStoreKey) }
             .map { URL(fileURLWithPath: $0) }
-        return pins.first(where: hasDataMarker)
-            ?? pins.first { FileManager.default.fileExists(atPath: $0.path) }
+        func storeExists(_ url: URL) -> Bool { FileManager.default.fileExists(atPath: url.path) }
+        return pins.first { storeExists($0) && hasDataMarker($0) }
+            ?? pins.first(where: storeExists)
             ?? pins.first
     }
 
