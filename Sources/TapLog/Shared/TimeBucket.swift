@@ -92,7 +92,10 @@ enum TimeBucket: Int, CaseIterable, Sendable {
     ) -> [String] {
         let calendar = Calendar.current
         let windowStart = calendar.date(byAdding: .day, value: -windowDays, to: referenceDate)!
-        let windowedEntries = entries.filter { $0.date >= windowStart }
+        // The window is bounded at both ends. With only a lower bound, an entry
+        // dated next week counted as evidence of a habit, so a single
+        // future-dated log could reorder the tiles before it had happened.
+        let windowedEntries = entries.filter { $0.date >= windowStart && $0.date <= referenceDate }
 
         guard windowedEntries.count >= activationThreshold else {
             return globalTopCategories(entries: windowedEntries, categories: categories, limit: maxSlots)

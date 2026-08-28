@@ -89,7 +89,10 @@ enum StoreLocator {
                     for: Entry.self, SpendCategory.self,
                     configurations: configuration
                 )
-                if pinOnSuccess { pin(url) }
+                if pinOnSuccess {
+                    pin(url)
+                    recordHistoryIfPresent(at: url, container: container)
+                }
                 return container
             } catch {
                 print("TapLog: SwiftData store unusable at \(url.path): \(error) — trying next location")
@@ -111,6 +114,7 @@ enum StoreLocator {
         return orderedCandidates(
             candidates,
             pinned: pinnedStoreURL,
+            hasData: hasDataMarker,
             storeExists: { FileManager.default.fileExists(atPath: $0.path) }
         )
     }
@@ -118,41 +122,73 @@ enum StoreLocator {
     /// Decides which candidate to try first. Pure and injectable so the rules
     /// below can be tested without a real filesystem or defaults.
     ///
-    /// Two rules, in order:
+    /// The ordering is driven by evidence of history, not by preference:
     ///
-    /// 1. A pin wins — but only if the store it names is still on disk. An
-    ///    honoured pin pointing at a deleted file would have SwiftData create a
-    ///    fresh empty store at that path, which looks exactly like data loss.
-    /// 2. Otherwise prefer whichever candidate already holds a store. Plain
-    ///    preference order would open the empty App Group store the first time
-    ///    the entitlement becomes available, abandoning a fallback full of
-    ///    history — and pinning alone does not save it, because that history was
-    ///    pinned while `sharedDefaults` was still the standard suite.
+    /// 1. A location known to hold history wins — the pin first if it qualifies,
+    ///    otherwise whichever candidate does. Mere file presence is not that
+    ///    evidence: an empty-but-valid store file can sit in the App Group
+    ///    container (a build opened it, logged nothing, then lost the
+    ///    entitlement), and promoting it would hide a fallback full of history.
+    /// 2. Failing that, a pin that still points at a real store, then any real
+    ///    store, then plain preference order.
     ///
-    /// Nothing is copied between locations. Silently migrating a live SwiftData
-    /// store is a larger risk than continuing to use the one that has the data.
+    /// Nothing is ever copied between locations. Silently migrating a live
+    /// SwiftData store is a larger risk than continuing to use the one that
+    /// already has the data.
     static func orderedCandidates(
         _ candidates: [URL],
         pinned: URL?,
+        hasData: (URL) -> Bool,
         storeExists: (URL) -> Bool
     ) -> [URL] {
         var ordered = candidates
 
-        func promote(_ url: URL) {
-            guard let index = ordered.firstIndex(of: url), index != 0 else { return }
-            ordered.remove(at: index)
-            ordered.insert(url, at: 0)
-        }
-
-        if let pinned, storeExists(pinned), ordered.contains(pinned) {
-            promote(pinned)
+        func promote(_ url: URL) -> [URL] {
+            if let index = ordered.firstIndex(of: url), index != 0 {
+                ordered.remove(at: index)
+                ordered.insert(url, at: 0)
+            }
             return ordered
         }
 
-        if let holdingData = ordered.first(where: storeExists) {
-            promote(holdingData)
-        }
+        if let pinned, ordered.contains(pinned), hasData(pinned) { return promote(pinned) }
+        if let populated = ordered.first(where: hasData) { return promote(populated) }
+        if let pinned, ordered.contains(pinned), storeExists(pinned) { return promote(pinned) }
+        if let existing = ordered.first(where: storeExists) { return promote(existing) }
         return ordered
+    }
+
+    // MARK: - History marker
+
+    /// Sits beside a store that has held at least one entry.
+    ///
+    /// It exists because "the file is there" and "the file has the user's data"
+    /// are different questions, and only the second one should decide which
+    /// store to open. Once written it is never removed: a store the user emptied
+    /// is still their store.
+    private static let dataMarkerName = ".taplog-has-data"
+
+    private static func dataMarkerURL(for store: URL) -> URL {
+        store.deletingLastPathComponent().appendingPathComponent(dataMarkerName)
+    }
+
+    private static func hasDataMarker(_ store: URL) -> Bool {
+        FileManager.default.fileExists(atPath: dataMarkerURL(for: store).path)
+    }
+
+    /// Marks `url` as holding history, if it does. Runs once per location: after
+    /// the marker exists the check is a file lookup, never a fetch.
+    ///
+    /// Uses a fresh `ModelContext` rather than `mainContext`, because this runs
+    /// during the container's lazy initialisation on whichever thread touched it
+    /// first — which for a Siri log or a widget refresh is not the main one.
+    private static func recordHistoryIfPresent(at url: URL, container: ModelContainer) {
+        guard !hasDataMarker(url) else { return }
+        var descriptor = FetchDescriptor<Entry>()
+        descriptor.fetchLimit = 1
+        let context = ModelContext(container)
+        guard let found = try? context.fetch(descriptor), !found.isEmpty else { return }
+        FileManager.default.createFile(atPath: dataMarkerURL(for: url).path, contents: Data())
     }
 
     /// Defaults key holding the store location this install settled on.
@@ -171,13 +207,19 @@ enum StoreLocator {
         return suites
     }
 
-    /// The remembered location, or nil on a first run. When the suites disagree,
-    /// the pin whose store actually exists wins.
+    /// The remembered location, or nil on a first run.
+    ///
+    /// When the two suites disagree — which is exactly what happens across the
+    /// App Group appearing — the pin naming a store with history wins, then one
+    /// naming a store that at least exists. Suite order is the last resort, not
+    /// the first, because it carries no information about where the data is.
     private static var pinnedStoreURL: URL? {
         let pins = pinSuites
             .compactMap { $0.string(forKey: pinnedStoreKey) }
             .map { URL(fileURLWithPath: $0) }
-        return pins.first { FileManager.default.fileExists(atPath: $0.path) } ?? pins.first
+        return pins.first(where: hasDataMarker)
+            ?? pins.first { FileManager.default.fileExists(atPath: $0.path) }
+            ?? pins.first
     }
 
     /// Records the location that actually opened, in every suite, so the record

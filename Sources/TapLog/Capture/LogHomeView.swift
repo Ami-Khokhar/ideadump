@@ -71,7 +71,13 @@ struct LogHomeView: View {
     }
 
     private var todayEntries: [Entry] {
-        activeEntries.filter { Calendar.current.isDateInToday($0.date) }
+        // `isDateInToday` alone covers the whole calendar day, so an entry dated
+        // later today landed in the hero total the moment it was created — the
+        // one number on this screen that is meant to say what has been spent.
+        let now = Date.now
+        return activeEntries.filter {
+            Calendar.current.isDateInToday($0.date) && $0.date <= now
+        }
     }
     private var todayTotal: Decimal {
         todayEntries.reduce(Decimal(0)) { $0 + $1.amount }

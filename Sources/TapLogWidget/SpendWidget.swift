@@ -51,9 +51,14 @@ private func loadTodaySnapshot() -> SpendSnapshot {
 @MainActor
 private func makeQuickButtons(context: ModelContext) -> [QuickButton] {
     // Fetch all non-archived entries (last 90 days is enough to learn patterns)
-    let ninetyDaysAgo = Calendar.current.date(byAdding: .day, value: -90, to: .now) ?? .now
+    let now = Date.now
+    let ninetyDaysAgo = Calendar.current.date(byAdding: .day, value: -90, to: now) ?? now
+    // Bounded at both ends: a future-dated entry is not history, and letting it
+    // rank the buttons would put a purchase that hasn't happened on the widget.
     let descriptor = FetchDescriptor<Entry>(
-        predicate: #Predicate<Entry> { $0.date >= ninetyDaysAgo && !$0.isArchived && !$0.isPending }
+        predicate: #Predicate<Entry> {
+            $0.date >= ninetyDaysAgo && $0.date <= now && !$0.isArchived && !$0.isPending
+        }
     )
     let entries: [Entry] = (try? context.fetch(descriptor)) ?? []
 
