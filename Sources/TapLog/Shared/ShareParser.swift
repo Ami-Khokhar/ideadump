@@ -15,15 +15,37 @@ enum ShareParser {
         return ShareParse(amount: extracted.value, note: note)
     }
 
+    /// Whether the text says money actually moved.
+    ///
+    /// Without this, the bare-number fallback below matched the first digits in
+    /// *any* shared text, so sharing "Your OTP is 482910" filed a pending
+    /// ₹482,910 expense. A share sheet that invents six-figure spending out of a
+    /// one-time password is worse than one that declines to guess.
+    static func mentionsSpending(_ text: String) -> Bool {
+        // Roots, not prefixes: "\bpay" would match "Paytm" and "\bspen" would
+        // match "Spencer", which hands the fallback right back to the OTP texts
+        // it was gated against.
+        let pattern = #"""
+        (?i)(\bdebit|\bspent\b|\bspend\b|\bspending\b|\bpaid\b|\bpayments?\b|\brs\b|\binr\b|[₹$€£])
+        """#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return false }
+        return regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) != nil
+    }
+
     private static func extractAmount(from text: String) -> (value: Decimal?, raw: String) {
         // Group 1 captures just the number; the full match (e.g. "$12.50", "Rs 1,200")
         // is removed from the note text.
-        let patterns = [
+        var patterns = [
             #"[₹$€£]\s?([0-9][0-9,]*(?:\.[0-9]{1,2})?)"#,
             #"(?i)\brs\.?\s?([0-9][0-9,]*(?:\.[0-9]{1,2})?)"#,
             #"(?i)\binr\.?\s?([0-9][0-9,]*(?:\.[0-9]{1,2})?)"#,
-            #"([0-9][0-9,]*(?:\.[0-9]{1,2})?)"#,
         ]
+        // The loose fallback only runs once the text has said money moved. It
+        // still covers the symbol-less forms the patterns above miss — "You spent
+        // 12.50 at Starbucks", "Amount in Rs: 1,200".
+        if mentionsSpending(text) {
+            patterns.append(#"([0-9][0-9,]*(?:\.[0-9]{1,2})?)"#)
+        }
         for pattern in patterns {
             guard let regex = try? NSRegularExpression(pattern: pattern),
                   let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),

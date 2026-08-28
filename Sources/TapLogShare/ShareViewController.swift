@@ -64,7 +64,15 @@ final class ShareViewController: UIViewController {
 
     @discardableResult
     private func savePendingEntry(amount: Decimal, note: String?) -> Bool {
-        let container = StoreLocator.makeContainer()
+        // `makeContainer()` traps when no candidate store opens. That is the right
+        // answer for the app — there is nothing to show without a store — but here
+        // it kills the share sheet with no message, from inside somebody else's
+        // app, while they are looking at it. Failing returns false and the caller
+        // already has the label for it.
+        guard let container = try? StoreLocator.container() else {
+            print("TapLog Share: No usable store — cannot save pending entry")
+            return false
+        }
         let context = container.mainContext
         // Pending entries land in the neutral "Other" bucket — attribution is the
         // user's decision when they confirm it in the app.

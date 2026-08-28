@@ -74,4 +74,41 @@ final class ShareParserTests: XCTestCase {
         XCTAssertNil(ShareParser.parse("").note)
         XCTAssertNil(ShareParser.parse("12345").note)
     }
+
+    // MARK: - The bare-number fallback needs permission
+
+    /// The exact message this gate exists for. The loose pattern used to grab the
+    /// first digits in any shared text, so an OTP became a six-figure expense.
+    func testOTPMessageProducesNoAmount() {
+        XCTAssertNil(ShareParser.parse("Your OTP is 482910").amount)
+    }
+
+    func testOtherCodeBearingMessagesProduceNoAmount() {
+        XCTAssertNil(ShareParser.parse("482910 is your verification code. Do not share it with anyone.").amount)
+        XCTAssertNil(ShareParser.parse("Your delivery arrives between 4 and 6 today").amount)
+        XCTAssertNil(ShareParser.parse("Flight AI 2634 is on time, gate 12").amount)
+        XCTAssertNil(ShareParser.parse("Meeting moved to 11:30").amount)
+    }
+
+    /// The gate must not cost the fallback its actual job: a real payment SMS
+    /// that names no currency symbol at all.
+    func testSymbolLessPaymentSMSStillParses() {
+        XCTAssertEqual(ShareParser.parse("You spent 12.50 at Starbucks").amount, Decimal(string: "12.50"))
+        XCTAssertEqual(ShareParser.parse("Amount in Rs: 1,200 at BigBasket").amount, Decimal(string: "1200"))
+        XCTAssertEqual(ShareParser.parse("450 debited from your account").amount, Decimal(string: "450"))
+        XCTAssertEqual(ShareParser.parse("Paid 89 to Uber").amount, Decimal(string: "89"))
+    }
+
+    /// "yours" and "hrs" contain "rs"; a substring check would have let the OTP
+    /// straight back through.
+    func testSpendingMarkersMatchWholeWordsOnly() {
+        XCTAssertFalse(ShareParser.mentionsSpending("Yours truly, 482910"))
+        XCTAssertFalse(ShareParser.mentionsSpending("Delayed by 3 hrs"))
+        XCTAssertFalse(ShareParser.mentionsSpending("Paytm code 482910"), "a prefix match on \"pay\" would reopen the hole")
+        XCTAssertFalse(ShareParser.mentionsSpending("Spencer Plaza opens at 10"))
+        XCTAssertFalse(ShareParser.mentionsSpending("Your OTP is 482910"))
+        XCTAssertTrue(ShareParser.mentionsSpending("Rs 40 debited"))
+        XCTAssertTrue(ShareParser.mentionsSpending("You spent 12.50"))
+        XCTAssertTrue(ShareParser.mentionsSpending("₹40"))
+    }
 }
