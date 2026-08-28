@@ -20,6 +20,7 @@ struct SettingsView: View {
 #endif
 
     @State private var showingClearConfirmation = false
+    @State private var showingFrontDoors = false
 
     var body: some View {
         NavigationStack {
@@ -47,6 +48,18 @@ struct SettingsView: View {
                     Text("Appearance")
                 } footer: {
                     Text("Overrides the system setting. \"System\" follows your iPhone.")
+                }
+
+                // Moved here when the home screen's ⋯ menu was cut back to
+                // Settings alone. The widget, Lock Screen and Action Button are
+                // setup, not navigation — they belong with the other things you
+                // configure once, not on a bar meant for daily use.
+                Section {
+                    Button("Faster ways to log") {
+                        showingFrontDoors = true
+                    }
+                } footer: {
+                    Text("Add TapLog to your Home Screen, Lock Screen, Control Centre or Action Button.")
                 }
 
                 Section {
@@ -118,6 +131,11 @@ struct SettingsView: View {
                     Button("Done") { dismiss() }
                         .fontWeight(.semibold)
                 }
+            }
+            .sheet(isPresented: $showingFrontDoors) {
+                SetupFrontDoorsView(onDone: { showingFrontDoors = false })
+                    .presentationDetents([.medium, .large])
+                    .tint(Theme.accent)
             }
             .confirmationDialog(
                 "Delete all entries?",

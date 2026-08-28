@@ -2,9 +2,10 @@ import SwiftUI
 import SwiftData
 import Combine
 
-/// App root: a single capture-first home screen. Everything else — History, Recap,
-/// front doors, Settings — lives behind the dropdown menu so the home page stays a
-/// pure logging surface. Also hosts the first-session onboarding state machine,
+/// App root: a single capture-first home screen. History, Budgets and Recap sit on
+/// the navigation bar beside it; Settings (and the front doors it holds) stay behind
+/// the dropdown so the home page stays a logging surface first. Also hosts the
+/// first-session onboarding state machine,
 /// deep-link prefill, appearance override, and the app-wide undo toast.
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
@@ -83,36 +84,36 @@ struct ContentView: View {
                 },
                 skipSplash: intentDirectCapture
             )
+            // The three screens the app exists to pay off with sit on the bar,
+            // one tap from the capture surface. They used to live inside the ⋯
+            // menu, which is where features go to be forgotten — nobody opens a
+            // menu to discover whether an app has anything to show them, so a
+            // recap nobody found was a recap nobody had.
+            //
+            // Budgets earns a button of its own rather than relying on the grove
+            // strip alone: the strip only exists once a budget does, so on a
+            // fresh install it is exactly the person with no trees who would have
+            // had no way to plant one.
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        route = .history
+                    } label: {
+                        Label("History", systemImage: "clock")
+                    }
+                }
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button {
+                        openRoute(.budgets)
+                    } label: {
+                        Label("Budgets", systemImage: "leaf")
+                    }
+                    Button {
+                        openRoute(.recap)
+                    } label: {
+                        Label("Recap", systemImage: "chart.bar")
+                    }
                     Menu {
-                        Button {
-                            route = .history
-                        } label: {
-                            Label("History", systemImage: "clock")
-                        }
-                        Button {
-                            openRoute(.budgets)
-                        } label: {
-                            Label("Budgets", systemImage: "leaf")
-                        }
-                        Button {
-                            route = .categories
-                        } label: {
-                            Label("Categories", systemImage: "tag")
-                        }
-                        Button {
-                            openRoute(.recap)
-                        } label: {
-                            Label("Recap", systemImage: "chart.bar")
-                        }
-                        Divider()
-                        Button {
-                            route = .frontDoors
-                        } label: {
-                            Label("Faster ways to log", systemImage: "sparkles")
-                        }
-                        Divider()
                         Button {
                             route = .settings
                         } label: {
