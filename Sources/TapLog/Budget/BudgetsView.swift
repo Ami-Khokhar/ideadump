@@ -26,7 +26,14 @@ struct BudgetsView: View {
         categories
             .compactMap { BudgetCalculator.report(for: $0, entries: entries) }
             .sorted {
-                ($0.utilization ?? 0) > ($1.utilization ?? 0)
+                // Tie-break on the key, matching `GroveStripModel.trees`. Sort
+                // order is not stable, and the grove card above now draws only
+                // the first few — so without this, which of several untouched
+                // budgets (all sitting at zero) get drawn could change between
+                // redraws of the same unchanged data.
+                ($0.utilization ?? 0) == ($1.utilization ?? 0)
+                    ? $0.categoryKey < $1.categoryKey
+                    : ($0.utilization ?? 0) > ($1.utilization ?? 0)
             }
     }
 
@@ -174,9 +181,17 @@ struct BudgetsView: View {
     private var groveCard: some View {
         let groveSummary = computeGroveSummary()
         return VStack(alignment: .leading, spacing: 0) {
-            // Trees in a row
+            // Trees in a row.
+            //
+            // Capped like `GroveStrip`: at 48pt apiece these run off the right
+            // edge of the card from the seventh budget on, and a tree drawn
+            // half-outside its own card is worse than one not drawn. The caption
+            // below counts every budget, drawn or not, and the rows underneath
+            // name them all — so nothing is hidden, only undrawn. `budgetReports`
+            // leads with the most-pressed budget, so an overspend is always
+            // among the ones that fit.
             HStack(alignment: .bottom, spacing: 8) {
-                ForEach(budgetReports, id: \.categoryKey) { report in
+                ForEach(budgetReports.prefix(GroveStripModel.maxStripTrees), id: \.categoryKey) { report in
                     VStack(spacing: 0) {
                         TreeMark(
                             state: TreeHealthMark(report.health),

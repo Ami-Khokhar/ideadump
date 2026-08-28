@@ -169,6 +169,40 @@ final class GroveStripModelTests: XCTestCase {
         XCTAssertEqual(GroveStripModel.summary(for: []), "")
     }
 
+    /// Both grove rows — the capture strip and the Budgets card — draw at most
+    /// `maxStripTrees` and let the caption speak for the rest. The caption has to
+    /// count budgets that were never drawn, or an overspend past the cut can go
+    /// unreported on a screen whose whole job is to report it.
+    func testSummaryCountsBudgetsBeyondTheDrawnCap() {
+        let count = GroveStripModel.maxStripTrees + 3
+        let categories = (0..<count).map { category("cat\($0)", target: 100, period: .weekly) }
+        // Every one of them overspent, including the ones past the cap.
+        let entries = (0..<count).map { entry(500, "cat\($0)", on: now) }
+        let grove = trees(categories, entries)
+
+        XCTAssertEqual(grove.count, count, "trees() caps nothing — the views do")
+        XCTAssertEqual(GroveStripModel.summary(for: grove), "\(count) over target")
+        XCTAssertGreaterThan(count, GroveStripModel.maxStripTrees)
+    }
+
+    /// The cap only stays honest while the most-pressed budgets sort first: the
+    /// drawn prefix has to be the one an overspend is guaranteed to be inside.
+    func testTheDrawnPrefixHoldsTheWorstBudgets() {
+        var categories = (0..<GroveStripModel.maxStripTrees).map {
+            category("safe\($0)", target: 100, period: .weekly)
+        }
+        categories.append(category("blown", target: 100, period: .weekly))
+        var entries = (0..<GroveStripModel.maxStripTrees).map {
+            entry(10, "safe\($0)", on: now)
+        }
+        entries.append(entry(900, "blown", on: now))
+
+        let drawn = trees(categories, entries).prefix(GroveStripModel.maxStripTrees)
+
+        XCTAssertEqual(drawn.first?.categoryKey, "blown",
+                       "the overspent budget must survive the cut, not fall off the end")
+    }
+
     // MARK: - Accessibility
 
     /// The strip encodes state as a silhouette and a tint; VoiceOver gets neither,
