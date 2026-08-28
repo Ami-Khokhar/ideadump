@@ -56,7 +56,7 @@ struct LogHomeView: View {
     private var lookup: CategoryLookup { CategoryLookup(categories) }
 
     private var topCategories: [SpendCategory] {
-        let keys = TimeBucket.blendedTopCategories(
+        let keys = CategorySuggestions.topCategories(
             entries: activeEntries,
             categories: categories,
             maxSlots: 4
@@ -70,7 +70,7 @@ struct LogHomeView: View {
     ///
     /// Cost: one pass over `activeEntries` plus a report per budgeted category
     /// over that category's own slice — the same order as the tile row's
-    /// existing `blendedTopCategories` scan, and no work at all when nobody has
+    /// existing suggestion scan, and no work at all when nobody has
     /// set a budget. It is read exactly once per body pass in `mainContent` and
     /// handed down, because a computed property read from inside `tileButton`
     /// would redo the whole thing once per tile.
