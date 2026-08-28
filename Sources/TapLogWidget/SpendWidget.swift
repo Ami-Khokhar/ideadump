@@ -25,9 +25,15 @@ struct SpendSnapshot: TimelineEntry {
 private func loadTodaySnapshot() -> SpendSnapshot {
     let container = StoreLocator.makeContainer()
     let context = container.mainContext
-    let startOfDay = Calendar.current.startOfDay(for: .now)
+    let now = Date.now
+    let startOfDay = Calendar.current.startOfDay(for: now)
+    // Upper bound as well as lower: an entry dated later today hasn't been spent
+    // yet, and without it the widget reported a total the app's own screens —
+    // which all apply this cut-off — refused to show.
     let descriptor = FetchDescriptor<Entry>(
-        predicate: #Predicate<Entry> { $0.date >= startOfDay && !$0.isArchived && !$0.isPending }
+        predicate: #Predicate<Entry> {
+            $0.date >= startOfDay && $0.date <= now && !$0.isArchived && !$0.isPending
+        }
     )
     let entries: [Entry] = (try? context.fetch(descriptor)) ?? []
     let total = entries.reduce(Decimal(0)) { $0 + $1.amount }

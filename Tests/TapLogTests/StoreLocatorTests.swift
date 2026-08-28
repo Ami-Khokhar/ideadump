@@ -107,4 +107,68 @@ final class StoreLocatorTests: XCTestCase {
 
         XCTAssertEqual(try context.fetch(FetchDescriptor<Entry>()).count, 1)
     }
+
+    // MARK: - Candidate ordering
+
+    private let groupStore = URL(fileURLWithPath: "/group/TapLog.store")
+    private let fallbackStore = URL(fileURLWithPath: "/support/TapLog.store")
+
+    /// Plain preference order, with nothing pinned and nothing on disk.
+    func testGroupStoreIsPreferredOnAFirstRun() {
+        let ordered = StoreLocator.orderedCandidates(
+            [groupStore, fallbackStore], pinned: nil, storeExists: { _ in false }
+        )
+        XCTAssertEqual(ordered.first, groupStore)
+    }
+
+    /// The regression this ordering exists for: history accumulated in the
+    /// fallback while the App Group was unprovisioned must not be abandoned the
+    /// day the entitlement lands.
+    func testACandidateHoldingDataWinsOverAnEmptyPreferredOne() {
+        let ordered = StoreLocator.orderedCandidates(
+            [groupStore, fallbackStore],
+            pinned: nil,
+            storeExists: { $0 == self.fallbackStore }
+        )
+        XCTAssertEqual(ordered.first, fallbackStore)
+        XCTAssertEqual(ordered.count, 2, "the other location stays available as a fallback")
+    }
+
+    func testPinIsHonouredWhenItsStoreStillExists() {
+        let ordered = StoreLocator.orderedCandidates(
+            [groupStore, fallbackStore],
+            pinned: fallbackStore,
+            storeExists: { _ in true }
+        )
+        XCTAssertEqual(ordered.first, fallbackStore)
+    }
+
+    /// Honouring a pin whose file is gone would have SwiftData create a fresh
+    /// empty store there — indistinguishable from data loss.
+    func testPinNamingADeletedStoreIsIgnored() {
+        let ordered = StoreLocator.orderedCandidates(
+            [groupStore, fallbackStore],
+            pinned: fallbackStore,
+            storeExists: { $0 == self.groupStore }
+        )
+        XCTAssertEqual(ordered.first, groupStore, "fall through to the location that has data")
+    }
+
+    /// A pin left behind by a location that is no longer offered at all.
+    func testPinNamingAnUnavailableLocationIsIgnored() {
+        let ordered = StoreLocator.orderedCandidates(
+            [fallbackStore], pinned: groupStore, storeExists: { _ in true }
+        )
+        XCTAssertEqual(ordered, [fallbackStore])
+    }
+
+    func testOrderingNeverDropsOrDuplicatesACandidate() {
+        let ordered = StoreLocator.orderedCandidates(
+            [groupStore, fallbackStore],
+            pinned: fallbackStore,
+            storeExists: { _ in true }
+        )
+        XCTAssertEqual(Set(ordered), Set([groupStore, fallbackStore]))
+        XCTAssertEqual(ordered.count, 2)
+    }
 }
