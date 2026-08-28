@@ -264,4 +264,122 @@ final class StoreLocatorTests: XCTestCase {
         XCTAssertEqual(ordered([fallbackStore], marked: [fallbackStore]), [fallbackStore])
         XCTAssertEqual(ordered([fallbackStore]), [fallbackStore])
     }
+
+    // MARK: - Healing a split store
+
+    private func makeStore() throws -> ModelContainer {
+        try ModelContainer(
+            for: Entry.self, SpendCategory.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+    }
+
+    /// The split the app can actually create: log without the entitlement, then
+    /// gain it. The fallback holds the history; the group store is empty.
+    func testHealRunsWhenTheFallbackHoldsHistoryAndTheGroupDoesNot() {
+        XCTAssertTrue(StoreLocator.shouldHealSplit(
+            group: groupStore, fallback: fallbackStore,
+            holdsHistory: { $0 == self.fallbackStore }
+        ))
+    }
+
+    func testHealDoesNotRunWhenTheGroupStoreAlreadyHoldsHistory() {
+        XCTAssertFalse(StoreLocator.shouldHealSplit(
+            group: groupStore, fallback: fallbackStore,
+            holdsHistory: { _ in true }
+        ), "copying into a store that already has data is how duplicates happen")
+    }
+
+    func testHealDoesNotRunWhenThereIsNothingToMove() {
+        XCTAssertFalse(StoreLocator.shouldHealSplit(
+            group: groupStore, fallback: fallbackStore,
+            holdsHistory: { _ in false }
+        ))
+    }
+
+    func testHealDoesNotRunWithoutAnAppGroup() {
+        XCTAssertFalse(StoreLocator.shouldHealSplit(
+            group: nil, fallback: fallbackStore,
+            holdsHistory: { _ in true }
+        ))
+    }
+
+    func testCopyMovesEntriesAndCategories() throws {
+        let source = try makeStore(), destination = try makeStore()
+        let from = ModelContext(source)
+        from.insert(SpendCategory(key: "chai", name: "Chai", emoji: "☕️", sortOrder: 1, logCount: 7,
+                                  budgetTarget: 300, budgetPeriod: .monthly))
+        from.insert(Entry(amount: 12, category: "chai", note: "morning", intent: .impulse))
+        from.insert(Entry(amount: 30, category: "chai"))
+        try from.save()
+
+        let result = try StoreLocator.copyStore(from: source, to: destination)
+        XCTAssertEqual(result.entries, 2)
+        XCTAssertEqual(result.categoriesAdded, 1)
+
+        let into = ModelContext(destination)
+        let copied = try into.fetch(FetchDescriptor<Entry>())
+        XCTAssertEqual(copied.count, 2)
+        XCTAssertEqual(Set(copied.map(\.amount)), [12, 30])
+        XCTAssertEqual(copied.first(where: { $0.amount == 12 })?.note, "morning")
+        XCTAssertEqual(copied.first(where: { $0.amount == 12 })?.intent, .impulse)
+
+        let category = try XCTUnwrap(into.fetch(FetchDescriptor<SpendCategory>()).first)
+        XCTAssertEqual(category.budgetTarget, 300, "a budget is the user's, and has to survive the move")
+        XCTAssertEqual(category.logCount, 7)
+    }
+
+    /// The guard that makes the copy safe to retry. An interrupted run that
+    /// never wrote its marker would otherwise duplicate every row next launch.
+    func testCopyRefusesADestinationThatAlreadyHasEntries() throws {
+        let source = try makeStore(), destination = try makeStore()
+        let from = ModelContext(source)
+        from.insert(Entry(amount: 12, category: "chai"))
+        try from.save()
+        let into = ModelContext(destination)
+        into.insert(Entry(amount: 99, category: "food"))
+        try into.save()
+
+        XCTAssertEqual(try StoreLocator.copyStore(from: source, to: destination), .none)
+        XCTAssertEqual(try ModelContext(destination).fetch(FetchDescriptor<Entry>()).count, 1)
+    }
+
+    func testCopyingTwiceDoesNotDuplicate() throws {
+        let source = try makeStore(), destination = try makeStore()
+        let from = ModelContext(source)
+        from.insert(Entry(amount: 12, category: "chai"))
+        try from.save()
+
+        XCTAssertEqual(try StoreLocator.copyStore(from: source, to: destination).entries, 1)
+        XCTAssertEqual(try StoreLocator.copyStore(from: source, to: destination), .none)
+        XCTAssertEqual(try ModelContext(destination).fetch(FetchDescriptor<Entry>()).count, 1)
+    }
+
+    /// A category the destination seeded by default must end up carrying the
+    /// user's settings, not the default's.
+    func testCopyOverwritesASeededCategoryRatherThanDuplicatingIt() throws {
+        let source = try makeStore(), destination = try makeStore()
+        let from = ModelContext(source)
+        from.insert(SpendCategory(key: "chai", name: "Chai", emoji: "☕️", sortOrder: 1, logCount: 9,
+                                  budgetTarget: 500, budgetPeriod: .weekly))
+        from.insert(Entry(amount: 12, category: "chai"))
+        try from.save()
+        let into = ModelContext(destination)
+        into.insert(SpendCategory(key: "chai", name: "Chai", emoji: "☕️", sortOrder: 1))
+        try into.save()
+
+        let result = try StoreLocator.copyStore(from: source, to: destination)
+        XCTAssertEqual(result.categoriesAdded, 0)
+        XCTAssertEqual(result.categoriesUpdated, 1)
+
+        let categories = try ModelContext(destination).fetch(FetchDescriptor<SpendCategory>())
+        XCTAssertEqual(categories.count, 1, "the key already existed; a second row would split the category")
+        XCTAssertEqual(categories.first?.budgetTarget, 500)
+        XCTAssertEqual(categories.first?.logCount, 9)
+    }
+
+    func testCopyFromAnEmptySourceIsANoOp() throws {
+        let source = try makeStore(), destination = try makeStore()
+        XCTAssertEqual(try StoreLocator.copyStore(from: source, to: destination), .none)
+    }
 }

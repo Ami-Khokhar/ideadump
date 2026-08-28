@@ -20,11 +20,26 @@ enum StoreLocator {
         UserDefaults(suiteName: appGroupID) ?? .standard
     }
 
-    /// Resolved once per process: group-container store when present and provably
-    /// writable, otherwise Application Support.
-    static var storeURL: URL { resolvedCandidates[0] }
+    /// The store this process actually opened.
+    ///
+    /// This used to be `resolvedCandidates[0]` — the first location *tried*, not
+    /// the one that opened. Whenever the preferred candidate failed (a denied
+    /// sandbox, a half-written store), the app quietly ran on the next location
+    /// while `storeURL`, `isUsingSharedStore` and the Settings warning built on
+    /// them all described a store it was not using. A diagnostic that lies is
+    /// worse than none.
+    static var storeURL: URL {
+        if case .success(let opened) = cachedStore { return opened.url }
+        // Nothing opened at all; name the location that would have been tried
+        // first so callers still get something coherent to report.
+        return candidateStoreURLs().first ?? applicationSupportStoreURL
+    }
 
-    private static let resolvedCandidates: [URL] = candidateStoreURLs()
+    /// A container together with the location it was opened from.
+    private struct OpenedStore {
+        let container: ModelContainer
+        let url: URL
+    }
 
     enum StoreError: LocalizedError {
         case noUsableStore
@@ -48,15 +63,28 @@ enum StoreLocator {
     /// `static let` gives lazy, once-only, thread-safe initialisation, so every
     /// caller in a process now shares the container — which also means a Siri log
     /// lands in the same store the UI is observing instead of a second file.
-    private static let cachedContainer: Result<ModelContainer, Error> = {
-        do { return .success(try openContainer(candidates: resolvedCandidates, pinOnSuccess: true)) }
-        catch { return .failure(error) }
+    private static let cachedStore: Result<OpenedStore, Error> = {
+        // Heal before choosing. The copy changes which location holds history,
+        // and therefore which one the ordering below will pick.
+        healSplitStoreIfNeeded()
+
+        for url in candidateStoreURLs() {
+            do {
+                let container = try openContainer(at: url)
+                pin(url)
+                recordHistoryIfPresent(at: url, container: container)
+                return .success(OpenedStore(container: container, url: url))
+            } catch {
+                print("TapLog: SwiftData store unusable at \(url.path): \(error) — trying next location")
+            }
+        }
+        return .failure(StoreError.noUsableStore)
     }()
 
     /// Throwing accessor for App Intents. A store that cannot be opened has to
     /// surface as a spoken Siri error, never as a crash.
     static func container() throws -> ModelContainer {
-        try cachedContainer.get()
+        try cachedStore.get().container
     }
 
     /// App-launch accessor. A store we cannot open at all leaves nothing to show,
@@ -79,21 +107,20 @@ enum StoreLocator {
         }
     }
 
+    /// Opens the store at exactly one location.
+    private static func openContainer(at url: URL) throws -> ModelContainer {
+        try ModelContainer(
+            for: Entry.self, SpendCategory.self,
+            configurations: ModelConfiguration(url: url)
+        )
+    }
+
     /// Opens the store at the first candidate SwiftData can actually use. A sandbox-denied
     /// or half-created store is skipped instead of fatal — a stranded store beats a crash.
-    private static func openContainer(candidates: [URL], pinOnSuccess: Bool = false) throws -> ModelContainer {
+    private static func openContainer(candidates: [URL]) throws -> ModelContainer {
         for url in candidates {
             do {
-                let configuration = ModelConfiguration(url: url)
-                let container = try ModelContainer(
-                    for: Entry.self, SpendCategory.self,
-                    configurations: configuration
-                )
-                if pinOnSuccess {
-                    pin(url)
-                    recordHistoryIfPresent(at: url, container: container)
-                }
-                return container
+                return try openContainer(at: url)
             } catch {
                 print("TapLog: SwiftData store unusable at \(url.path): \(error) — trying next location")
             }
@@ -164,6 +191,155 @@ enum StoreLocator {
         return ordered
     }
 
+    // MARK: - Healing a split store
+
+    /// What a copy did, so callers and tests can tell "nothing to do" from
+    /// "moved 40 entries" rather than inferring it from a Bool.
+    struct CopyResult: Equatable {
+        var entries = 0
+        var categoriesAdded = 0
+        var categoriesUpdated = 0
+
+        static let none = CopyResult()
+    }
+
+    /// Whether the one-time copy should run.
+    ///
+    /// Only in one direction and only into an empty destination: from the
+    /// Application Support fallback, which holds history, into an App Group
+    /// store that has none. That is precisely the split the app can create — log
+    /// for a while without the entitlement, then gain it — and it is the state
+    /// where the widget and share extension read an empty store while the app
+    /// shows a full one.
+    ///
+    /// Pure and injectable so every branch is testable without a filesystem.
+    static func shouldHealSplit(
+        group: URL?,
+        fallback: URL,
+        holdsHistory: (URL) -> Bool
+    ) -> Bool {
+        guard let group else { return false }
+        // The group store already has the user's data, or is the one in use.
+        guard !holdsHistory(group) else { return false }
+        // Nothing to move.
+        return holdsHistory(fallback)
+    }
+
+    /// Copies entries and categories from one store into another, row by row.
+    ///
+    /// Row-by-row through `ModelContext`, never a file copy. The two stores are
+    /// separate SwiftData stacks with their own metadata; moving the file would
+    /// carry one store's identity into the other's container, and a half-copied
+    /// file is unopenable in a way a half-copied row set is not.
+    ///
+    /// Refuses a destination that already holds entries, which is what makes it
+    /// safe to retry: an interrupted copy that never got to write its marker
+    /// would otherwise duplicate every row on the next launch.
+    @discardableResult
+    static func copyStore(from source: ModelContainer, to destination: ModelContainer) throws -> CopyResult {
+        let from = ModelContext(source)
+        let into = ModelContext(destination)
+
+        var probe = FetchDescriptor<Entry>()
+        probe.fetchLimit = 1
+        guard try into.fetch(probe).isEmpty else { return .none }
+
+        let entries = try from.fetch(FetchDescriptor<Entry>())
+        let categories = try from.fetch(FetchDescriptor<SpendCategory>())
+        guard !entries.isEmpty || !categories.isEmpty else { return .none }
+
+        var result = CopyResult()
+
+        // Categories first, so the entries that reference them by key land in a
+        // store that can already name them.
+        let existing = Dictionary(
+            try into.fetch(FetchDescriptor<SpendCategory>()).map { ($0.key, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        for category in categories {
+            if let destination = existing[category.key] {
+                // The destination's copy is a default the app seeded on first
+                // open; the source's is the user's, budgets and all.
+                destination.name = category.name
+                destination.emoji = category.emoji
+                destination.sortOrder = category.sortOrder
+                destination.logCount = category.logCount
+                destination.budgetTarget = category.budgetTarget
+                destination.budgetPeriod = category.budgetPeriod
+                destination.budgetHealthResetDate = category.budgetHealthResetDate
+                result.categoriesUpdated += 1
+            } else {
+                into.insert(SpendCategory(
+                    key: category.key,
+                    name: category.name,
+                    emoji: category.emoji,
+                    sortOrder: category.sortOrder,
+                    logCount: category.logCount,
+                    budgetTarget: category.budgetTarget,
+                    budgetPeriod: category.budgetPeriod,
+                    budgetHealthResetDate: category.budgetHealthResetDate
+                ))
+                result.categoriesAdded += 1
+            }
+        }
+
+        for entry in entries {
+            let copy = Entry(
+                amount: entry.amount,
+                category: entry.category,
+                note: entry.note,
+                date: entry.date,
+                isArchived: entry.isArchived,
+                isPending: entry.isPending,
+                intent: entry.intent
+            )
+            // `init` stamps a fresh `createdAt` and clears the legacy flag; both
+            // are the source row's to keep.
+            copy.createdAt = entry.createdAt
+            copy.isPlanned = entry.isPlanned
+            into.insert(copy)
+            result.entries += 1
+        }
+
+        try into.save()
+        return result
+    }
+
+    /// Runs the copy once, if the split exists. Called before the store is
+    /// chosen, because a successful copy changes which location holds history.
+    ///
+    /// Every failure here is survivable and silent by design: the fallback store
+    /// is never modified or deleted, so the worst outcome is that the app keeps
+    /// running on it exactly as it did before, with the Settings warning still
+    /// telling the truth about sharing.
+    private static func healSplitStoreIfNeeded() {
+        let group = FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: appGroupID)
+            .flatMap { isWritableDirectory($0) ? $0.appendingPathComponent(storeFileName) : nil }
+        let fallback = applicationSupportStoreURL
+
+        func holdsHistory(_ url: URL) -> Bool {
+            FileManager.default.fileExists(atPath: url.path) && hasDataMarker(url)
+        }
+        guard shouldHealSplit(group: group, fallback: fallback, holdsHistory: holdsHistory),
+              let group else { return }
+
+        do {
+            let source = try openContainer(at: fallback)
+            let destination = try openContainer(at: group)
+            let result = try copyStore(from: source, to: destination)
+            guard result != .none else { return }
+
+            // Only now: the marker is what makes the group store win the next
+            // ordering decision, so writing it before a successful save would
+            // point the app at a store that does not yet have the data.
+            markAsHoldingHistory(group)
+            print("TapLog: healed a split store — copied \(result.entries) entries and \(result.categoriesAdded + result.categoriesUpdated) categories into the App Group")
+        } catch {
+            print("TapLog: could not heal the split store: \(error) — continuing on the existing one")
+        }
+    }
+
     // MARK: - History marker
 
     /// Sits beside a store that has held at least one entry.
@@ -194,7 +370,11 @@ enum StoreLocator {
         descriptor.fetchLimit = 1
         let context = ModelContext(container)
         guard let found = try? context.fetch(descriptor), !found.isEmpty else { return }
+        markAsHoldingHistory(url)
+    }
 
+    /// Writes the marker beside `url`.
+    private static func markAsHoldingHistory(_ url: URL) {
         // A failed write leaves a populated store looking empty, which is how it
         // would lose a later ordering decision to a genuinely empty one. There
         // is nothing to do about it here beyond saying so — but the attempt
