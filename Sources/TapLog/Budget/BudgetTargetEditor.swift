@@ -184,8 +184,11 @@ struct BudgetTargetEditor: View {
 
     /// Spend in the period the user is *currently choosing*, not the one last saved.
     private var previewSpend: Decimal {
-        let brackets = BudgetCalculator.intervals(for: period, calendar: .current, referenceDate: .now)
-        let matches = BudgetCalculator.activeEntries(entries, matching: categoryKey, in: brackets.current)
+        let now = Date.now
+        let brackets = BudgetCalculator.intervals(for: period, calendar: .current, referenceDate: now)
+        let matches = BudgetCalculator.activeEntries(
+            entries, matching: categoryKey, in: brackets.current, notAfter: now
+        )
         return BudgetCalculator.total(of: matches)
     }
 

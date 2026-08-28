@@ -51,6 +51,31 @@ enum RecapMath {
         return result
     }
 
+    /// Which seven-day block of a month a date falls in, counting from the 1st
+    /// (0-based). Shared by the monthly bars and the "this week" highlight so
+    /// the two can never disagree about which bar holds today — they used to
+    /// use different definitions, and a month starting mid-week put the
+    /// highlight on the wrong bar.
+    ///
+    /// Day boundaries are compared rather than raw dates, so an entry logged
+    /// hours before the month starts cannot round up into the first block.
+    static func monthWeekIndex(
+        for date: Date,
+        monthStart: Date,
+        calendar: Calendar = .current
+    ) -> Int {
+        let days = calendar.dateComponents(
+            [.day],
+            from: calendar.startOfDay(for: monthStart),
+            to: calendar.startOfDay(for: date)
+        ).day ?? 0
+        // Floor, not truncate. Swift's `/` rounds toward zero, so a date one to
+        // six days before the month start yielded 0 and would have been counted
+        // into the first bar. Callers bounds-check with `>= 0`, which only
+        // means anything if earlier dates are genuinely negative.
+        return days >= 0 ? days / 7 : (days - 6) / 7
+    }
+
     /// Spend grouped by category key.
     static func totals(byCategory entries: [Entry]) -> [String: Decimal] {
         var result: [String: Decimal] = [:]

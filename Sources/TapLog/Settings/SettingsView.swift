@@ -64,6 +64,24 @@ struct SettingsView: View {
                     Text("How many days per week you aim to log. The weekly ring and streak track this target.")
                 }
 
+                // Only shown when sharing is actually broken. Silence used to be
+                // the only signal that the widget and share extension were
+                // reading a different store than the app, which surfaces to the
+                // user as a widget stuck at zero with no explanation.
+                if !StoreLocator.isUsingSharedStore {
+                    Section {
+                        Label {
+                            Text("Widget and Share Sheet can't reach your data")
+                                .font(.subheadline.weight(.medium))
+                        } icon: {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundStyle(Theme.clay)
+                        }
+                    } footer: {
+                        Text("This build has no App Group entitlement, so TapLog keeps your expenses inside the app. Everything here works — the widget and Share Sheet just won't show them.")
+                    }
+                }
+
 #if DEBUG
                 Section("Debug") {
                     Button("Seed sample data") {

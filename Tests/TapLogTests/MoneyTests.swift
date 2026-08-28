@@ -116,4 +116,44 @@ final class MoneyTests: XCTestCase {
             XCTAssertEqual(roundTripped, decimal, "round trip failed for \(value)")
         }
     }
+
+    // MARK: - Intent amount validation
+
+    /// Sub-cent input used to clear `> 0` on the raw Double, then round to
+    /// 0.00 and be stored by Siri or the widget as a zero-value expense.
+    func testSubCentAmountIsRejectedRatherThanStoredAsZero() {
+        XCTAssertThrowsError(try TapLogIntentAmountValidator.validate(0.001))
+        XCTAssertThrowsError(try TapLogIntentAmountValidator.validate(0.004))
+    }
+
+    func testAmountRoundingUpToACentIsAccepted() throws {
+        let value = try TapLogIntentAmountValidator.validate(0.005)
+        XCTAssertEqual(value, Decimal(string: "0.01"))
+    }
+
+    func testValidatorReturnsTheRoundedValueThatWillBeStored() throws {
+        let value = try TapLogIntentAmountValidator.validate(12.987)
+        XCTAssertEqual(value, Decimal(string: "12.99"))
+    }
+
+    func testNonPositiveAndNonFiniteAmountsAreRejected() {
+        XCTAssertThrowsError(try TapLogIntentAmountValidator.validate(0))
+        XCTAssertThrowsError(try TapLogIntentAmountValidator.validate(-5))
+        XCTAssertThrowsError(try TapLogIntentAmountValidator.validate(.nan))
+        XCTAssertThrowsError(try TapLogIntentAmountValidator.validate(.infinity))
+    }
+
+    func testAmountAboveTheCeilingIsRejected() {
+        XCTAssertThrowsError(try TapLogIntentAmountValidator.validate(1_000_000_000))
+    }
+
+    func testOptionalValidatorPassesNilThrough() throws {
+        XCTAssertNil(try TapLogIntentAmountValidator.validateOptional(nil))
+    }
+
+    func testOptionalValidatorRejectsSubCentPrefill() {
+        XCTAssertThrowsError(try TapLogIntentAmountValidator.validateOptional(0.001)) { error in
+            XCTAssertEqual(error as? TapLogIntentError, .invalidOptionalAmount)
+        }
+    }
 }

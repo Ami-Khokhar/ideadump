@@ -103,6 +103,54 @@ final class PersistenceTests: XCTestCase {
         XCTAssertEqual(try context.fetch(FetchDescriptor<Entry>()).first?.intent, .impulse)
     }
 
+    /// The migration must consume the legacy flag, not just read it. Leaving
+    /// `isPlanned` set meant a later cleared intent would be silently re-marked
+    /// `.planned` on the next launch, restoring a mark the user removed.
+    @MainActor
+    func testLegacyMigrationConsumesTheFlagSoItCannotRunTwice() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let entry = Entry(amount: 10, category: "chai")
+        entry.isPlanned = true
+        context.insert(entry)
+        try context.save()
+
+        Entry.migrateLegacyPlannedMarks(container: container)
+        XCTAssertEqual(try context.fetch(FetchDescriptor<Entry>()).first?.intent, .planned)
+        XCTAssertFalse(
+            try XCTUnwrap(context.fetch(FetchDescriptor<Entry>()).first).isPlanned,
+            "the legacy flag must be cleared once carried over"
+        )
+
+        // The user clears the mark; the next launch must leave it cleared.
+        try XCTUnwrap(context.fetch(FetchDescriptor<Entry>()).first).intent = nil
+        try context.save()
+        Entry.migrateLegacyPlannedMarks(container: container)
+
+        XCTAssertNil(
+            try context.fetch(FetchDescriptor<Entry>()).first?.intent,
+            "a cleared intent must not be resurrected by a second migration pass"
+        )
+    }
+
+    /// An entry the user has already answered keeps its answer, but still gives
+    /// up the stale flag — otherwise it stays re-migratable forever.
+    @MainActor
+    func testLegacyMigrationClearsTheFlagOnAlreadyMarkedEntries() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let entry = Entry(amount: 10, category: "chai", intent: .impulse)
+        entry.isPlanned = true
+        context.insert(entry)
+        try context.save()
+
+        Entry.migrateLegacyPlannedMarks(container: container)
+
+        let fetched = try XCTUnwrap(context.fetch(FetchDescriptor<Entry>()).first)
+        XCTAssertEqual(fetched.intent, .impulse)
+        XCTAssertFalse(fetched.isPlanned)
+    }
+
     // MARK: - Visibility predicates (what each screen shows)
 
     func testActivePredicateExcludesArchivedAndPending() throws {

@@ -676,12 +676,18 @@ struct WeeklyRecapView: View {
     }
 
     /// Index of the current week within the current month (0-based).
+    ///
+    /// This must use the *same* bucketing as `monthlyWeekTotals`, which splits
+    /// the month into fixed seven-day blocks from the 1st. Deriving it from
+    /// `weekOfMonth` instead made the two disagree whenever a month starts
+    /// mid-week: the calendar counts the partial first week as W1 and rolls to
+    /// W2 on the next Sunday, while the bars roll over on the 8th — so the
+    /// highlighted bar could be the one next to the bar actually holding today.
     private var currentWeekIndexForMonth: Int {
         let calendar = Calendar.current
         let now = Date.now
         let monthStart = calendar.dateInterval(of: .month, for: now)!.start
-        let weekNumber = calendar.dateComponents([.weekOfMonth], from: monthStart, to: now).weekOfMonth ?? 0
-        return weekNumber
+        return RecapMath.monthWeekIndex(for: now, monthStart: monthStart, calendar: calendar)
     }
 
     /// Compute week-based recap data: (thisWeek, lastWeek, barTotals, barLabels)
@@ -698,10 +704,15 @@ struct WeeklyRecapView: View {
         let calendar = Calendar.current
         let now = Date.now
 
-        // Current month
+        // Current month. The `<= now` cut-off matches the one `splitWeeks`
+        // applies to the weekly span: a future-dated entry sits inside this
+        // month's bounds but hasn't been spent, and without the cut-off it
+        // inflated the headline total, every category percentage, the impulse
+        // breakdown and the bar it landed in — while the same entry was
+        // correctly excluded from the weekly view of the same data.
         let thisMonthInterval = calendar.dateInterval(of: .month, for: now)!
         let thisMonth = entries.filter {
-            $0.date >= thisMonthInterval.start && $0.date < thisMonthInterval.end
+            $0.date >= thisMonthInterval.start && $0.date < thisMonthInterval.end && $0.date <= now
         }
 
         // Previous month
@@ -728,8 +739,9 @@ struct WeeklyRecapView: View {
         var result: [Decimal] = Array(repeating: Decimal(0), count: weeksInMonth)
 
         for entry in month {
-            let daysSinceStart = calendar.dateComponents([.day], from: calendar.startOfDay(for: monthStart), to: calendar.startOfDay(for: entry.date)).day ?? 0
-            let weekIndex = daysSinceStart / 7
+            let weekIndex = RecapMath.monthWeekIndex(
+                for: entry.date, monthStart: monthStart, calendar: calendar
+            )
             if weekIndex >= 0 && weekIndex < weeksInMonth {
                 result[weekIndex] += entry.amount
             }

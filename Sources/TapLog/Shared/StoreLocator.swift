@@ -49,7 +49,7 @@ enum StoreLocator {
     /// caller in a process now shares the container — which also means a Siri log
     /// lands in the same store the UI is observing instead of a second file.
     private static let cachedContainer: Result<ModelContainer, Error> = {
-        do { return .success(try openContainer(candidates: resolvedCandidates)) }
+        do { return .success(try openContainer(candidates: resolvedCandidates, pinOnSuccess: true)) }
         catch { return .failure(error) }
     }()
 
@@ -81,14 +81,16 @@ enum StoreLocator {
 
     /// Opens the store at the first candidate SwiftData can actually use. A sandbox-denied
     /// or half-created store is skipped instead of fatal — a stranded store beats a crash.
-    private static func openContainer(candidates: [URL]) throws -> ModelContainer {
+    private static func openContainer(candidates: [URL], pinOnSuccess: Bool = false) throws -> ModelContainer {
         for url in candidates {
             do {
                 let configuration = ModelConfiguration(url: url)
-                return try ModelContainer(
+                let container = try ModelContainer(
                     for: Entry.self, SpendCategory.self,
                     configurations: configuration
                 )
+                if pinOnSuccess { pin(url) }
+                return container
             } catch {
                 print("TapLog: SwiftData store unusable at \(url.path): \(error) — trying next location")
             }
@@ -96,7 +98,16 @@ enum StoreLocator {
         throw StoreError.noUsableStore
     }
 
-    /// Group-container store first (only when writable), Application Support last.
+    /// Group-container store first (only when writable), Application Support
+    /// last — except that a location already in use always wins.
+    ///
+    /// Without that exception the choice silently flipped underneath the user.
+    /// A build that once fell back to Application Support accumulates real
+    /// history there; the day the App Group becomes provisionable, plain
+    /// preference order would move the app to the (empty) group store and every
+    /// expense would look deleted. Pinning keeps the app pointed at the store
+    /// that holds the data. Nothing is copied between locations — a silent
+    /// migration of a live SwiftData store is a worse risk than staying put.
     private static func candidateStoreURLs() -> [URL] {
         var candidates: [URL] = []
         if let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID),
@@ -104,7 +115,42 @@ enum StoreLocator {
             candidates.append(groupURL.appendingPathComponent(storeFileName))
         }
         candidates.append(applicationSupportStoreURL)
+
+        if let pinned = pinnedStoreURL,
+           let index = candidates.firstIndex(of: pinned), index != 0 {
+            candidates.remove(at: index)
+            candidates.insert(pinned, at: 0)
+        }
         return candidates
+    }
+
+    /// Defaults key holding the store location this install settled on.
+    private static let pinnedStoreKey = "TapLog.pinnedStorePath"
+
+    /// The remembered location, or nil on a first run. A pin naming somewhere no
+    /// longer offered (the group went away) is ignored rather than honoured, so
+    /// the normal preference order resumes instead of stranding the app.
+    private static var pinnedStoreURL: URL? {
+        guard let path = sharedDefaults.string(forKey: pinnedStoreKey) else { return nil }
+        return URL(fileURLWithPath: path)
+    }
+
+    /// Records the location that actually opened. Written to the shared suite so
+    /// every target agrees; when the App Group is unavailable that suite is the
+    /// per-process standard defaults, which is the best that can be done —
+    /// without the entitlement the targets genuinely cannot share a store.
+    private static func pin(_ url: URL) {
+        sharedDefaults.set(url.path, forKey: pinnedStoreKey)
+    }
+
+    /// Whether the store in use actually lives in the App Group container — i.e.
+    /// whether the widget and share extension can see the same data the app
+    /// does. False means TapLog still works, but only inside the app.
+    static var isUsingSharedStore: Bool {
+        guard let groupURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: appGroupID
+        ) else { return false }
+        return storeURL.path.hasPrefix(groupURL.path)
     }
 
     private static var applicationSupportStoreURL: URL {

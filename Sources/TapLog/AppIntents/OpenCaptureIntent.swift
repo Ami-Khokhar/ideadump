@@ -131,11 +131,7 @@ struct OpenCaptureIntent: AppIntent {
     }
 
     static func prefillAmountText(from amount: Double?) throws -> String? {
-        guard let amount else { return nil }
-        guard amount.isFinite, amount > 0,
-              amount <= NSDecimalNumber(decimal: Money.maxAmount).doubleValue else {
-            throw TapLogIntentError.invalidOptionalAmount
-        }
-        return String(amount)
+        guard let rounded = try TapLogIntentAmountValidator.validateOptional(amount) else { return nil }
+        return Money.plainString(rounded)
     }
 }

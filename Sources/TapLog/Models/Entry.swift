@@ -59,17 +59,27 @@ final class Entry {
     /// indistinguishable from never having touched it, so only `true` is migrated
     /// and everything else stays unmarked.
     ///
-    /// Idempotent: it only writes where `intent` is still nil, so re-running it at
-    /// every launch cannot resurrect a mark the user has since changed.
+    /// Runs once per row and then cannot run again: the legacy flag is cleared
+    /// as each entry is carried over, so the next fetch no longer matches it.
+    ///
+    /// Clearing matters. Only setting `intent` left `isPlanned` true forever,
+    /// which made the migration idempotent only while `intent` stayed non-nil —
+    /// clear an entry's intent and the next launch would silently re-mark it
+    /// `.planned`, restoring a mark the user had removed. Consuming the flag
+    /// makes the carry-over genuinely one-way.
     @MainActor
     static func migrateLegacyPlannedMarks(container: ModelContainer) {
         let context = container.mainContext
         let descriptor = FetchDescriptor<Entry>(predicate: #Predicate { $0.isPlanned })
         guard let legacy = try? context.fetch(descriptor) else { return }
-        let pending = legacy.filter { $0.intent == nil }
-        guard !pending.isEmpty else { return }
-        for entry in pending {
-            entry.intent = .planned
+        guard !legacy.isEmpty else { return }
+        for entry in legacy {
+            // A row that already carries an intent has been decided — by an
+            // earlier run or by the user — so only the flag is consumed.
+            if entry.intent == nil {
+                entry.intent = .planned
+            }
+            entry.isPlanned = false
         }
         do {
             try context.save()

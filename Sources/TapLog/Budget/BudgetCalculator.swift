@@ -62,17 +62,29 @@ enum BudgetCalculator {
     // MARK: - Filtering
 
     /// Entries that count toward a budget total: matching category, inside the
-    /// interval, and confirmed (neither pending share-sheet import nor archived).
+    /// interval, confirmed (neither pending share-sheet import nor archived),
+    /// and already spent.
+    ///
+    /// `notAfter` is the cut-off the recap already applies. An entry dated
+    /// tomorrow sits inside the current week or month, so without it the money
+    /// was subtracted from the remaining budget before it had been spent — and
+    /// a far-enough-forward date could tip a healthy tree to wilting for a
+    /// purchase that hasn't happened. It defaults to `.distantFuture` so a
+    /// caller asking about a fully elapsed interval need not supply one; the
+    /// previous bracket is always in the past, and passing a cut-off there
+    /// would be a no-op.
     static func activeEntries(
         _ entries: [Entry],
         matching key: String,
-        in interval: Interval
+        in interval: Interval,
+        notAfter: Date = .distantFuture
     ) -> [Entry] {
         entries.filter { entry in
             entry.category == key
                 && !entry.isPending
                 && !entry.isArchived
                 && interval.contains(entry.date)
+                && entry.date <= notAfter
         }
     }
 
@@ -226,7 +238,9 @@ enum BudgetCalculator {
         guard let target = category.budgetTarget, target > 0,
               category.budgetPeriod != nil else { return nil }
         let brackets = intervals(for: category, calendar: calendar, referenceDate: referenceDate)
-        let currentMatches = activeEntries(entries, matching: category.key, in: brackets.current)
+        let currentMatches = activeEntries(
+            entries, matching: category.key, in: brackets.current, notAfter: referenceDate
+        )
         let previousMatches = activeEntries(entries, matching: category.key, in: brackets.previous)
         let previousPeriodIsComparable = category.budgetHealthResetDate.map {
             $0 <= brackets.previous.start

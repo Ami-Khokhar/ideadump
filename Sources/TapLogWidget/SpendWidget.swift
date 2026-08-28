@@ -219,7 +219,9 @@ struct SpendWidgetEntryView: View {
                     VStack(spacing: 2) {
                         Image(systemName: "number")
                             .font(.caption)
-                        Text("₹?")
+                        // The user's currency, not a hardcoded rupee — this
+                        // button read "₹?" for someone logging in dollars.
+                        Text("\(Money.currencySymbol)?")
                             .font(.caption2.weight(.semibold))
                     }
                     .foregroundStyle(.tint)

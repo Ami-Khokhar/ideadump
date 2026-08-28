@@ -48,6 +48,56 @@ final class BudgetCalculatorTests: XCTestCase {
         )
     }
 
+    // MARK: - Future-dated entries
+
+    func testFutureDatedEntryDoesNotCountTowardTheCurrentBudget() {
+        let category = makeCategory(target: Decimal(string: "100"), period: .weekly)
+        // Thu 2026-08-20 is inside the current week but after `now` (Wed).
+        let entries = [
+            entry(Decimal(string: "30")!, on: date(2026, 8, 18)),
+            entry(Decimal(string: "40")!, on: date(2026, 8, 20)),
+        ]
+        let report = BudgetCalculator.report(
+            for: category, entries: entries, calendar: calendar, referenceDate: now
+        )
+        XCTAssertEqual(report?.currentSpent, Decimal(string: "30"))
+        XCTAssertEqual(report?.currentCount, 1)
+        XCTAssertEqual(report?.remaining, Decimal(string: "70"))
+    }
+
+    func testFutureDatedEntryCannotPushABudgetOverTarget() {
+        let category = makeCategory(target: Decimal(string: "50"), period: .weekly)
+        let entries = [
+            entry(Decimal(string: "20")!, on: date(2026, 8, 18)),
+            entry(Decimal(string: "500")!, on: date(2026, 8, 22)),
+        ]
+        let report = BudgetCalculator.report(
+            for: category, entries: entries, calendar: calendar, referenceDate: now
+        )
+        XCTAssertFalse(report!.isOver, "Money not yet spent must not overspend the budget")
+        XCTAssertEqual(report?.health, .seedling)
+    }
+
+    func testEntryDatedExactlyNowStillCounts() {
+        let category = makeCategory(target: Decimal(string: "100"), period: .weekly)
+        let entries = [entry(Decimal(string: "10")!, on: now)]
+        let report = BudgetCalculator.report(
+            for: category, entries: entries, calendar: calendar, referenceDate: now
+        )
+        XCTAssertEqual(report?.currentSpent, Decimal(string: "10"))
+    }
+
+    func testPreviousIntervalIsUnaffectedByTheCutOff() {
+        let category = makeCategory(target: Decimal(string: "100"), period: .weekly)
+        // Entirely in the previous week, so wholly in the past.
+        let entries = [entry(Decimal(string: "25")!, on: date(2026, 8, 12))]
+        let report = BudgetCalculator.report(
+            for: category, entries: entries, calendar: calendar, referenceDate: now
+        )
+        XCTAssertEqual(report?.previousSpent, Decimal(string: "25"))
+        XCTAssertEqual(report?.previousCount, 1)
+    }
+
     // MARK: - Interval derivation
 
     func testWeeklyIntervalBracketsAcrossMondayMidnight() {
@@ -134,7 +184,9 @@ final class BudgetCalculatorTests: XCTestCase {
         let entries = [
             entry(20, on: date(2026, 8, 18)),  // Tue
             entry(Decimal(string: "19.99")!, on: date(2026, 8, 19)),  // Wed
-            entry(Decimal(string: "10.01")!, on: date(2026, 8, 20)),  // Thu
+            // Monday, not Thursday: `now` is Wednesday, and spend that hasn't
+            // happened yet no longer counts toward the current period.
+            entry(Decimal(string: "10.01")!, on: date(2026, 8, 17)),  // Mon
         ]
         let report = BudgetCalculator.report(
             for: category, entries: entries, calendar: calendar, referenceDate: now

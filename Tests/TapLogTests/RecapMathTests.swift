@@ -31,6 +31,63 @@ final class RecapMathTests: XCTestCase {
         Entry(amount: amount, category: category, date: date)
     }
 
+    // MARK: - monthWeekIndex
+
+    func testMonthWeekIndexCountsSevenDayBlocksFromTheFirst() {
+        let monthStart = date(2026, 8, 1)
+        XCTAssertEqual(RecapMath.monthWeekIndex(for: date(2026, 8, 1), monthStart: monthStart, calendar: calendar), 0)
+        XCTAssertEqual(RecapMath.monthWeekIndex(for: date(2026, 8, 7), monthStart: monthStart, calendar: calendar), 0)
+        XCTAssertEqual(RecapMath.monthWeekIndex(for: date(2026, 8, 8), monthStart: monthStart, calendar: calendar), 1)
+        XCTAssertEqual(RecapMath.monthWeekIndex(for: date(2026, 8, 15), monthStart: monthStart, calendar: calendar), 2)
+        XCTAssertEqual(RecapMath.monthWeekIndex(for: date(2026, 8, 31), monthStart: monthStart, calendar: calendar), 4)
+    }
+
+    /// August 2026 starts on a Saturday. The blocks must still run 1–7, 8–14 and
+    /// so on regardless of which weekday the month opens on — that is what lets
+    /// the bars and the "this week" highlight share one definition instead of
+    /// each deriving their own.
+    func testMonthWeekIndexIgnoresWhichWeekdayTheMonthStartsOn() {
+        let monthStart = date(2026, 8, 1) // Saturday
+        for day in 1...7 {
+            XCTAssertEqual(
+                RecapMath.monthWeekIndex(for: date(2026, 8, day), monthStart: monthStart, calendar: calendar),
+                0,
+                "day \(day) belongs to the first block"
+            )
+        }
+        for day in 8...14 {
+            XCTAssertEqual(
+                RecapMath.monthWeekIndex(for: date(2026, 8, day), monthStart: monthStart, calendar: calendar),
+                1,
+                "day \(day) belongs to the second block"
+            )
+        }
+    }
+
+    /// The same must hold for a month that opens on the first weekday.
+    func testMonthWeekIndexIsIdenticalForAMonthStartingOnAMonday() {
+        let monthStart = date(2026, 6, 1) // Monday
+        XCTAssertEqual(RecapMath.monthWeekIndex(for: date(2026, 6, 7), monthStart: monthStart, calendar: calendar), 0)
+        XCTAssertEqual(RecapMath.monthWeekIndex(for: date(2026, 6, 8), monthStart: monthStart, calendar: calendar), 1)
+    }
+
+    func testMonthWeekIndexIgnoresTimeOfDay() {
+        let monthStart = date(2026, 8, 1)
+        XCTAssertEqual(
+            RecapMath.monthWeekIndex(for: date(2026, 8, 8, hour: 0), monthStart: monthStart, calendar: calendar),
+            RecapMath.monthWeekIndex(for: date(2026, 8, 8, hour: 23), monthStart: monthStart, calendar: calendar)
+        )
+    }
+
+    func testMonthWeekIndexIsNegativeBeforeTheMonthStarts() {
+        // Callers bounds-check the result; it must not round up into block 0.
+        let monthStart = date(2026, 8, 1)
+        XCTAssertLessThan(
+            RecapMath.monthWeekIndex(for: date(2026, 7, 31, hour: 23), monthStart: monthStart, calendar: calendar),
+            0
+        )
+    }
+
     // MARK: - splitWeeks
 
     func testSplitsCurrentAndPreviousWeek() {
