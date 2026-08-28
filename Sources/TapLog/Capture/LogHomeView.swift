@@ -37,6 +37,10 @@ struct LogHomeView: View {
     let onLogged: (() -> Void)?
     let onCancelOnboarding: (() -> Void)?
     let onPrefillConsumed: (() -> Void)?
+    /// Opens the Budgets screen — where the grove strip goes. Routed through the
+    /// host rather than presented here so it takes the same first-run-explainer
+    /// path as the menu item, instead of a second way in that skips it.
+    let onOpenBudgets: (() -> Void)?
     /// When true the logo splash is skipped — used by OpenCaptureIntent.
     let skipSplash: Bool
 
@@ -51,6 +55,18 @@ struct LogHomeView: View {
         return keys.compactMap { key in
             categories.first { $0.key == key }
         }
+    }
+
+    /// Budget trees for the strip and the tile badges.
+    ///
+    /// Cost: one pass over `activeEntries` plus a report per budgeted category
+    /// over that category's own slice — the same order as the tile row's
+    /// existing `blendedTopCategories` scan, and no work at all when nobody has
+    /// set a budget. It is read exactly once per body pass in `mainContent` and
+    /// handed down, because a computed property read from inside `tileButton`
+    /// would redo the whole thing once per tile.
+    private var groveTrees: [GroveTree] {
+        GroveStripModel.trees(categories: categories, entries: activeEntries)
     }
 
     private var todayEntries: [Entry] {
@@ -142,14 +158,24 @@ struct LogHomeView: View {
     /// Everything above them scrolls, which is what keeps this usable on a 4.7"
     /// device where the keypad alone claims most of the viewport.
     private var mainContent: some View {
-        ScrollView(.vertical, showsIndicators: false) {
+        // Derived once per pass and passed down — see `groveTrees`.
+        let trees = groveTrees
+        let treesByCategory = Dictionary(trees.map { ($0.categoryKey, $0) }) { first, _ in first }
+
+        return ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 0) {
                 statusBar
+                // Nothing to show before the first budget exists, and a stub row
+                // on a fresh install would be pure clutter on the one screen the
+                // app asks to stay calm.
+                if !trees.isEmpty {
+                    GroveStrip(trees: trees) { onOpenBudgets?() }
+                }
                 Spacer(minLength: 20)
                 amountArea
                 Spacer(minLength: 20)
                 categoryLine
-                tileRow
+                tileRow(trees: treesByCategory)
                 noteField
             }
         }
@@ -376,11 +402,11 @@ struct LogHomeView: View {
 
     // MARK: - 4. Tile Row
 
-    private var tileRow: some View {
+    private func tileRow(trees: [String: GroveTree]) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
                 ForEach(topCategories) { category in
-                    tileButton(category)
+                    tileButton(category, tree: trees[category.key])
                 }
                 moreTile
             }
@@ -388,7 +414,23 @@ struct LogHomeView: View {
         }
     }
 
-    private func tileButton(_ category: SpendCategory) -> some View {
+    /// A budgeted category carries its tree in the tile's top corner, so the
+    /// state is legible *before* the tap rather than after it. Unbudgeted tiles
+    /// are untouched — including the label VoiceOver reads, which is only
+    /// overridden where there is a silhouette it cannot see.
+    @ViewBuilder
+    private func tileButton(_ category: SpendCategory, tree: GroveTree?) -> some View {
+        if let tree {
+            tileBody(category, tree: tree)
+                .accessibilityLabel(tree.accessibilityLabel)
+        } else {
+            tileBody(category, tree: nil)
+        }
+    }
+
+    /// The badge is an overlay: it takes no layout space, so the tile keeps its
+    /// size and the row keeps its tap targets.
+    private func tileBody(_ category: SpendCategory, tree: GroveTree?) -> some View {
         let isSelected = selectedCategoryKey == category.key
         return Button {
             selectedCategoryKey = category.key
@@ -409,6 +451,14 @@ struct LogHomeView: View {
                 isSelected ? Theme.accentSoft : Theme.surface,
                 in: RoundedRectangle(cornerRadius: 14, style: .continuous)
             )
+            .overlay(alignment: .topTrailing) {
+                if let tree {
+                    TreeStateGlyph(state: tree.mark, color: tree.tint)
+                        .frame(width: 14, height: 18)
+                        .padding(.top, 5)
+                        .padding(.trailing, 5)
+                }
+            }
             .scaleEffect(isSelected ? 1.03 : 1)
             .animation(reduceMotion ? nil : Motion.gentleFast, value: isSelected)
         }
@@ -520,6 +570,11 @@ struct LogHomeView: View {
 
         let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
         let categoryKey = selectedCategoryKey.isEmpty ? SpendCategory.fallbackKey : selectedCategoryKey
+        // Snapshot before the insert. `activeEntries` is a `@Query` and does not
+        // refresh inside this function, so the tree's "before" state has to be
+        // read from the array as it stands right now — reading it back after the
+        // save would be a race against SwiftData's next update.
+        let priorEntries = activeEntries
 
         let entry = Entry(
             amount: amount,
@@ -537,7 +592,10 @@ struct LogHomeView: View {
         }
 
         lastUsedCategoryKey = categoryKey
-        undoStack.record("Logged \(Money.format(amount)) · \(lookup.name(for: categoryKey))") {
+        undoStack.record(
+            "Logged \(Money.format(amount)) · \(lookup.name(for: categoryKey))",
+            tree: treeConfirmation(for: categoryKey, before: priorEntries, adding: entry)
+        ) {
             modelContext.delete(entry)
             do {
                 try modelContext.save()
@@ -560,6 +618,29 @@ struct LogHomeView: View {
         onLogged?()
     }
 
+    /// The tree the confirmation shows, or nil when the category has no budget.
+    ///
+    /// An unbudgeted category deliberately gets nothing: there is no tree, and
+    /// drawing one would claim a budget the user never set. Both states come out
+    /// of `GroveStripModel.tree` — the same derivation behind the strip and the
+    /// tile badges — so the toast cannot word the consequence differently from
+    /// the row it is standing under.
+    ///
+    /// Only this category's own entries are passed, which is what `report` would
+    /// have filtered down to anyway, and this runs once per log rather than once
+    /// per keypad tap.
+    private func treeConfirmation(
+        for categoryKey: String,
+        before priorEntries: [Entry],
+        adding entry: Entry
+    ) -> TreeConfirmation? {
+        guard let category = categories.first(where: { $0.key == categoryKey }) else { return nil }
+        let own = priorEntries.filter { $0.category == categoryKey }
+        guard let previous = GroveStripModel.tree(for: category, ownEntries: own),
+              let current = GroveStripModel.tree(for: category, ownEntries: own + [entry])
+        else { return nil }
+        return TreeConfirmation(tree: current, previous: previous)
+    }
 
     private func setAmountError(_ error: String?) {
         if reduceMotion {
@@ -602,4 +683,9 @@ enum CaptureBottomBar {
         + logButtonLiftPadding
         + logButtonHeight
         + logButtonBottomPadding
+
+    /// Clearance between the top of the bar and the bottom of the undo toast.
+    /// It is also how far the toast is allowed to travel as it appears, which is
+    /// what keeps the entrance from reaching down over the keys.
+    static let toastGap: CGFloat = 10
 }
