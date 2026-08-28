@@ -657,13 +657,15 @@ struct LogHomeView: View {
             intent: intent
         )
         modelContext.insert(entry)
-        do {
-            try modelContext.save()
-        } catch {
-            print("TapLog: Failed to save entry: \(error)")
-            modelContext.delete(entry)
-            return
-        }
+        // `amountText` is deliberately still populated here — it is cleared only
+        // after this returns true, so a refusal leaves the user's typed amount
+        // on screen to try again with.
+        guard EntryPersistence.commit(
+            message: EntryPersistence.insertFailureMessage,
+            save: { try modelContext.save() },
+            rollback: { modelContext.delete(entry) },
+            report: undoStack.report
+        ) else { return }
 
         lastUsedCategoryKey = categoryKey
         undoStack.record(

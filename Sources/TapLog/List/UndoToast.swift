@@ -32,10 +32,18 @@ struct UndoToast: View {
                             // the change animation instead of inheriting the
                             // settled state of the log before it.
                             .id(action.id)
-                    } else {
+                    } else if action.isUndoable {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.subheadline)
                             .foregroundStyle(Theme.accent)
+                            .symbolEffect(.bounce, options: .nonRepeating, value: undoStack.current?.id)
+                    } else {
+                        // Clay, not the sage every other toast uses: this one is
+                        // reporting that the thing the user asked for did not
+                        // happen, and it must not read as another confirmation.
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.subheadline)
+                            .foregroundStyle(Theme.toastClay)
                             .symbolEffect(.bounce, options: .nonRepeating, value: undoStack.current?.id)
                     }
 
@@ -58,11 +66,16 @@ struct UndoToast: View {
                     }
 
                     Spacer(minLength: 8)
-                    Button("Undo") {
-                        undoStack.undo()
+                    // A failure has no inverse, so it offers no button. Showing
+                    // a disabled or dead "Undo" beside it would imply something
+                    // had happened that could be taken back.
+                    if action.isUndoable {
+                        Button("Undo") {
+                            undoStack.undo()
+                        }
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(Theme.accent)
                     }
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(Theme.accent)
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)

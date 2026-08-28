@@ -241,13 +241,12 @@ struct CaptureForm: View {
                 note: trimmedNote.isEmpty ? nil : trimmedNote
             )
             modelContext.insert(entry)
-            do {
-                try modelContext.save()
-            } catch {
-                print("TapLog: Failed to save entry: \(error)")
-                modelContext.delete(entry)
-                return
-            }
+            guard EntryPersistence.commit(
+                message: EntryPersistence.insertFailureMessage,
+                save: { try modelContext.save() },
+                rollback: { modelContext.delete(entry) },
+                report: undoStack.report
+            ) else { return }
             lastUsedCategoryKey = categoryKey
             CaptureBookkeeping.apply(modelContext: modelContext, categories: categories, categoryKey: categoryKey)
             undoStack.record("Logged \(Money.format(amount)) · \(lookup.name(for: categoryKey))") {
@@ -272,17 +271,18 @@ struct CaptureForm: View {
             entry.category = categoryKey
             entry.note = trimmedNote.isEmpty ? nil : trimmedNote
             entry.isPending = false
-            do {
-                try modelContext.save()
-            } catch {
-                print("TapLog: Failed to save edited entry: \(error)")
-                // Restore the in-memory state — nothing was persisted.
-                entry.amount = previous.amount
-                entry.category = previous.category
-                entry.note = previous.note
-                entry.isPending = previous.isPending
-                return
-            }
+            guard EntryPersistence.commit(
+                message: EntryPersistence.editFailureMessage,
+                save: { try modelContext.save() },
+                rollback: {
+                    // Restore the in-memory state — nothing was persisted.
+                    entry.amount = previous.amount
+                    entry.category = previous.category
+                    entry.note = previous.note
+                    entry.isPending = previous.isPending
+                },
+                report: undoStack.report
+            ) else { return }
             // Confirming a pending share-sheet entry is that expense's "log moment" —
             // count it exactly like any other capture (only once the save succeeded).
             if previous.isPending {
