@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 @main
 struct TapLogApp: App {
@@ -18,6 +19,10 @@ struct TapLogApp: App {
         DebugSeeder.seedCategoriesIfNeeded(container: container)
         // Hidden hook for automated testing: `simctl launch ... -seedSampleData`
         DebugSeeder.seedIfRequested(container: container)
+        // Registering the delegate is not asking for permission — it only says
+        // who handles a tap if the user ever grants it. The ask itself is
+        // deliberately nowhere near launch; see `RecapNotificationPolicy`.
+        UNUserNotificationCenter.current().delegate = RecapNotifier.shared
     }
 
     var body: some Scene {

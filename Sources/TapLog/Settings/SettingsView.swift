@@ -152,6 +152,9 @@ struct SettingsView: View {
         CaptureBookkeeping.resetCategoryUsage(modelContext: modelContext)
         StoreLocator.sharedDefaults.removeObject(forKey: "logsLogged")
         retention.resetAll()
+        // Someone who has just deleted every expense should not be told on
+        // Sunday morning that their week is ready.
+        RecapNotifier.shared.cancelWeeklyRecap()
         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
     }
 }

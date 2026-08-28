@@ -77,6 +77,7 @@
 		B2856953B3FFDD3F05D4699A /* BudgetTargetEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 101ACAC9E5097E0742075CEE /* BudgetTargetEditor.swift */; };
 		B43EF9AC9E469CF685DE3A9B /* BudgetSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FF5B7CC3A02BEBA45C89BA1 /* BudgetSetupView.swift */; };
 		B5927A0A110705F9BD5C42A9 /* BudgetCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B454363C9AF47F9F64BE104 /* BudgetCalculatorTests.swift */; };
+		B5D89B6B429CB3EEAB13F219 /* RecapNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E279F292063657339D3BB49 /* RecapNotifier.swift */; };
 		BAA215AEB6EB92DDBE543F6A /* Entry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E06859D8DD2DC20B4D96A32 /* Entry.swift */; };
 		BB76D8D3AB714C8081432CC6 /* CapturePrefill.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CBA4D4E213F6B83EB33639D /* CapturePrefill.swift */; };
 		BBD245F2A416FC8B71E4E2EF /* SeedlingEmptyState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80E71C2E724671AC335F03F6 /* SeedlingEmptyState.swift */; };
@@ -93,6 +94,7 @@
 		DABDD1131FE8B6E4541DC315 /* SpendCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF3DE2DAA95012E652F3392 /* SpendCategory.swift */; };
 		E177EC93F4160211C460AAA6 /* CategoryEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9779FFE83DC74430532BAEA4 /* CategoryEntity.swift */; };
 		E37461D086CDA7EFB0634484 /* UndoStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52F262C9AE91426858ADB810 /* UndoStack.swift */; };
+		E43AC5B85F80BB9338E6897D /* RecapNotifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 256BCB7D411B244512C38AE8 /* RecapNotifierTests.swift */; };
 		EAB42C3D2592A69E61F4D393 /* AmountInputFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EBEBC7026B1A2D05767961 /* AmountInputFilter.swift */; };
 		EBD36511DF423247C3455D83 /* TapLogShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F616AC66CBCE53CF8CAB9A65 /* TapLogShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		EDAE63C361499BD772BB5803 /* TimeBucketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 890EC89BF216C1F34145CD4A /* TimeBucketTests.swift */; };
@@ -155,6 +157,7 @@
 		13A258162CA563136B4721E8 /* ShareParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareParserTests.swift; sourceTree = "<group>"; };
 		20F77E259B173EDF11903A71 /* StreakWreath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakWreath.swift; sourceTree = "<group>"; };
 		210AC728C284853DB7238733 /* OnboardingFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlow.swift; sourceTree = "<group>"; };
+		256BCB7D411B244512C38AE8 /* RecapNotifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecapNotifierTests.swift; sourceTree = "<group>"; };
 		2CAC674E8E824850DF01E0ED /* CaptureForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureForm.swift; sourceTree = "<group>"; };
 		37EBEBC7026B1A2D05767961 /* AmountInputFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmountInputFilter.swift; sourceTree = "<group>"; };
 		3BF3DE2DAA95012E652F3392 /* SpendCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendCategory.swift; sourceTree = "<group>"; };
@@ -178,6 +181,7 @@
 		61FEEF255C865D34F51F7B91 /* CaptureBookkeepingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureBookkeepingTests.swift; sourceTree = "<group>"; };
 		6777CE25E6E3E35618636979 /* EntryPersistenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryPersistenceTests.swift; sourceTree = "<group>"; };
 		6C56A65200B9807EE40FEC45 /* RecapMath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecapMath.swift; sourceTree = "<group>"; };
+		6E279F292063657339D3BB49 /* RecapNotifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecapNotifier.swift; sourceTree = "<group>"; };
 		6FCAFA2601272F61B499A280 /* OnboardingCategoriesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCategoriesView.swift; sourceTree = "<group>"; };
 		7867E24E221AC6122BCDA234 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		7DD6A7AF092AF09A67270576 /* TimeBucket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeBucket.swift; sourceTree = "<group>"; };
@@ -236,6 +240,7 @@
 		05F3ECDC45ED95C9C0E5F69A /* Retention */ = {
 			isa = PBXGroup;
 			children = (
+				6E279F292063657339D3BB49 /* RecapNotifier.swift */,
 				20F77E259B173EDF11903A71 /* StreakWreath.swift */,
 			);
 			path = Retention;
@@ -307,6 +312,7 @@
 				8CDF629996C6BC1B1C2D0187 /* OpenCaptureIntentTests.swift */,
 				B981E1CD86D1D49E1B89DAAA /* PersistenceTests.swift */,
 				F5A6873766A3AAC068A5CF04 /* RecapMathTests.swift */,
+				256BCB7D411B244512C38AE8 /* RecapNotifierTests.swift */,
 				9380549822DEC6CE9FCD846D /* RetentionManagerTests.swift */,
 				13A258162CA563136B4721E8 /* ShareParserTests.swift */,
 				49755A7016E44B7F1042415C /* StoreLocatorTests.swift */,
@@ -651,6 +657,7 @@
 				10FC99EA0CD361A92052B43D /* OpenCaptureIntent.swift in Sources */,
 				3DC3F135860710F724D5FEDE /* QuickLogIntent.swift in Sources */,
 				EF1BFBF97F6335E1AC0423E5 /* RecapMath.swift in Sources */,
+				B5D89B6B429CB3EEAB13F219 /* RecapNotifier.swift in Sources */,
 				964B42C5BDDB3315C60A46E9 /* RetentionManager.swift in Sources */,
 				BBD245F2A416FC8B71E4E2EF /* SeedlingEmptyState.swift in Sources */,
 				02757F7C23442471CBA41280 /* SettingsView.swift in Sources */,
@@ -710,6 +717,7 @@
 				6F0F50E8824E78BC1D7F8C7F /* OpenCaptureIntentTests.swift in Sources */,
 				07F07FAE13CACDFD7F4246B3 /* PersistenceTests.swift in Sources */,
 				A053856F440889544F06D2C1 /* RecapMathTests.swift in Sources */,
+				E43AC5B85F80BB9338E6897D /* RecapNotifierTests.swift in Sources */,
 				C43E0B895B64A75176F53DAE /* RetentionManagerTests.swift in Sources */,
 				FE0C41BD1EA95880437984EB /* ShareParserTests.swift in Sources */,
 				918FC202598E02AC6F1027B9 /* StoreLocatorTests.swift in Sources */,

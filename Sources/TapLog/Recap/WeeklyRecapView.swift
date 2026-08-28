@@ -81,6 +81,13 @@ struct WeeklyRecapView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     barsGrown = true
                 }
+                RecapNotifier.shared.recordRecapOpened()
+            }
+            .onDisappear {
+                // Asked on the way out, not on the way in: the user has now seen
+                // what a recap is, and the one system prompt we get is not spent
+                // on top of the thing they came here to read.
+                RecapNotifier.shared.askIfRelevant(hasCompletedAWeek: retention.targetMet)
             }
         }
     }

@@ -721,6 +721,13 @@ struct LogHomeView: View {
 
         amountError = nil
         onLogged?()
+
+        // The second earned moment for the notification prompt: this log just
+        // finished a week's target, so there is now a recap worth being told
+        // about. `askIfRelevant` is a no-op every other time.
+        if retention.targetMet {
+            RecapNotifier.shared.askIfRelevant(hasCompletedAWeek: true)
+        }
     }
 
     /// The tree the confirmation shows, or nil when the category has no budget.

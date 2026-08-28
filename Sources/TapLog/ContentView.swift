@@ -175,6 +175,11 @@ struct ContentView: View {
         // payload to UserDefaults then posts this notification so ContentView
         // can consume it immediately, even when the scene is already active
         // (didBecomeActiveNotification won't fire in that case).
+        // The weekly recap notification is the app's only one, and this is the
+        // only thing tapping it does: open the screen it was about.
+        .onReceive(NotificationCenter.default.publisher(for: RecapNotifier.openRecapNotification)) { _ in
+            route = .recap
+        }
         .onReceive(NotificationCenter.default.publisher(for: OpenCaptureIntent.activationNotification)) { _ in
             consumePendingIntent()
         }
