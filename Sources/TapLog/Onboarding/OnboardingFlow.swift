@@ -9,6 +9,7 @@ enum OnboardingFlow {
     static let categoryPromptPendingKey = "onboarding.categoryPromptPending"
     static let categoryPromptDismissedKey = "onboarding.categoryPromptDismissed"
     static let fasterPromptDismissedKey = "onboarding.fasterPromptDismissed"
+    static let firstBudgetPromptDismissedKey = "onboarding.firstBudgetPromptDismissed"
     static let coreCompleteKey = "onboarding.coreComplete"
     static let awaitingFirstConfirmedLogKey = "onboarding.awaitingFirstConfirmedLog"
 
@@ -140,6 +141,29 @@ enum OnboardingFlow {
     static func dismissCategories(defaults: UserDefaults = .standard) {
         defaults.set(false, forKey: categoryPromptPendingKey)
         defaults.set(true, forKey: categoryPromptDismissedKey)
+    }
+
+    /// Whether to offer to plant the first tree.
+    ///
+    /// Follows the categories beat rather than replacing it: the offer names a
+    /// category, so it is worth asking only once the user has had their say about
+    /// which categories they keep. It is also skipped entirely for anyone who
+    /// already has a budget — that user found the grove without being asked, and
+    /// being offered a "first" tree afterwards would read as the app not looking.
+    static func shouldOfferFirstBudget(
+        confirmedLogCount: Int,
+        hasAnyBudget: Bool,
+        defaults: UserDefaults = .standard
+    ) -> Bool {
+        confirmedLogCount > 0
+            && !hasAnyBudget
+            && defaults.bool(forKey: coreCompleteKey)
+            && defaults.bool(forKey: categoryPromptDismissedKey)
+            && !defaults.bool(forKey: firstBudgetPromptDismissedKey)
+    }
+
+    static func dismissFirstBudget(defaults: UserDefaults = .standard) {
+        defaults.set(true, forKey: firstBudgetPromptDismissedKey)
     }
 
     static func shouldOfferFasterWays(

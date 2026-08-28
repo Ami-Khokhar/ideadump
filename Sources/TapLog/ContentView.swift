@@ -19,6 +19,8 @@ struct ContentView: View {
     @Query(filter: #Predicate<Entry> { !$0.isArchived && !$0.isPending })
     private var confirmedEntries: [Entry]
 
+    @Query private var allCategories: [SpendCategory]
+
     @State private var onboardingStep: OnboardingStep?
     @State private var isOnboardingCapture = false
     @State private var prefill: CapturePrefill?
@@ -53,12 +55,19 @@ struct ContentView: View {
 
     enum DeferredPrompt: String, Identifiable {
         case categories
+        case firstBudget
         case fasterWays
 
         var id: String { rawValue }
     }
 
     private var hasConfirmedEntry: Bool { !confirmedEntries.isEmpty }
+
+    /// A category counts as budgeted only with both halves set — a target with no
+    /// cadence is an unfinished budget, and the grove does not grow a tree for it.
+    private var hasAnyBudget: Bool {
+        allCategories.contains { ($0.budgetTarget ?? 0) > 0 && $0.budgetPeriod != nil }
+    }
 
     var body: some View {
         NavigationStack {
@@ -240,6 +249,8 @@ struct ContentView: View {
                 switch activeDeferredPrompt {
                 case .categories:
                     OnboardingFlow.dismissCategories()
+                case .firstBudget:
+                    OnboardingFlow.dismissFirstBudget()
                 case .fasterWays:
                     OnboardingFlow.dismissFasterWays()
                 }
@@ -255,6 +266,14 @@ struct ContentView: View {
                 .presentationDetents([.large])
                 .tint(Theme.accent)
                 .onAppear { activeDeferredPrompt = .categories }
+            case .firstBudget:
+                FirstBudgetView(onDone: {
+                    OnboardingFlow.dismissFirstBudget()
+                    deferredPrompt = nil
+                })
+                .presentationDetents([.large])
+                .tint(Theme.accent)
+                .onAppear { activeDeferredPrompt = .firstBudget }
             case .fasterWays:
                 SetupFrontDoorsView(onDone: {
                     OnboardingFlow.dismissFasterWays()
@@ -374,6 +393,11 @@ struct ContentView: View {
             ) else { return }
             if OnboardingFlow.shouldOfferCategories(confirmedLogCount: confirmedEntries.count) {
                 deferredPrompt = .categories
+            } else if OnboardingFlow.shouldOfferFirstBudget(
+                confirmedLogCount: confirmedEntries.count,
+                hasAnyBudget: hasAnyBudget
+            ) {
+                deferredPrompt = .firstBudget
             } else if OnboardingFlow.shouldOfferFasterWays(
                 confirmedLogCount: confirmedEntries.count,
                 isFirstLogSession: loggedInCurrentSession
