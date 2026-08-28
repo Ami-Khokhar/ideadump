@@ -221,6 +221,9 @@ struct ContentView: View {
         }) { step in
             onboardingView(for: step)
                 .applyAppearanceOverride()
+                // Same reason as the route sheet above: presented content sits
+                // outside the root `.tint`, so it starts from the system default.
+                .tint(Theme.accent)
         }
         .sheet(item: $deferredPrompt, onDismiss: {
             if let activeDeferredPrompt {
@@ -240,6 +243,7 @@ struct ContentView: View {
                     deferredPrompt = nil
                 })
                 .presentationDetents([.large])
+                .tint(Theme.accent)
                 .onAppear { activeDeferredPrompt = .categories }
             case .fasterWays:
                 SetupFrontDoorsView(onDone: {
@@ -247,6 +251,7 @@ struct ContentView: View {
                     deferredPrompt = nil
                 })
                 .presentationDetents([.medium, .large])
+                .tint(Theme.accent)
                 .onAppear { activeDeferredPrompt = .fasterWays }
             }
         }
