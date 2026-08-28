@@ -24,6 +24,10 @@ enum DebugSeeder {
         }
     }
 
+    /// Debug-only: reachable only from `simctl launch ... -seedSampleData`.
+    /// A shipped build must never be able to write two months of invented
+    /// expenses into somebody's real history because of a launch argument.
+#if DEBUG
     @MainActor
     static func seedIfRequested(container: ModelContainer) {
         guard ProcessInfo.processInfo.arguments.contains("-seedSampleData") else { return }
@@ -32,6 +36,10 @@ enum DebugSeeder {
         guard existing == 0 else { return }
         seed(context: context)
     }
+#else
+    @MainActor
+    static func seedIfRequested(container: ModelContainer) {}
+#endif
 
     @MainActor
     static func seed(context: ModelContext) {

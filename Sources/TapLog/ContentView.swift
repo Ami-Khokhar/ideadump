@@ -137,7 +137,10 @@ struct ContentView: View {
             reconcileOnboarding(with: confirmedEntries.count)
             // Start the delayed onboarding flow (unless an activation was handled).
             handleLaunchFlow()
-            // Dev/testing hooks
+#if DEBUG
+            // Dev/testing hooks. Debug-only: these rewrite onboarding state,
+            // navigation, and appearance from a launch argument, and none of
+            // them should be reachable in anything a user installs.
             let args = ProcessInfo.processInfo.arguments
             if args.contains("-onboarding") {
                 hasLaunchedBefore = true
@@ -158,6 +161,7 @@ struct ContentView: View {
                     appearanceMode = value
                 }
             }
+#endif
         }
         // Handle warm/background activation: the scene becomes active after the
         // intent wrote its payload while the app was suspended.

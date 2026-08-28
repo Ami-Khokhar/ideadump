@@ -92,12 +92,14 @@ struct CategoryManageView: View {
     /// straight from `simctl launch`, so the budget preview card can be inspected
     /// without driving two sheets by hand.
     private func openRequestedCategoryForDebug() {
+#if DEBUG
         let args = ProcessInfo.processInfo.arguments
         guard let index = args.lastIndex(of: "-editCategory"),
               args.indices.contains(index + 1) else { return }
         let key = args[index + 1]
         guard let match = categories.first(where: { $0.key == key }) else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { editingCategory = match }
+#endif
     }
 
     private func budgetSubtitle(for category: SpendCategory) -> String? {

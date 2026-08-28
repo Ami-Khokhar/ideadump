@@ -121,6 +121,10 @@ struct LogHomeView: View {
                     }
                 }
             }
+#if DEBUG
+            // Test hook: `simctl launch ... -autolog 42` logs an expense without a
+            // human at the keypad. Debug-only — a shipped build that logs money
+            // because of a launch argument is a bug with a spending consequence.
             let args = ProcessInfo.processInfo.arguments
             if let index = args.lastIndex(of: "-autolog"), args.indices.contains(index + 1) {
                 let value = args[index + 1]
@@ -129,6 +133,7 @@ struct LogHomeView: View {
                     save()
                 }
             }
+#endif
         }
         .onChange(of: skipSplash) { _, newValue in
             // Handle intent activation received after onAppear — e.g. the app
