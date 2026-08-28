@@ -42,6 +42,15 @@ enum Theme {
     static let toast = adaptive(light: 0x1C1B1A, dark: 0xF0EEEB, alpha: 0.94)
     static let toastText = adaptive(light: 0xF5F3F0, dark: 0x1C1B1A)
 
+    /// `accent` and `clay` as they read *on the toast*, whose ground is inverted
+    /// relative to every other surface in the app. Both accents are tuned per
+    /// scheme against the app's own background, so painting a tree on the toast
+    /// with them puts the light-mode sage on ink and the dark-mode sage on
+    /// paper — each one against the ground it was not chosen for. Swapping the
+    /// pair restores the intended contrast without inventing a third green.
+    static let toastAccent = adaptive(light: 0x7FA085, dark: 0x6B8F71)
+    static let toastClay = adaptive(light: 0xC08E70, dark: 0xB5836A)
+
     // MARK: Helpers
 
     /// Builds a dynamic color from two hex values (0xRRGGBB), optionally with alpha.

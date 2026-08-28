@@ -140,16 +140,6 @@ final class RetentionManager {
         daysLoggedThisWeek >= weeklyTarget
     }
 
-    /// Progress toward the weekly target (0.0 … 1.0+).
-    var weeklyProgress: Double {
-        Double(daysLoggedThisWeek) / Double(weeklyTarget)
-    }
-
-    /// Fraction of the ring that should be filled (capped at 1.0 for visual).
-    var ringFraction: Double {
-        min(1.0, weeklyProgress)
-    }
-
     // MARK: - Actions
 
     /// Call once after every successful log. Updates the weekly mask and checks

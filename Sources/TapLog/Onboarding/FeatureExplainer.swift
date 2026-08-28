@@ -12,6 +12,10 @@ struct ExplainerPoint: Identifiable {
     /// Tree state drawn instead of a symbol, for the budget legend.
     let tree: TreeHealthMark?
     let treeColor: Color?
+    /// Streak wreath drawn instead of a symbol — days filled out of a weekly
+    /// target. The point that explains the streak shows the mark the user will
+    /// actually meet, not a stand-in symbol for it.
+    let wreath: (filled: Int, target: Int)?
     let title: String
     let body: String
 
@@ -19,6 +23,7 @@ struct ExplainerPoint: Identifiable {
         self.symbol = symbol
         self.tree = nil
         self.treeColor = nil
+        self.wreath = nil
         self.title = title
         self.body = body
     }
@@ -27,6 +32,16 @@ struct ExplainerPoint: Identifiable {
         self.symbol = nil
         self.tree = tree
         self.treeColor = color
+        self.wreath = nil
+        self.title = title
+        self.body = body
+    }
+
+    init(wreathFilled: Int, of target: Int, title: String, body: String) {
+        self.symbol = nil
+        self.tree = nil
+        self.treeColor = nil
+        self.wreath = (wreathFilled, target)
         self.title = title
         self.body = body
     }
@@ -93,6 +108,10 @@ struct FeatureExplainerView: View {
     private func explainerIcon(_ point: ExplainerPoint) -> some View {
         if let tree = point.tree {
             TreeMark(state: tree, color: point.treeColor ?? Theme.accent)
+        } else if let wreath = point.wreath {
+            WreathMark(daysLogged: wreath.filled, target: wreath.target, color: Theme.accent)
+                .frame(width: 40, height: 40)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let symbol = point.symbol {
             Image(systemName: symbol)
                 .font(.title3)
@@ -179,9 +198,9 @@ extension FeatureExplainerView {
                     body: "Only counts entries you actually marked, and says how much of the period that covers. An unmarked entry is left out rather than assumed."
                 ),
                 ExplainerPoint(
-                    symbol: "flame.fill",
+                    wreathFilled: 3, of: 5,
                     title: "Streak and freezes",
-                    body: "Days logged this week. A freeze covers one missed day so a single slip doesn't reset the count."
+                    body: "The wreath gains a leaf for each day you log and closes when you hit your weekly target. A freeze covers one missed day so a single slip doesn't reset the count."
                 ),
                 ExplainerPoint(
                     symbol: "square.and.arrow.up",

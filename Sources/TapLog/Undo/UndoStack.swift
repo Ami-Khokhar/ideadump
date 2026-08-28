@@ -7,6 +7,11 @@ final class UndoStack: ObservableObject {
     struct Action: Identifiable {
         let id = UUID()
         let message: String
+        /// The budget tree this action moved, when it moved one. Carried on the
+        /// action rather than held by the capture screen because the toast is an
+        /// overlay on the app root: it outlives the screen that recorded it, and
+        /// it has to disappear with the action when the action is undone.
+        let tree: TreeConfirmation?
         let undo: () -> Void
     }
 
@@ -14,8 +19,8 @@ final class UndoStack: ObservableObject {
     private var history: [Action] = []
     private var dismissTask: Task<Void, Never>?
 
-    func record(_ message: String, undo: @escaping () -> Void) {
-        history.append(Action(message: message, undo: undo))
+    func record(_ message: String, tree: TreeConfirmation? = nil, undo: @escaping () -> Void) {
+        history.append(Action(message: message, tree: tree, undo: undo))
         showCurrent()
     }
 

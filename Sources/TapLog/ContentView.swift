@@ -78,6 +78,9 @@ struct ContentView: View {
                 onPrefillConsumed: {
                     prefill = nil
                 },
+                onOpenBudgets: {
+                    openRoute(.budgets)
+                },
                 skipSplash: intentDirectCapture
             )
             .toolbar {

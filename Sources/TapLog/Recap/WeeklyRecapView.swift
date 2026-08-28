@@ -135,98 +135,102 @@ struct WeeklyRecapView: View {
 
         return ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(spanTitle)
-                        .font(.footnote)
-                        .foregroundStyle(Theme.textSecondary)
-                        .entrance()
-                    Text(Money.format(thisTotal))
-                        .font(Theme.amount(46))
-                        .foregroundStyle(Theme.textPrimary)
-                        .contentTransition(.numericText())
-                        .entrance(delay: 0.08)
-                    if thisTotal != lastTotal {
-                        if lastTotal > 0 {
-                            // Guard against near-zero baselines producing absurd percentages
-                            let pct = (thisTotal - lastTotal) / lastTotal
-                            if pct > 9.99 {
-                                // Clamp: percentage > 999%, show no number
-                                let up = thisTotal > lastTotal
-                                Text("\(up ? "▲" : "▼") vs. \(compareTitle)")
-                                    .font(.footnote.weight(.medium))
-                                    .foregroundStyle(up ? Theme.accent : Theme.textSecondary)
-                                    .monospacedDigit()
+                if thisData.isEmpty {
+                    emptySpanState
+                } else {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(spanTitle)
+                            .font(.footnote)
+                            .foregroundStyle(Theme.textSecondary)
+                            .entrance()
+                        Text(Money.format(thisTotal))
+                            .font(Theme.amount(46))
+                            .foregroundStyle(Theme.textPrimary)
+                            .contentTransition(.numericText())
+                            .entrance(delay: 0.08)
+                        if thisTotal != lastTotal {
+                            if lastTotal > 0 {
+                                // Guard against near-zero baselines producing absurd percentages
+                                let pct = (thisTotal - lastTotal) / lastTotal
+                                if pct > 9.99 {
+                                    // Clamp: percentage > 999%, show no number
+                                    let up = thisTotal > lastTotal
+                                    Text("\(up ? "▲" : "▼") vs. \(compareTitle)")
+                                        .font(.footnote.weight(.medium))
+                                        .foregroundStyle(up ? Theme.accent : Theme.textSecondary)
+                                        .monospacedDigit()
+                                } else {
+                                    // Normal case: show percentage
+                                    let up = thisTotal > lastTotal
+                                    // The arrow already carries the direction, so the
+                                    // percentage is shown unsigned — "▼ -36%" reads as
+                                    // a double negative.
+                                    Text("\(up ? "▲" : "▼") \(Money.percent(abs(pct))) vs. \(compareTitle)")
+                                        .font(.footnote.weight(.medium))
+                                        .foregroundStyle(up ? Theme.accent : Theme.textSecondary)
+                                        .monospacedDigit()
+                                }
                             } else {
-                                // Normal case: show percentage
-                                let up = thisTotal > lastTotal
-                                // The arrow already carries the direction, so the
-                                // percentage is shown unsigned — "▼ -36%" reads as
-                                // a double negative.
-                                Text("\(up ? "▲" : "▼") \(Money.percent(abs(pct))) vs. \(compareTitle)")
-                                    .font(.footnote.weight(.medium))
-                                    .foregroundStyle(up ? Theme.accent : Theme.textSecondary)
-                                    .monospacedDigit()
+                                // First period tracked
+                                Text("First \(span == .week ? "week" : "month") tracked")
+                                    .font(.footnote)
+                                    .foregroundStyle(Theme.textSecondary)
                             }
                         } else {
-                            // First period tracked
-                            Text("First \(span == .week ? "week" : "month") tracked")
+                            Text("\(Money.format(lastTotal)) \(compareTitle)")
                                 .font(.footnote)
                                 .foregroundStyle(Theme.textSecondary)
                         }
-                    } else {
-                        Text("\(Money.format(lastTotal)) \(compareTitle)")
-                            .font(.footnote)
-                            .foregroundStyle(Theme.textSecondary)
                     }
-                }
-                .padding(.horizontal, 28)
-                .padding(.top, 24)
-                .animation(Motion.stateChange, value: thisTotal)
+                    .padding(.horizontal, 28)
+                    .padding(.top, 24)
+                    .animation(Motion.stateChange, value: thisTotal)
 
-                // Bars
-                HStack(alignment: .bottom, spacing: 8) {
-                    let maxBar = max(dayBars.max() ?? 1, 1)
-                    let barCount = dayBars.count
-                    ForEach(0..<barCount, id: \.self) { index in
-                        let value = dayBars[index]
-                        let isCurrent = span == .week ? (index == todayIndex) : (index == currentWeekIndexForMonth)
-                        let isFuture = span == .week ? (index > todayIndex) : (index > currentWeekIndexForMonth)
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(isCurrent ? Theme.accent : (isFuture ? Theme.surfaceStrong.opacity(0.4) : Theme.surfaceStrong))
-                            .frame(height: value == 0 ? 4 : max(10, CGFloat(NSDecimalNumber(decimal: value / maxBar).doubleValue) * 96))
-                            .overlay(
-                                isFuture && value == 0 ?
-                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                        .strokeBorder(Theme.hairline, style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                                        .frame(height: 4)
-                                : nil
-                            )
-                            .scaleEffect(y: barsGrown ? 1 : 0.02, anchor: .bottom)
-                            .animation(
-                                Motion.gentleSlow.delay(0.08 * Double(index)),
-                                value: barsGrown
-                            )
+                    // Bars
+                    HStack(alignment: .bottom, spacing: 8) {
+                        let maxBar = max(dayBars.max() ?? 1, 1)
+                        let barCount = dayBars.count
+                        ForEach(0..<barCount, id: \.self) { index in
+                            let value = dayBars[index]
+                            let isCurrent = span == .week ? (index == todayIndex) : (index == currentWeekIndexForMonth)
+                            let isFuture = span == .week ? (index > todayIndex) : (index > currentWeekIndexForMonth)
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(isCurrent ? Theme.accent : (isFuture ? Theme.surfaceStrong.opacity(0.4) : Theme.surfaceStrong))
+                                .frame(height: value == 0 ? 4 : max(10, CGFloat(NSDecimalNumber(decimal: value / maxBar).doubleValue) * 96))
+                                .overlay(
+                                    isFuture && value == 0 ?
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .strokeBorder(Theme.hairline, style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                                            .frame(height: 4)
+                                    : nil
+                                )
+                                .scaleEffect(y: barsGrown ? 1 : 0.02, anchor: .bottom)
+                                .animation(
+                                    Motion.gentleSlow.delay(0.08 * Double(index)),
+                                    value: barsGrown
+                                )
+                        }
                     }
-                }
-                .frame(height: 100)
-                .padding(.horizontal, 28)
-                .padding(.top, 26)
+                    .frame(height: 100)
+                    .padding(.horizontal, 28)
+                    .padding(.top, 26)
 
-                HStack(spacing: 8) {
-                    ForEach(0..<barLabels.count, id: \.self) { index in
-                        let isCurrent = span == .week ? (index == todayIndex) : (index == currentWeekIndexForMonth)
-                        let isFuture = span == .week ? (index > todayIndex) : (index > currentWeekIndexForMonth)
-                        Text(barLabels[index])
-                            .font(.caption)
-                            .foregroundStyle(isCurrent ? Theme.accent : (isFuture ? Theme.textTertiary.opacity(0.4) : Theme.textTertiary))
-                            .fontWeight(isCurrent ? .semibold : .regular)
-                            .frame(maxWidth: .infinity)
+                    HStack(spacing: 8) {
+                        ForEach(0..<barLabels.count, id: \.self) { index in
+                            let isCurrent = span == .week ? (index == todayIndex) : (index == currentWeekIndexForMonth)
+                            let isFuture = span == .week ? (index > todayIndex) : (index > currentWeekIndexForMonth)
+                            Text(barLabels[index])
+                                .font(.caption)
+                                .foregroundStyle(isCurrent ? Theme.accent : (isFuture ? Theme.textTertiary.opacity(0.4) : Theme.textTertiary))
+                                .fontWeight(isCurrent ? .semibold : .regular)
+                                .frame(maxWidth: .infinity)
+                        }
                     }
+                    .padding(.horizontal, 28)
+                    .padding(.top, 6)
                 }
-                .padding(.horizontal, 28)
-                .padding(.top, 6)
 
-                // Consistency: weekly target ring, streak, freezes.
+                // Consistency: the streak wreath, streak count, freezes.
                 consistencyCard
                     .padding(.horizontal, 28)
                     .padding(.top, 24)
@@ -245,54 +249,56 @@ struct WeeklyRecapView: View {
                     .padding(.horizontal, 28)
                     .padding(.top, 28)
 
-                // By category
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("BY CATEGORY")
-                        .font(.caption2.weight(.semibold))
-                        .kerning(0.9)
-                        .foregroundStyle(Theme.textTertiary)
-                        .padding(.bottom, 4)
+                if !thisTotals.isEmpty {
+                    // By category
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("BY CATEGORY")
+                            .font(.caption2.weight(.semibold))
+                            .kerning(0.9)
+                            .foregroundStyle(Theme.textTertiary)
+                            .padding(.bottom, 4)
 
-                    ForEach(thisTotals.sorted { $0.value > $1.value }, id: \.key) { item in
-                        let pct = thisTotal > 0
-                            ? item.value / thisTotal
-                            : 0
-                        HStack(spacing: 12) {
-                            Text(lookup.emoji(for: item.key))
-                                .font(.body)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(lookup.name(for: item.key))
-                                    .font(.subheadline.weight(.medium))
-                                    .foregroundStyle(Theme.textPrimary)
-                                // The impulse read rides on the existing ranking
-                                // rather than repeating it in a second list. Only
-                                // categories with marked spend say anything.
-                                if let caption = categoryIntentCaption(categoryIntents[item.key]) {
-                                    Text(caption)
-                                        .font(.caption2)
-                                        .foregroundStyle(Theme.textTertiary)
+                        ForEach(thisTotals.sorted { $0.value > $1.value }, id: \.key) { item in
+                            let pct = thisTotal > 0
+                                ? item.value / thisTotal
+                                : 0
+                            HStack(spacing: 12) {
+                                Text(lookup.emoji(for: item.key))
+                                    .font(.body)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(lookup.name(for: item.key))
+                                        .font(.subheadline.weight(.medium))
+                                        .foregroundStyle(Theme.textPrimary)
+                                    // The impulse read rides on the existing ranking
+                                    // rather than repeating it in a second list. Only
+                                    // categories with marked spend say anything.
+                                    if let caption = categoryIntentCaption(categoryIntents[item.key]) {
+                                        Text(caption)
+                                            .font(.caption2)
+                                            .foregroundStyle(Theme.textTertiary)
+                                    }
                                 }
+                                Spacer()
+                                Text("\(Money.percent(pct))")
+                                    .font(.footnote)
+                                    .foregroundStyle(Theme.textTertiary)
+                                    .monospacedDigit()
+                                Text(Money.format(item.value))
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(Theme.textPrimary)
+                                    .monospacedDigit()
                             }
-                            Spacer()
-                            Text("\(Money.percent(pct))")
-                                .font(.footnote)
-                                .foregroundStyle(Theme.textTertiary)
-                                .monospacedDigit()
-                            Text(Money.format(item.value))
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(Theme.textPrimary)
-                                .monospacedDigit()
-                        }
-                        .padding(.vertical, 10)
-                        .overlay(alignment: .bottom) {
-                            Rectangle()
-                                .fill(Theme.hairline)
-                                .frame(height: 1)
+                            .padding(.vertical, 10)
+                            .overlay(alignment: .bottom) {
+                                Rectangle()
+                                    .fill(Theme.hairline)
+                                    .frame(height: 1)
+                            }
                         }
                     }
+                    .padding(.horizontal, 28)
+                    .padding(.top, 28)
                 }
-                .padding(.horizontal, 28)
-                .padding(.top, 28)
 
                 ShareLink(
                     item: CSVFile(text: CSVExporter.makeCSV(entries: exportEntries, lookup: lookup)),
@@ -343,7 +349,7 @@ struct WeeklyRecapView: View {
 
     // MARK: - Helpers
 
-    /// Weekly-target ring plus streak and freeze status — the retention loop's
+    /// The streak wreath plus streak and freeze status — the retention loop's
     /// payoff surface, so progress is visible and a freeze can be spent.
     // MARK: - Budgets
 
@@ -604,8 +610,7 @@ struct WeeklyRecapView: View {
 
     private var consistencyCard: some View {
         HStack(alignment: .top, spacing: 14) {
-            WeeklyRingView(
-                progress: retention.ringFraction,
+            WeeklyStreakWreath(
                 daysLogged: retention.daysLoggedThisWeek,
                 target: retention.weeklyTarget,
                 freezesAvailable: retention.streakFreezes
@@ -633,6 +638,25 @@ struct WeeklyRecapView: View {
         }
         .padding(14)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    /// What the recap shows when the selected span holds nothing.
+    ///
+    /// The hero, the bars and the category split are all derived from entries,
+    /// so an empty week rendered them as ₹0.00 over a row of stubs under a
+    /// heading with nothing beneath it — three separate ways of saying the same
+    /// nothing. One seedling says it once. The consistency card and Export stay
+    /// put: the streak is about *logging*, which is exactly what an empty week
+    /// needs to talk about, and Export covers all time rather than this span.
+    private var emptySpanState: some View {
+        SeedlingEmptyState(
+            title: span == .week ? "Nothing logged this week" : "Nothing logged this month",
+            message: span == .week
+                ? "Log one expense and your total, the day bars and your category split all fill in here."
+                : "Log one expense and your total, the week bars and your category split all fill in here."
+        )
+        .padding(.top, 44)
+        .padding(.bottom, 8)
     }
 
     private var consistencyFootnote: String {

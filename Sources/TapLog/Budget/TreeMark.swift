@@ -456,6 +456,36 @@ extension TreeHealthMark {
     }
 }
 
+extension GraphicsContext {
+    /// Draws tree `parts` authored on `canvas`, scaled to fit and centred in
+    /// `size`, tinted with `color` at each part's own opacity.
+    ///
+    /// Shared by `TreeMark` and `TreeStateGlyph` so both marks composite the same
+    /// way — the crowns get their depth from overlapping translucent copies, and
+    /// that only holds together if the fit and the shading are identical.
+    func drawTree(_ parts: [TreeArt.TreePart], canvas: CGSize, in size: CGSize, color: Color) {
+        let scale = min(size.width / canvas.width, size.height / canvas.height)
+        let fit = CGAffineTransform(
+            translationX: (size.width - canvas.width * scale) / 2,
+            y: (size.height - canvas.height * scale) / 2
+        ).scaledBy(x: scale, y: scale)
+
+        for part in parts {
+            let resolved = part.path.applying(part.transform.concatenating(fit))
+            let shading = Shading.color(color.opacity(part.opacity))
+            if part.lineWidth > 0 {
+                stroke(
+                    resolved,
+                    with: shading,
+                    style: StrokeStyle(lineWidth: part.lineWidth * scale, lineCap: .round, lineJoin: .round)
+                )
+            } else {
+                fill(resolved, with: shading)
+            }
+        }
+    }
+}
+
 /// Renders a tree mark, scaled to fit and centred in the frame it is given.
 struct TreeMark: View {
     let state: TreeHealthMark
@@ -463,25 +493,7 @@ struct TreeMark: View {
 
     var body: some View {
         Canvas(opaque: false) { context, size in
-            let scale = min(size.width / TreeArt.canvas.width, size.height / TreeArt.canvas.height)
-            let fit = CGAffineTransform(
-                translationX: (size.width - TreeArt.canvas.width * scale) / 2,
-                y: (size.height - TreeArt.canvas.height * scale) / 2
-            ).scaledBy(x: scale, y: scale)
-
-            for part in TreeArt.parts(for: state) {
-                let resolved = part.path.applying(part.transform.concatenating(fit))
-                let shading = GraphicsContext.Shading.color(color.opacity(part.opacity))
-                if part.lineWidth > 0 {
-                    context.stroke(
-                        resolved,
-                        with: shading,
-                        style: StrokeStyle(lineWidth: part.lineWidth * scale, lineCap: .round, lineJoin: .round)
-                    )
-                } else {
-                    context.fill(resolved, with: shading)
-                }
-            }
+            context.drawTree(TreeArt.parts(for: state), canvas: TreeArt.canvas, in: size, color: color)
         }
         .accessibilityHidden(true)
     }

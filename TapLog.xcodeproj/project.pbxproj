@@ -30,12 +30,15 @@
 		37E49062EB90FD7454E6141F /* IntentSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AFDF5F905D85495CC043D15 /* IntentSupport.swift */; };
 		3C7943A4295129D2204EB8F7 /* OnboardingFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EC8711A571D36069B32250F /* OnboardingFlowTests.swift */; };
 		3DC3F135860710F724D5FEDE /* QuickLogIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CCFD7C9C1623952E799140E /* QuickLogIntent.swift */; };
+		3E2F86C171439C33C115AC98 /* GroveStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB2DBF9ED98312E10D8C678D /* GroveStrip.swift */; };
+		3F782C21595B75BB50E6ACDD /* GroveStripModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B73195AE132A3E7B12113635 /* GroveStripModelTests.swift */; };
 		43D182AFC1658E8831D51AAA /* BudgetCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F329029C78879DE79A69EE09 /* BudgetCalculator.swift */; };
 		458C5F0772D39EB04AC604D9 /* TapLogWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C5F641E7F91BA446B4783A55 /* TapLogWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		473818FD29C8AA1B87935510 /* TimeBucket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DD6A7AF092AF09A67270576 /* TimeBucket.swift */; };
 		494EE6FABA03802CC3E6CDEA /* EntryRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DE4D63F839A1FC98CE3CC4 /* EntryRowView.swift */; };
 		4AF040C455CC9F3F424076FC /* AmountTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = E61E6D1F80EEF58F89B322BC /* AmountTextField.swift */; };
 		4BA53740A22BDA4BE58BB8A8 /* CaptureBookkeepingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61FEEF255C865D34F51F7B91 /* CaptureBookkeepingTests.swift */; };
+		4E8BBBDCD22E7104B21745E0 /* TreeStateGlyph.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7E884616B36F59271A32D33 /* TreeStateGlyph.swift */; };
 		517CA2752492795FF822A77F /* UndoStackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE5755275B1B7EDCCE0DC33B /* UndoStackTests.swift */; };
 		547769EC100751C7458552E2 /* TapLogControlWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9DFFBA84BFB8F6EF268CCB4 /* TapLogControlWidget.swift */; };
 		564D486201F2A0EC049A833D /* TapLogApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B07A4859D752E1C04081F18 /* TapLogApp.swift */; };
@@ -48,13 +51,13 @@
 		654FE0290D434A453699DD27 /* Money.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E288AE6E7A4297523866942 /* Money.swift */; };
 		6EAE93A9D17930A34279BBA0 /* CSVExporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40526EBEDA350B87189991D6 /* CSVExporterTests.swift */; };
 		6F0F50E8824E78BC1D7F8C7F /* OpenCaptureIntentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CDF629996C6BC1B1C2D0187 /* OpenCaptureIntentTests.swift */; };
-		70186E15E278587B332A0229 /* WeeklyRingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2983E22129651C0755248959 /* WeeklyRingView.swift */; };
 		7CF118853A08588EC1E210DD /* AmountInputFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EBEBC7026B1A2D05767961 /* AmountInputFilter.swift */; };
 		7E3C9F68292A061AABA7806C /* TreeMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6DF1C21877AEDEBAE486B62 /* TreeMark.swift */; };
 		81E2753C030895E72AB06B0B /* FeatureExplainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB38DB67D7BAE0F3254A4436 /* FeatureExplainer.swift */; };
 		8CE70B98B9C3944E1BF4634D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991D5BACEE57C2FC20B39564 /* ContentView.swift */; };
 		8CEDFE125F57EF2D49C58BAB /* SpendWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AFDA712F13988B761C89CF1 /* SpendWidget.swift */; };
 		8FD6B5B53E4E7526850DD72D /* LogExpenseIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D624420DCFD82FB945A607A /* LogExpenseIntent.swift */; };
+		90B5A7CB3AB93EAF91C0B7B7 /* StreakWreath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20F77E259B173EDF11903A71 /* StreakWreath.swift */; };
 		918FC202598E02AC6F1027B9 /* StoreLocatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49755A7016E44B7F1042415C /* StoreLocatorTests.swift */; };
 		9305AA5EEDE873C20697A888 /* QuickLogIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CCFD7C9C1623952E799140E /* QuickLogIntent.swift */; };
 		934E3242625C35BED0B96BD7 /* AnimatedLogoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BA74CF6D87B3967129B30B2 /* AnimatedLogoView.swift */; };
@@ -73,6 +76,7 @@
 		B5927A0A110705F9BD5C42A9 /* BudgetCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B454363C9AF47F9F64BE104 /* BudgetCalculatorTests.swift */; };
 		BAA215AEB6EB92DDBE543F6A /* Entry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E06859D8DD2DC20B4D96A32 /* Entry.swift */; };
 		BB76D8D3AB714C8081432CC6 /* CapturePrefill.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CBA4D4E213F6B83EB33639D /* CapturePrefill.swift */; };
+		BBD245F2A416FC8B71E4E2EF /* SeedlingEmptyState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80E71C2E724671AC335F03F6 /* SeedlingEmptyState.swift */; };
 		C2737376F33598D3B3021A62 /* RetentionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC4A8904E421B41AB3B22AD0 /* RetentionManager.swift */; };
 		C36F23736DBB27A19B89D13E /* CaptureBookkeeping.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3F7C64942F6820DBC00A43F /* CaptureBookkeeping.swift */; };
 		C43E0B895B64A75176F53DAE /* RetentionManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9380549822DEC6CE9FCD846D /* RetentionManagerTests.swift */; };
@@ -145,8 +149,8 @@
 		0FC516F728D48F203896905E /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		101ACAC9E5097E0742075CEE /* BudgetTargetEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetTargetEditor.swift; sourceTree = "<group>"; };
 		13A258162CA563136B4721E8 /* ShareParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareParserTests.swift; sourceTree = "<group>"; };
+		20F77E259B173EDF11903A71 /* StreakWreath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakWreath.swift; sourceTree = "<group>"; };
 		210AC728C284853DB7238733 /* OnboardingFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlow.swift; sourceTree = "<group>"; };
-		2983E22129651C0755248959 /* WeeklyRingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRingView.swift; sourceTree = "<group>"; };
 		2CAC674E8E824850DF01E0ED /* CaptureForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureForm.swift; sourceTree = "<group>"; };
 		37EBEBC7026B1A2D05767961 /* AmountInputFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmountInputFilter.swift; sourceTree = "<group>"; };
 		3BF3DE2DAA95012E652F3392 /* SpendCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendCategory.swift; sourceTree = "<group>"; };
@@ -171,6 +175,7 @@
 		6FCAFA2601272F61B499A280 /* OnboardingCategoriesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCategoriesView.swift; sourceTree = "<group>"; };
 		7867E24E221AC6122BCDA234 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		7DD6A7AF092AF09A67270576 /* TimeBucket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeBucket.swift; sourceTree = "<group>"; };
+		80E71C2E724671AC335F03F6 /* SeedlingEmptyState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeedlingEmptyState.swift; sourceTree = "<group>"; };
 		81FFDEB986BB922DED4CE884 /* OpenCaptureIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenCaptureIntent.swift; sourceTree = "<group>"; };
 		890EC89BF216C1F34145CD4A /* TimeBucketTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeBucketTests.swift; sourceTree = "<group>"; };
 		8AFDA712F13988B761C89CF1 /* SpendWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendWidget.swift; sourceTree = "<group>"; };
@@ -182,9 +187,11 @@
 		9CCFD7C9C1623952E799140E /* QuickLogIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickLogIntent.swift; sourceTree = "<group>"; };
 		A6DF1C21877AEDEBAE486B62 /* TreeMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TreeMark.swift; sourceTree = "<group>"; };
 		A781E9B64AAEA272FA487658 /* StoreLocator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreLocator.swift; sourceTree = "<group>"; };
+		A7E884616B36F59271A32D33 /* TreeStateGlyph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TreeStateGlyph.swift; sourceTree = "<group>"; };
 		AC4A8904E421B41AB3B22AD0 /* RetentionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetentionManager.swift; sourceTree = "<group>"; };
 		ACC67EF1B129BAF3036316D7 /* TapLogShortcutsProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapLogShortcutsProvider.swift; sourceTree = "<group>"; };
 		B3ABAFEF33AB24EADE9F540E /* DebugSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugSeeder.swift; sourceTree = "<group>"; };
+		B73195AE132A3E7B12113635 /* GroveStripModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroveStripModelTests.swift; sourceTree = "<group>"; };
 		B981E1CD86D1D49E1B89DAAA /* PersistenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceTests.swift; sourceTree = "<group>"; };
 		B9DFFBA84BFB8F6EF268CCB4 /* TapLogControlWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapLogControlWidget.swift; sourceTree = "<group>"; };
 		BE6D869DDDC20393088C7D57 /* TapLogWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapLogWidgetBundle.swift; sourceTree = "<group>"; };
@@ -196,6 +203,7 @@
 		DE26898A296300C98D396FFB /* TapLogTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = TapLogTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E47FDDD9D72A53C355B60DEF /* LogHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogHomeView.swift; sourceTree = "<group>"; };
 		E61E6D1F80EEF58F89B322BC /* AmountTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmountTextField.swift; sourceTree = "<group>"; };
+		EB2DBF9ED98312E10D8C678D /* GroveStrip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroveStrip.swift; sourceTree = "<group>"; };
 		EE5755275B1B7EDCCE0DC33B /* UndoStackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoStackTests.swift; sourceTree = "<group>"; };
 		F01CDE21A570CB1DA2BCCC31 /* BudgetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetsView.swift; sourceTree = "<group>"; };
 		F329029C78879DE79A69EE09 /* BudgetCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetCalculator.swift; sourceTree = "<group>"; };
@@ -222,7 +230,7 @@
 		05F3ECDC45ED95C9C0E5F69A /* Retention */ = {
 			isa = PBXGroup;
 			children = (
-				2983E22129651C0755248959 /* WeeklyRingView.swift */,
+				20F77E259B173EDF11903A71 /* StreakWreath.swift */,
 			);
 			path = Retention;
 			sourceTree = "<group>";
@@ -286,6 +294,7 @@
 				61FEEF255C865D34F51F7B91 /* CaptureBookkeepingTests.swift */,
 				F60213EFF64EA4A3F5924AED /* CapturePrefillTests.swift */,
 				40526EBEDA350B87189991D6 /* CSVExporterTests.swift */,
+				B73195AE132A3E7B12113635 /* GroveStripModelTests.swift */,
 				4EB99B5662BD9B4C2793C718 /* MoneyTests.swift */,
 				3EC8711A571D36069B32250F /* OnboardingFlowTests.swift */,
 				8CDF629996C6BC1B1C2D0187 /* OpenCaptureIntentTests.swift */,
@@ -347,6 +356,7 @@
 			isa = PBXGroup;
 			children = (
 				4BA74CF6D87B3967129B30B2 /* AnimatedLogoView.swift */,
+				80E71C2E724671AC335F03F6 /* SeedlingEmptyState.swift */,
 				0FC516F728D48F203896905E /* Theme.swift */,
 			);
 			path = Theme;
@@ -434,6 +444,7 @@
 				F01CDE21A570CB1DA2BCCC31 /* BudgetsView.swift */,
 				101ACAC9E5097E0742075CEE /* BudgetTargetEditor.swift */,
 				A6DF1C21877AEDEBAE486B62 /* TreeMark.swift */,
+				A7E884616B36F59271A32D33 /* TreeStateGlyph.swift */,
 			);
 			path = Budget;
 			sourceTree = "<group>";
@@ -444,6 +455,7 @@
 				E61E6D1F80EEF58F89B322BC /* AmountTextField.swift */,
 				2CAC674E8E824850DF01E0ED /* CaptureForm.swift */,
 				050E9E68352EA3E37605FE71 /* CategoryManageView.swift */,
+				EB2DBF9ED98312E10D8C678D /* GroveStrip.swift */,
 				E47FDDD9D72A53C355B60DEF /* LogHomeView.swift */,
 			);
 			path = Capture;
@@ -618,6 +630,7 @@
 				96C8A026B355082E77E556A2 /* EntryListView.swift in Sources */,
 				494EE6FABA03802CC3E6CDEA /* EntryRowView.swift in Sources */,
 				81E2753C030895E72AB06B0B /* FeatureExplainer.swift in Sources */,
+				3E2F86C171439C33C115AC98 /* GroveStrip.swift in Sources */,
 				37E49062EB90FD7454E6141F /* IntentSupport.swift in Sources */,
 				8FD6B5B53E4E7526850DD72D /* LogExpenseIntent.swift in Sources */,
 				26306C88F962BCC08D7F9FDD /* LogHomeView.swift in Sources */,
@@ -628,20 +641,22 @@
 				3DC3F135860710F724D5FEDE /* QuickLogIntent.swift in Sources */,
 				EF1BFBF97F6335E1AC0423E5 /* RecapMath.swift in Sources */,
 				964B42C5BDDB3315C60A46E9 /* RetentionManager.swift in Sources */,
+				BBD245F2A416FC8B71E4E2EF /* SeedlingEmptyState.swift in Sources */,
 				02757F7C23442471CBA41280 /* SettingsView.swift in Sources */,
 				2344142B18619D974F6B8ECA /* SetupFrontDoorsView.swift in Sources */,
 				2E6F2D97FFCD86F90748A66C /* ShareParser.swift in Sources */,
 				DABDD1131FE8B6E4541DC315 /* SpendCategory.swift in Sources */,
 				935B66767E2C57C360E8072A /* StoreLocator.swift in Sources */,
+				90B5A7CB3AB93EAF91C0B7B7 /* StreakWreath.swift in Sources */,
 				564D486201F2A0EC049A833D /* TapLogApp.swift in Sources */,
 				3476CB7E522C20EE9E793A5B /* TapLogShortcutsProvider.swift in Sources */,
 				F050097AF5EEECD6B7266F2B /* Theme.swift in Sources */,
 				FEF818A35145A6C277821743 /* TimeBucket.swift in Sources */,
 				7E3C9F68292A061AABA7806C /* TreeMark.swift in Sources */,
+				4E8BBBDCD22E7104B21745E0 /* TreeStateGlyph.swift in Sources */,
 				E37461D086CDA7EFB0634484 /* UndoStack.swift in Sources */,
 				D080D8C375310E1E3F7670C3 /* UndoToast.swift in Sources */,
 				CED590693197D171DAE1BEFD /* WeeklyRecapView.swift in Sources */,
-				70186E15E278587B332A0229 /* WeeklyRingView.swift in Sources */,
 				AF5FAC9F8AF883608D9C5562 /* WelcomeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -677,6 +692,7 @@
 				6EAE93A9D17930A34279BBA0 /* CSVExporterTests.swift in Sources */,
 				4BA53740A22BDA4BE58BB8A8 /* CaptureBookkeepingTests.swift in Sources */,
 				3250540CB941724ECD3D95A8 /* CapturePrefillTests.swift in Sources */,
+				3F782C21595B75BB50E6ACDD /* GroveStripModelTests.swift in Sources */,
 				9BF6F9DEACE1F4F15E33995B /* MoneyTests.swift in Sources */,
 				3C7943A4295129D2204EB8F7 /* OnboardingFlowTests.swift in Sources */,
 				6F0F50E8824E78BC1D7F8C7F /* OpenCaptureIntentTests.swift in Sources */,
