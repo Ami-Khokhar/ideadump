@@ -63,6 +63,18 @@ struct ContentView: View {
 
     private var hasConfirmedEntry: Bool { !confirmedEntries.isEmpty }
 
+    /// The logo plays once, on the first launch, and never again.
+    ///
+    /// It costs 1.8 seconds before the keypad is usable. That is a fair price to
+    /// introduce an app nobody has seen; it is a toll on someone opening it for
+    /// the eleventh time to log a ₹20 chai before the queue moves — and this app's
+    /// entire pitch is that logging takes about five seconds. An intent launch
+    /// skips it for the same reason, only harder: that user has already said what
+    /// they came to do.
+    private var skipSplash: Bool {
+        intentDirectCapture || hasLaunchedBefore
+    }
+
     /// A category counts as budgeted only with both halves set — a target with no
     /// cadence is an unfinished budget, and the grove does not grow a tree for it.
     private var hasAnyBudget: Bool {
@@ -91,7 +103,7 @@ struct ContentView: View {
                 onOpenBudgets: {
                     openRoute(.budgets)
                 },
-                skipSplash: intentDirectCapture
+                skipSplash: skipSplash
             )
             // The three screens the app exists to pay off with sit on the bar,
             // one tap from the capture surface. They used to live inside the ⋯
