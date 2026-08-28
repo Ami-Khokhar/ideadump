@@ -4,7 +4,8 @@ import SwiftData
 /// Tracks weekly log consistency, streaks, and streak freezes.
 ///
 /// Uses `UserDefaults` for lightweight persistence (no new SwiftData model needed).
-/// The weekly log mask resets automatically when a new Monday is detected.
+/// The weekly log mask resets automatically when a new week is detected, using
+/// the user's own first weekday rather than a hardcoded Monday.
 ///
 /// ## Freeze semantics
 /// A freeze and a target completion are tracked as separate resolutions:
@@ -18,12 +19,17 @@ import SwiftData
 @Observable
 final class RetentionManager {
     private let defaults: UserDefaults
+    /// The calendar every week boundary is measured in. Injected so tests can pin
+    /// `firstWeekday` — a streak that only works on the tester's locale is a
+    /// streak that breaks for half the users.
+    private let calendar: Calendar
 
     /// All state lives in the given defaults — the App Group suite by default, so a
     /// log recorded from the widget or Siri counts toward the same streaks as one
     /// recorded in the app.
-    init(defaults: UserDefaults = StoreLocator.sharedDefaults) {
+    init(defaults: UserDefaults = StoreLocator.sharedDefaults, calendar: Calendar = .current) {
         self.defaults = defaults
+        self.calendar = calendar
     }
 
     // MARK: - Legacy migration
@@ -100,20 +106,21 @@ final class RetentionManager {
 
     // MARK: - Weekly Log Mask
 
-    /// The Monday of the current tracking week.
+    /// The first day of the current tracking week, in the user's own calendar.
     private var weekStartDate: Date {
         get {
             if let stored = defaults.object(forKey: Keys.weekStartDate) as? Date {
                 return stored
             }
-            let monday = Self.currentMonday()
-            defaults.set(monday, forKey: Keys.weekStartDate)
-            return monday
+            let start = Self.weekStart(containing: Date(), calendar: calendar)
+            defaults.set(start, forKey: Keys.weekStartDate)
+            return start
         }
         set { defaults.set(newValue, forKey: Keys.weekStartDate) }
     }
 
-    /// 7-element array: index 0 = Monday … 6 = Sunday. `true` = logged that day.
+    /// 7-element array indexed from `weekStartDate`: 0 = the week's first day …
+    /// 6 = its last. `true` = logged that day.
     private var weeklyMask: [Bool] {
         get { (defaults.array(forKey: Keys.weeklyMask) as? [Bool]) ?? Array(repeating: false, count: 7) }
         set { defaults.set(newValue, forKey: Keys.weeklyMask) }
@@ -146,12 +153,11 @@ final class RetentionManager {
     /// whether a streak should be extended or a freeze consumed.
     func recordLogDay() {
         refreshWeekIfNeeded()
-        let today = Calendar.current.component(.weekday, from: Date())
-        // weekday: 1=Sun … 7=Sat → mask index: Mon=0 … Sun=6
-        let index = (today + 5) % 7
-        var mask = weeklyMask
-        mask[index] = true
-        weeklyMask = mask
+        if let index = Self.maskIndex(for: Date(), weekStart: weekStartDate, calendar: calendar) {
+            var mask = weeklyMask
+            mask[index] = true
+            weeklyMask = mask
+        }
 
         totalLogs += 1
 
@@ -188,11 +194,10 @@ final class RetentionManager {
         refreshWeekIfNeeded()
         totalLogs = max(0, totalLogs - 1)
 
-        guard let removedDay else { return }
-        let calendar = Calendar.current
-        guard calendar.startOfDay(for: removedDay) >= weekStartDate else { return }
+        guard let removedDay,
+              let index = Self.maskIndex(for: removedDay, weekStart: weekStartDate, calendar: calendar)
+        else { return }
 
-        let index = (calendar.component(.weekday, from: removedDay) + 5) % 7
         var mask = weeklyMask
         mask[index] = false
         weeklyMask = mask
@@ -205,7 +210,7 @@ final class RetentionManager {
         longestStreak = 0
         streakFreezes = 0
         totalLogs = 0
-        weekStartDate = Self.currentMonday()
+        weekStartDate = Self.weekStart(containing: Date(), calendar: calendar)
         weeklyMask = Array(repeating: false, count: 7)
         defaults.set(false, forKey: Keys.weekResolved)
         defaults.set(false, forKey: Keys.weekFrozen)
@@ -230,6 +235,7 @@ final class RetentionManager {
         static let weekResolved = "retention.weekResolved"
         static let weekFrozen = "retention.weekFrozen"
         static let legacyMigrated = "retention.legacyMigrated"
+        static let weekAlignmentMigrated = "retention.weekAlignmentMigrated"
 
         /// Every key this manager owns — used by the legacy-state migration.
         static var allStorageKeys: [String] {
@@ -238,13 +244,54 @@ final class RetentionManager {
         }
     }
 
-    private static func currentMonday() -> Date {
-        let cal = Calendar.current
-        let now = Date()
-        let weekday = cal.component(.weekday, from: now)
-        // Days since Monday: Mon=2 → 0, Tue=3 → 1, … Sun=1 → 6
-        let daysSinceMonday = (weekday + 5) % 7
-        return cal.startOfDay(for: cal.date(byAdding: .day, value: -daysSinceMonday, to: now)!)
+    /// The first day of the week containing `date`, per `calendar.firstWeekday`.
+    ///
+    /// This used to be a hardcoded Monday, which put the streak on a different
+    /// week to the recap for every user whose calendar starts on Sunday — a
+    /// Sunday log counted toward one week in the recap and the next week in the
+    /// streak.
+    static func weekStart(containing date: Date, calendar: Calendar = .current) -> Date {
+        calendar.dateInterval(of: .weekOfYear, for: date)?.start ?? calendar.startOfDay(for: date)
+    }
+
+    /// Where `date` sits in a mask that starts at `weekStart`, or nil when it
+    /// falls outside that week. Nil rather than a clamped index: clamping would
+    /// silently mark the wrong day.
+    static func maskIndex(for date: Date, weekStart: Date, calendar: Calendar = .current) -> Int? {
+        let days = calendar.dateComponents(
+            [.day],
+            from: calendar.startOfDay(for: weekStart),
+            to: calendar.startOfDay(for: date)
+        ).day
+        guard let days, (0...6).contains(days) else { return nil }
+        return days
+    }
+
+    /// One-time realignment of a window stored by the old Monday-only code.
+    ///
+    /// The stored start was always a Monday and the mask was indexed from it, so
+    /// the whole window simply shifts forward by the gap between the real week
+    /// start and that Monday. A day that shifts past index 6 belongs to the
+    /// *next* locale week and is dropped rather than wrapped: wrapping would
+    /// credit a day the user has not lived yet, and dropping can only ever cost
+    /// progress, never invent it.
+    private func migrateWeekAlignmentIfNeeded() {
+        guard !defaults.bool(forKey: Keys.weekAlignmentMigrated) else { return }
+        defaults.set(true, forKey: Keys.weekAlignmentMigrated)
+
+        guard let storedStart = defaults.object(forKey: Keys.weekStartDate) as? Date else { return }
+        let alignedStart = Self.weekStart(containing: storedStart, calendar: calendar)
+        guard let shift = calendar.dateComponents([.day], from: alignedStart, to: storedStart).day,
+              shift != 0
+        else { return }
+
+        var realigned = Array(repeating: false, count: 7)
+        for (index, logged) in weeklyMask.enumerated() where logged {
+            let moved = index + shift
+            if moved < realigned.count { realigned[moved] = true }
+        }
+        weeklyMask = realigned
+        weekStartDate = alignedStart
     }
 
     /// If we've crossed into a new week, resolve last week's streak and reset.
@@ -252,8 +299,9 @@ final class RetentionManager {
     /// Snapshot the prior window before replacing it so its result cannot be
     /// accidentally written into the new week's resolution flag.
     private func refreshWeekIfNeeded() {
-        let thisMonday = Self.currentMonday()
-        guard thisMonday > weekStartDate else { return }
+        migrateWeekAlignmentIfNeeded()
+        let thisWeekStart = Self.weekStart(containing: Date(), calendar: calendar)
+        guard thisWeekStart > weekStartDate else { return }
 
         // Snapshot last week before wiping it — once the mask resets, the old
         // week's data is gone.
@@ -276,7 +324,7 @@ final class RetentionManager {
         }
 
         // Advance into the new week with a fresh, unresolved window.
-        weekStartDate = thisMonday
+        weekStartDate = thisWeekStart
         weeklyMask = Array(repeating: false, count: 7)
         defaults.set(false, forKey: Keys.weekResolved)
         defaults.set(false, forKey: Keys.weekFrozen)

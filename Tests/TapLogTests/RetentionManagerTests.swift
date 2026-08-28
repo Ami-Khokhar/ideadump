@@ -20,6 +20,9 @@ final class RetentionManagerTests: XCTestCase {
         super.tearDown()
     }
 
+    /// Both seeds write already-aligned state: they exercise rollover and freeze
+    /// semantics, not the one-time Monday→locale realignment, which has its own
+    /// tests below.
     private func seedPastWeek(
         mask: [Bool],
         streak: Int,
@@ -29,6 +32,7 @@ final class RetentionManagerTests: XCTestCase {
         weeklyTarget: Int = 5
     ) {
         defaults.set(Date.distantPast, forKey: "retention.weekStartDate")
+        defaults.set(true, forKey: "retention.weekAlignmentMigrated")
         defaults.set(mask, forKey: "retention.weeklyMask")
         defaults.set(streak, forKey: "retention.currentStreak")
         defaults.set(resolved, forKey: "retention.weekResolved")
@@ -45,12 +49,8 @@ final class RetentionManagerTests: XCTestCase {
         freezes: Int = 0,
         weeklyTarget: Int = 5
     ) {
-        let cal = Calendar.current
-        let now = Date()
-        let weekday = cal.component(.weekday, from: now)
-        let daysSinceMonday = (weekday + 5) % 7
-        let monday = cal.startOfDay(for: cal.date(byAdding: .day, value: -daysSinceMonday, to: now)!)
-        defaults.set(monday, forKey: "retention.weekStartDate")
+        defaults.set(RetentionManager.weekStart(containing: Date()), forKey: "retention.weekStartDate")
+        defaults.set(true, forKey: "retention.weekAlignmentMigrated")
         defaults.set(mask, forKey: "retention.weeklyMask")
         defaults.set(streak, forKey: "retention.currentStreak")
         defaults.set(resolved, forKey: "retention.weekResolved")
@@ -258,5 +258,199 @@ final class RetentionManagerTests: XCTestCase {
         legacy.set(99, forKey: "retention.weeklyTarget")
         RetentionManager.migrateLegacyStateIfNeeded(target: defaults, legacy: legacy)
         XCTAssertEqual(defaults.integer(forKey: "retention.weeklyTarget"), 7)
+    }
+
+    // MARK: - Locale week alignment
+
+    /// Monday-first (much of Europe) and Sunday-first (en_US, en_IN) calendars,
+    /// pinned the way RecapMathTests pins them so the two files are talking about
+    /// the same weeks.
+    private var mondayFirst: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.firstWeekday = 2
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        calendar.locale = Locale(identifier: "en_US_POSIX")
+        return calendar
+    }()
+
+    private var sundayFirst: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.firstWeekday = 1
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        calendar.locale = Locale(identifier: "en_US_POSIX")
+        return calendar
+    }()
+
+    /// 2026-08-16 is a Sunday, 2026-08-17 the Monday after it, 2026-08-19 the
+    /// Wednesday after that.
+    private func day(_ year: Int, _ month: Int, _ day: Int, calendar: Calendar) -> Date {
+        calendar.date(from: DateComponents(year: year, month: month, day: day, hour: 12))!
+    }
+
+    func testWeekStartFollowsFirstWeekday() {
+        let wednesday = day(2026, 8, 19, calendar: mondayFirst)
+
+        XCTAssertEqual(
+            RetentionManager.weekStart(containing: wednesday, calendar: mondayFirst),
+            mondayFirst.startOfDay(for: day(2026, 8, 17, calendar: mondayFirst)),
+            "a Monday-first calendar starts the week on Monday the 17th"
+        )
+        XCTAssertEqual(
+            RetentionManager.weekStart(containing: wednesday, calendar: sundayFirst),
+            sundayFirst.startOfDay(for: day(2026, 8, 16, calendar: sundayFirst)),
+            "a Sunday-first calendar starts the same week on Sunday the 16th"
+        )
+    }
+
+    /// The bug this milestone exists for: on en_IN the recap put a Sunday log in
+    /// the week that Sunday opens, while the hardcoded-Monday streak put it in
+    /// the week that was closing. One log, two different weeks, and a streak that
+    /// broke on a day the user had actually logged.
+    func testSundayLogLandsInTheSameWeekForStreakAndRecap() {
+        let sunday = day(2026, 8, 16, calendar: sundayFirst)
+        let wednesday = day(2026, 8, 19, calendar: sundayFirst)
+
+        let sundayEntry = Entry(amount: 10, category: "chai", date: sunday)
+        let split = RecapMath.splitWeeks([sundayEntry], calendar: sundayFirst, now: wednesday)
+        XCTAssertEqual(split.thisWeek.count, 1, "the recap counts Sunday as the start of this week")
+
+        XCTAssertEqual(
+            RetentionManager.weekStart(containing: sunday, calendar: sundayFirst),
+            RetentionManager.weekStart(containing: wednesday, calendar: sundayFirst),
+            "so the streak must put that Sunday in this week too"
+        )
+        XCTAssertEqual(
+            RetentionManager.maskIndex(
+                for: sunday,
+                weekStart: RetentionManager.weekStart(containing: wednesday, calendar: sundayFirst),
+                calendar: sundayFirst
+            ),
+            0,
+            "and mark it as the week's first day"
+        )
+    }
+
+    func testMaskIndexRejectsDaysOutsideTheWeek() {
+        let start = RetentionManager.weekStart(
+            containing: day(2026, 8, 19, calendar: mondayFirst),
+            calendar: mondayFirst
+        )
+
+        XCTAssertEqual(
+            RetentionManager.maskIndex(for: day(2026, 8, 23, calendar: mondayFirst), weekStart: start, calendar: mondayFirst),
+            6,
+            "Sunday the 23rd is the last day of a Monday-first week"
+        )
+        XCTAssertNil(
+            RetentionManager.maskIndex(for: day(2026, 8, 24, calendar: mondayFirst), weekStart: start, calendar: mondayFirst),
+            "the following Monday belongs to the next week, not index 0 of this one"
+        )
+        XCTAssertNil(
+            RetentionManager.maskIndex(for: day(2026, 8, 16, calendar: mondayFirst), weekStart: start, calendar: mondayFirst),
+            "the preceding Sunday is before the window"
+        )
+    }
+
+    // MARK: - One-time realignment of stored state
+
+    /// Stored state as the removed `currentMonday()` would have written it: the
+    /// start is always a Monday and the mask is indexed from it.
+    ///
+    /// The Monday used is the one inside *this* locale week, so the realignment
+    /// lands on the current window and the week-rollover path stays out of the
+    /// way — these tests are about the shift, not about crossing a boundary.
+    private func seedLegacyMondayWeek(mask: [Bool], calendar: Calendar) -> Date {
+        let weekStart = RetentionManager.weekStart(containing: Date(), calendar: calendar)
+        let offset = (2 - calendar.firstWeekday + 7) % 7 // days from week start to Monday
+        let monday = calendar.date(byAdding: .day, value: offset, to: weekStart)!
+        defaults.set(monday, forKey: "retention.weekStartDate")
+        defaults.set(mask, forKey: "retention.weeklyMask")
+        defaults.removeObject(forKey: "retention.weekAlignmentMigrated")
+        return weekStart
+    }
+
+    func testRealignmentShiftsTheMaskOntoASundayFirstWeek() {
+        // Logged the Monday and Tuesday of a week the old code recorded as
+        // starting on that Monday.
+        let expectedStart = seedLegacyMondayWeek(
+            mask: [true, true, false, false, false, false, false],
+            calendar: sundayFirst
+        )
+        let retention = RetentionManager(defaults: defaults, calendar: sundayFirst)
+
+        _ = retention.daysLoggedThisWeek
+
+        XCTAssertEqual(
+            defaults.object(forKey: "retention.weekStartDate") as? Date,
+            expectedStart,
+            "the window moves back to the Sunday that really opens that week"
+        )
+        XCTAssertEqual(
+            defaults.array(forKey: "retention.weeklyMask") as? [Bool],
+            [false, true, true, false, false, false, false],
+            "and the logged days move with it — still Monday and Tuesday"
+        )
+    }
+
+    func testRealignmentDropsADayThatFallsIntoTheNextWeek() {
+        // Logged the Sunday that closed an old Monday-first week. Under a
+        // Sunday-first calendar that day opens the *next* week, so it cannot be
+        // represented in this window at all.
+        _ = seedLegacyMondayWeek(
+            mask: [false, false, false, false, false, false, true],
+            calendar: sundayFirst
+        )
+        let retention = RetentionManager(defaults: defaults, calendar: sundayFirst)
+
+        _ = retention.daysLoggedThisWeek
+
+        XCTAssertEqual(
+            defaults.array(forKey: "retention.weeklyMask") as? [Bool],
+            Array(repeating: false, count: 7),
+            "dropped, not wrapped to index 0 — wrapping would credit a day the user has not lived yet"
+        )
+    }
+
+    func testRealignmentIsANoOpOnAMondayFirstCalendar() {
+        let expectedStart = seedLegacyMondayWeek(
+            mask: [true, false, true, false, false, false, false],
+            calendar: mondayFirst
+        )
+        let retention = RetentionManager(defaults: defaults, calendar: mondayFirst)
+
+        _ = retention.daysLoggedThisWeek
+
+        XCTAssertEqual(defaults.object(forKey: "retention.weekStartDate") as? Date, expectedStart)
+        XCTAssertEqual(
+            defaults.array(forKey: "retention.weeklyMask") as? [Bool],
+            [true, false, true, false, false, false, false],
+            "a Monday-first user's stored week was already correct"
+        )
+    }
+
+    func testRealignmentRunsOnlyOnce() {
+        _ = seedLegacyMondayWeek(
+            mask: [true, false, false, false, false, false, false],
+            calendar: sundayFirst
+        )
+        _ = RetentionManager(defaults: defaults, calendar: sundayFirst).daysLoggedThisWeek
+
+        // A second pass over already-aligned state would shift the mask again.
+        _ = RetentionManager(defaults: defaults, calendar: sundayFirst).daysLoggedThisWeek
+
+        XCTAssertEqual(
+            defaults.array(forKey: "retention.weeklyMask") as? [Bool],
+            [false, true, false, false, false, false, false],
+            "the logged day stays on Monday instead of drifting a slot per launch"
+        )
+        XCTAssertTrue(defaults.bool(forKey: "retention.weekAlignmentMigrated"))
+    }
+
+    func testFreshInstallNeedsNoRealignment() {
+        let retention = RetentionManager(defaults: defaults, calendar: sundayFirst)
+
+        XCTAssertEqual(retention.daysLoggedThisWeek, 0)
+        XCTAssertTrue(defaults.bool(forKey: "retention.weekAlignmentMigrated"),
+                      "the flag is claimed even with nothing to move, so it never runs later against aligned state")
     }
 }
