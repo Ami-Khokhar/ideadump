@@ -74,6 +74,101 @@ enum RecapMath {
         return min(6, max(0, day))
     }
 
+    // MARK: - Impulse vs. planned
+
+    /// A period's impulse-versus-planned read.
+    ///
+    /// The three buckets are kept apart on purpose. Every ratio this exposes is
+    /// taken over *marked* spend only, because an unmarked entry carries no claim
+    /// either way — folding it into either side would manufacture an opinion the
+    /// user never expressed. `unmarked` is retained solely so callers can state
+    /// how complete the read is.
+    struct IntentBreakdown: Equatable, Sendable {
+        var impulse: Decimal = 0
+        var planned: Decimal = 0
+        var unmarked: Decimal = 0
+        /// Entry counts, so a caller can say "8 of 14 entries" without re-walking.
+        var markedCount: Int = 0
+        var entryCount: Int = 0
+
+        /// Spend the user actually took a position on.
+        var marked: Decimal { impulse + planned }
+        /// Everything in the period, marked or not.
+        var total: Decimal { marked + unmarked }
+
+        /// Impulse as a share of marked spend, or nil when there is nothing to
+        /// take a share of. Nil rather than zero: "0% impulse" and "you haven't
+        /// told me yet" are different statements, and only one of them is true.
+        var impulseShare: Decimal? {
+            guard markedCount > 0, marked > 0 else { return nil }
+            return impulse / marked
+        }
+
+        /// How much of the period's spend carries a mark — the honesty figure.
+        /// Nil for an empty period, where coverage is meaningless rather than 0%.
+        var coverage: Decimal? {
+            guard total > 0 else { return nil }
+            return marked / total
+        }
+    }
+
+    /// Splits a period's spend into impulse, planned, and unmarked.
+    static func intentBreakdown(_ entries: [Entry]) -> IntentBreakdown {
+        var result = IntentBreakdown()
+        for entry in entries {
+            result.entryCount += 1
+            switch entry.intent {
+            case .impulse:
+                result.impulse += entry.amount
+                result.markedCount += 1
+            case .planned:
+                result.planned += entry.amount
+                result.markedCount += 1
+            case nil:
+                result.unmarked += entry.amount
+            }
+        }
+        return result
+    }
+
+    /// The same split, per category key — so "which categories are impulse-heavy"
+    /// is answerable without a second pass over the entries.
+    static func intentBreakdown(byCategory entries: [Entry]) -> [String: IntentBreakdown] {
+        var result: [String: IntentBreakdown] = [:]
+        for entry in entries {
+            var bucket = result[entry.category] ?? IntentBreakdown()
+            bucket.entryCount += 1
+            switch entry.intent {
+            case .impulse:
+                bucket.impulse += entry.amount
+                bucket.markedCount += 1
+            case .planned:
+                bucket.planned += entry.amount
+                bucket.markedCount += 1
+            case nil:
+                bucket.unmarked += entry.amount
+            }
+            result[entry.category] = bucket
+        }
+        return result
+    }
+
+    /// Change in impulse share between two periods, in percentage *points*.
+    ///
+    /// Points, not a percentage of a percentage: 40% → 50% is "10 points", and
+    /// calling that "25% more impulsive" would be a different — and much
+    /// louder — claim than the data supports. Nil unless both periods have marked
+    /// spend, since a share can only be compared with another share.
+    static func impulseShareDelta(
+        current: IntentBreakdown,
+        previous: IntentBreakdown
+    ) -> Decimal? {
+        guard let now = current.impulseShare, let before = previous.impulseShare else {
+            return nil
+        }
+        return now - before
+    }
+
     /// Weekday labels aligned with `dailyTotals`/`todayIndex`: element 0 is the
     /// calendar's first weekday, produced by rotating the locale's
     /// `veryShortWeekdaySymbols` — localisation comes for free.

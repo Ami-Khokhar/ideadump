@@ -25,7 +25,8 @@ struct LogHomeView: View {
     @State private var amountText = ""
     @State private var selectedCategoryKey = ""
     @State private var note = ""
-    @State private var isPlanned = false
+    /// nil until the user answers — see `intentButton`.
+    @State private var intent: SpendIntent?
     @State private var showingCategoryPicker = false
     @State private var showingManageCategories = false
     @State private var amountError: String?
@@ -341,7 +342,7 @@ struct LogHomeView: View {
         amountText = result.text
     }
 
-    // MARK: - 3. Category + Planned Line
+    // MARK: - 3. Category + Intent Line
 
     private var categoryLine: some View {
         HStack(spacing: 8) {
@@ -358,20 +359,83 @@ struct LogHomeView: View {
             Text("·")
                 .foregroundStyle(Theme.textTertiary)
 
-            Button {
-                if reduceMotion {
-                    isPlanned.toggle()
-                } else {
-                    withAnimation(Motion.gentleFast) { isPlanned.toggle() }
-                }
-            } label: {
-                Text(isPlanned ? "Planned" : "Impulse?")
-                    .font(.subheadline)
-                    .foregroundStyle(isPlanned ? Theme.accent : Theme.textTertiary)
-            }
-            .buttonStyle(.plain)
+            intentButton
         }
         .padding(.vertical, 4)
+    }
+
+    /// Three-state intent control: unmarked → impulse → planned → unmarked.
+    ///
+    /// Cycling rather than a segmented control, for two reasons. The line is the
+    /// most contested one-line strip on the screen and a third option would either
+    /// widen it or shrink the category name; and — more importantly — the happy
+    /// path must stay untouched. Unmarked is the resting state, so logging is
+    /// still amount → Log with no detour, and the control costs a tap only when
+    /// the user chooses to answer.
+    ///
+    /// The order answers the question the resting label asks. "Impulse?" is an
+    /// invitation, so the first tap says yes; the second corrects it to Planned;
+    /// the third takes the answer back. Unmarked stays tertiary and glyph-less so
+    /// it reads as a prompt rather than a value, and each marked state carries its
+    /// own symbol — the two are never told apart by colour, which they share.
+    private var intentButton: some View {
+        Button {
+            let next = nextIntent(after: intent)
+            if reduceMotion {
+                intent = next
+            } else {
+                withAnimation(Motion.gentleFast) { intent = next }
+            }
+            UISelectionFeedbackGenerator().selectionChanged()
+        } label: {
+            HStack(spacing: 4) {
+                if let symbol = intentSymbol {
+                    Image(systemName: symbol)
+                        .font(.caption.weight(.semibold))
+                }
+                Text(intentLabel)
+                    .font(.subheadline)
+                    .fontWeight(intent == nil ? .regular : .medium)
+            }
+            .foregroundStyle(intent == nil ? Theme.textTertiary : Theme.accent)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Was this planned?")
+        .accessibilityValue(intentAccessibilityValue)
+        .accessibilityHint("Cycles through not marked, impulse, and planned")
+    }
+
+    private func nextIntent(after current: SpendIntent?) -> SpendIntent? {
+        switch current {
+        case nil: .impulse
+        case .impulse: .planned
+        case .planned: nil
+        }
+    }
+
+    private var intentLabel: String {
+        switch intent {
+        case nil: "Impulse?"
+        case .impulse: "Impulse"
+        case .planned: "Planned"
+        }
+    }
+
+    /// No glyph while unmarked — the absence is what makes the resting state quiet.
+    private var intentSymbol: String? {
+        switch intent {
+        case nil: nil
+        case .impulse: "bolt.fill"
+        case .planned: "calendar"
+        }
+    }
+
+    private var intentAccessibilityValue: String {
+        switch intent {
+        case nil: "Not marked"
+        case .impulse: "Impulse"
+        case .planned: "Planned"
+        }
     }
 
     // MARK: - 4. Tile Row
@@ -525,7 +589,7 @@ struct LogHomeView: View {
             amount: amount,
             category: categoryKey,
             note: trimmedNote.isEmpty ? nil : trimmedNote,
-            isPlanned: isPlanned
+            intent: intent
         )
         modelContext.insert(entry)
         do {
@@ -554,7 +618,7 @@ struct LogHomeView: View {
 
         amountText = ""
         note = ""
-        isPlanned = false
+        intent = nil
 
         amountError = nil
         onLogged?()

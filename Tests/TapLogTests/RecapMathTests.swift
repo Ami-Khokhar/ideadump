@@ -167,4 +167,150 @@ final class RecapMathTests: XCTestCase {
         XCTAssertEqual(RecapMath.weekdayLabels(calendar: calendar), ["M", "T", "W", "T", "F", "S", "S"])
         XCTAssertEqual(RecapMath.weekdayLabels(calendar: sundayFirstCalendar), ["S", "M", "T", "W", "T", "F", "S"])
     }
+
+    // MARK: - intentBreakdown
+
+    private func marked(_ amount: Decimal, _ intent: SpendIntent?, category: String = "chai") -> Entry {
+        Entry(amount: amount, category: category, date: now, intent: intent)
+    }
+
+    func testBreakdownSeparatesMarkedFromUnmarkedSpend() {
+        let breakdown = RecapMath.intentBreakdown([
+            marked(30, .impulse),
+            marked(10, .impulse),
+            marked(60, .planned),
+            marked(400, nil),
+        ])
+        XCTAssertEqual(breakdown.impulse, 40)
+        XCTAssertEqual(breakdown.planned, 60)
+        XCTAssertEqual(breakdown.unmarked, 400)
+        XCTAssertEqual(breakdown.marked, 100)
+        XCTAssertEqual(breakdown.total, 500)
+        XCTAssertEqual(breakdown.markedCount, 3)
+        XCTAssertEqual(breakdown.entryCount, 4)
+    }
+
+    /// The share is taken over marked spend only. The 400 of unmarked spend above
+    /// must not dilute it — folding it in either direction would invent an answer.
+    func testImpulseShareIgnoresUnmarkedSpend() {
+        let breakdown = RecapMath.intentBreakdown([
+            marked(40, .impulse),
+            marked(60, .planned),
+            marked(400, nil),
+        ])
+        XCTAssertEqual(breakdown.impulseShare, Decimal(string: "0.4"))
+        XCTAssertEqual(breakdown.coverage, Decimal(string: "0.2"))
+    }
+
+    /// The case that made this whole change necessary: a user who never touches
+    /// the control must be told nothing, not told that all of their spending was
+    /// impulsive — and not shown a fake 0% either.
+    func testAllUnmarkedPeriodHasNoShareAndZeroCoverage() {
+        let breakdown = RecapMath.intentBreakdown([
+            marked(10, nil),
+            marked(20, nil),
+        ])
+        XCTAssertNil(breakdown.impulseShare)
+        XCTAssertEqual(breakdown.coverage, 0)
+        XCTAssertEqual(breakdown.markedCount, 0)
+        XCTAssertEqual(breakdown.entryCount, 2)
+        XCTAssertEqual(breakdown.unmarked, 30)
+    }
+
+    func testEmptyPeriodHasNoShareAndNoCoverage() {
+        let breakdown = RecapMath.intentBreakdown([])
+        XCTAssertNil(breakdown.impulseShare, "no entries means no share to report")
+        XCTAssertNil(breakdown.coverage, "coverage of an empty period is meaningless, not 0%")
+        XCTAssertEqual(breakdown.total, 0)
+        XCTAssertEqual(breakdown.entryCount, 0)
+    }
+
+    func testFullyMarkedPeriodReportsCompleteCoverage() {
+        let breakdown = RecapMath.intentBreakdown([
+            marked(25, .impulse),
+            marked(75, .planned),
+        ])
+        XCTAssertEqual(breakdown.coverage, 1)
+        XCTAssertEqual(breakdown.impulseShare, Decimal(string: "0.25"))
+    }
+
+    func testAllMarkedSpendOnOneSideGivesAWholeShare() {
+        XCTAssertEqual(RecapMath.intentBreakdown([marked(50, .impulse)]).impulseShare, 1)
+        XCTAssertEqual(RecapMath.intentBreakdown([marked(50, .planned)]).impulseShare, 0)
+    }
+
+    // MARK: - intentBreakdown(byCategory:)
+
+    func testBreakdownByCategoryKeepsEachCategorysMarksSeparate() {
+        let breakdowns = RecapMath.intentBreakdown(byCategory: [
+            marked(30, .impulse, category: "chai"),
+            marked(10, .planned, category: "chai"),
+            marked(50, .planned, category: "bills"),
+            marked(20, nil, category: "food"),
+        ])
+        XCTAssertEqual(breakdowns["chai"]?.impulseShare, Decimal(string: "0.75"))
+        XCTAssertEqual(breakdowns["bills"]?.impulseShare, 0)
+        XCTAssertNil(breakdowns["food"]?.impulseShare, "an unmarked category answers nothing")
+        XCTAssertEqual(breakdowns["food"]?.entryCount, 1)
+        XCTAssertNil(breakdowns["transport"], "categories with no spend do not appear")
+    }
+
+    func testBreakdownByCategoryCountsPartialMarking() {
+        let breakdowns = RecapMath.intentBreakdown(byCategory: [
+            marked(30, .impulse, category: "chai"),
+            marked(70, nil, category: "chai"),
+        ])
+        XCTAssertEqual(breakdowns["chai"]?.markedCount, 1)
+        XCTAssertEqual(breakdowns["chai"]?.entryCount, 2)
+        XCTAssertEqual(breakdowns["chai"]?.coverage, Decimal(string: "0.3"))
+    }
+
+    // MARK: - impulseShareDelta
+
+    func testDeltaIsMeasuredInShareDifference() {
+        let current = RecapMath.intentBreakdown([marked(50, .impulse), marked(50, .planned)])
+        let previous = RecapMath.intentBreakdown([marked(20, .impulse), marked(80, .planned)])
+        // 50% now against 20% before — thirty points, not "150% more impulsive".
+        XCTAssertEqual(RecapMath.impulseShareDelta(current: current, previous: previous), Decimal(string: "0.3"))
+    }
+
+    func testDeltaIsNegativeWhenImpulseShareFalls() {
+        let current = RecapMath.intentBreakdown([marked(20, .impulse), marked(80, .planned)])
+        let previous = RecapMath.intentBreakdown([marked(50, .impulse), marked(50, .planned)])
+        XCTAssertEqual(RecapMath.impulseShareDelta(current: current, previous: previous), Decimal(string: "-0.3"))
+    }
+
+    func testDeltaIsNilWhenEitherPeriodHasNothingMarked() {
+        let answered = RecapMath.intentBreakdown([marked(50, .impulse), marked(50, .planned)])
+        let unanswered = RecapMath.intentBreakdown([marked(100, nil)])
+        let empty = RecapMath.intentBreakdown([])
+        XCTAssertNil(RecapMath.impulseShareDelta(current: answered, previous: unanswered))
+        XCTAssertNil(RecapMath.impulseShareDelta(current: unanswered, previous: answered))
+        XCTAssertNil(RecapMath.impulseShareDelta(current: answered, previous: empty))
+    }
+
+    func testDeltaIsZeroWhenTheShareIsUnchanged() {
+        let current = RecapMath.intentBreakdown([marked(30, .impulse), marked(30, .planned)])
+        let previous = RecapMath.intentBreakdown([marked(90, .impulse), marked(90, .planned)])
+        XCTAssertEqual(RecapMath.impulseShareDelta(current: current, previous: previous), 0)
+    }
+
+    /// The recap feeds `splitWeeks` straight into the breakdown, so the previous
+    /// period's comparison is only honest if the split itself is respected.
+    func testBreakdownOverSplitWeeksComparesLikeWithLike() {
+        let thisWeek = [
+            Entry(amount: 60, category: "chai", date: date(2026, 8, 17), intent: .impulse),
+            Entry(amount: 40, category: "chai", date: now, intent: .planned),
+        ]
+        let lastWeek = [
+            Entry(amount: 10, category: "chai", date: date(2026, 8, 14), intent: .impulse),
+            Entry(amount: 90, category: "chai", date: date(2026, 8, 13), intent: .planned),
+        ]
+        let split = RecapMath.splitWeeks(thisWeek + lastWeek, calendar: calendar, now: now)
+        let current = RecapMath.intentBreakdown(split.thisWeek)
+        let previous = RecapMath.intentBreakdown(split.lastWeek)
+        XCTAssertEqual(current.impulseShare, Decimal(string: "0.6"))
+        XCTAssertEqual(previous.impulseShare, Decimal(string: "0.1"))
+        XCTAssertEqual(RecapMath.impulseShareDelta(current: current, previous: previous), Decimal(string: "0.5"))
+    }
 }

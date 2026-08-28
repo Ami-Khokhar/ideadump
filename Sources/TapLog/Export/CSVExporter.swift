@@ -36,7 +36,7 @@ extension CSVFile: Transferable {
 
 enum CSVExporter {
     static func makeCSV(entries: [Entry], lookup: CategoryLookup) -> String {
-        var csv = "Date,Amount,Category,Note,Archived\n"
+        var csv = "Date,Amount,Category,Note,Archived,Intent\n"
         // Pending share-sheet captures are provisional and must not appear in a
         // user export. Archived entries remain historical records and are included.
         for entry in entries where !entry.isPending {
@@ -46,6 +46,10 @@ enum CSVExporter {
                 quote(lookup.name(for: entry.category)),
                 quote(entry.note ?? ""),
                 entry.isArchived ? "yes" : "no",
+                // Spelled out rather than left blank: an empty cell in a
+                // spreadsheet reads as missing data, and "unmarked" is a real
+                // answer that has to survive the export intact.
+                entry.intent?.rawValue ?? "unmarked",
             ]
             csv += fields.joined(separator: ",") + "\n"
         }

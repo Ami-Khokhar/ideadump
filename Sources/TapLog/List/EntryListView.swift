@@ -351,14 +351,7 @@ struct EntryListView: View {
     }
 
     private func delete(_ entry: Entry) {
-        let snapshot = (
-            amount: entry.amount,
-            category: entry.category,
-            note: entry.note,
-            date: entry.date,
-            archived: entry.isArchived,
-            planned: entry.isPlanned
-        )
+        let snapshot = DeletedEntrySnapshot(entry: entry)
         withAnimation(Motion.stateChange) {
             modelContext.delete(entry)
         }
@@ -367,26 +360,12 @@ struct EntryListView: View {
         } catch {
             print("TapLog: Failed to delete entry: \(error)")
             // The store is untouched — re-insert an equivalent so nothing is lost.
-            modelContext.insert(Entry(
-                amount: snapshot.amount,
-                category: snapshot.category,
-                note: snapshot.note,
-                date: snapshot.date,
-                isArchived: snapshot.archived,
-                isPlanned: snapshot.planned
-            ))
+            modelContext.insert(snapshot.makeEntry())
             return
         }
         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
         undoStack.record("Deleted \(Money.format(snapshot.amount))") {
-            let restored = Entry(
-                amount: snapshot.amount,
-                category: snapshot.category,
-                note: snapshot.note,
-                date: snapshot.date,
-                isArchived: snapshot.archived,
-                isPlanned: snapshot.planned
-            )
+            let restored = snapshot.makeEntry()
             modelContext.insert(restored)
             do {
                 try modelContext.save()
@@ -416,5 +395,42 @@ struct EntryListView: View {
         StoreLocator.sharedDefaults.removeObject(forKey: "logsLogged")
         retention.resetAll()
         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
+    }
+}
+
+/// Everything a deleted entry needs to come back intact, so undo restores a
+/// like-for-like row rather than a stripped copy.
+///
+/// A named type rather than an inline tuple because the field list is the thing
+/// that goes wrong: `intent` was added to `Entry` after this path existed, and a
+/// snapshot that quietly omits a field loses the user's answer at exactly the
+/// moment they asked for it back. Mirrors `EditCategorySnapshot`, and is unit
+/// tested for the same reason.
+struct DeletedEntrySnapshot {
+    let amount: Decimal
+    let category: String
+    let note: String?
+    let date: Date
+    let isArchived: Bool
+    let intent: SpendIntent?
+
+    init(entry: Entry) {
+        amount = entry.amount
+        category = entry.category
+        note = entry.note
+        date = entry.date
+        isArchived = entry.isArchived
+        intent = entry.intent
+    }
+
+    func makeEntry() -> Entry {
+        Entry(
+            amount: amount,
+            category: category,
+            note: note,
+            date: date,
+            isArchived: isArchived,
+            intent: intent
+        )
     }
 }

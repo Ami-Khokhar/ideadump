@@ -44,25 +44,29 @@ enum DebugSeeder {
         // never shows future bars. The earliest seed entry is last week's
         // Monday; the latest is "yesterday" so today starts empty and feels
         // like the user's first real log.
-        let samples: [(Decimal, String, String?, Date)] = [
-            (4.50, "chai", "latte",              today.addingTimeInterval(-5 * 86400)),  // 5 days ago
-            (12.50, "food", "lunch",             today.addingTimeInterval(-4 * 86400)),  // 4 days ago
-            (3.25, "chai", nil,                  today.addingTimeInterval(-3 * 86400)),  // 3 days ago
-            (45.00, "shopping", "groceries",     today.addingTimeInterval(-2 * 86400)),  // 2 days ago
-            (22.00, "transport", "metro",        today.addingTimeInterval(-1 * 86400)),  // yesterday
-            (8.75, "food", "dinner",             today.addingTimeInterval(-1 * 86400 + 7200)),  // yesterday evening
-            (15.00, "fun", "movies",             lastWeekStart.addingTimeInterval(86400)),       // last week Tue
-            (60.00, "bills", "electric",         lastWeekStart.addingTimeInterval(2 * 86400)),   // last week Wed
-            (5.50, "chai", nil,                  lastWeekStart.addingTimeInterval(3 * 86400)),   // last week Thu
-            (30.00, "shopping", "clothes",       lastWeekStart.addingTimeInterval(4 * 86400)),   // last week Fri
-            (10.00, "health", "pharmacy",        lastWeekStart.addingTimeInterval(5 * 86400)),   // last week Sat
-            (18.00, "food", "takeout",           lastWeekStart.addingTimeInterval(6 * 86400)),   // last week Sun
+        //
+        // Intent marks are deliberately left off some rows. A store where every
+        // entry is marked would hide the coverage line the recap exists to be
+        // honest with, so the sample is a realistic mix instead.
+        let samples: [(Decimal, String, String?, Date, SpendIntent?)] = [
+            (4.50, "chai", "latte",              today.addingTimeInterval(-5 * 86400), .impulse),  // 5 days ago
+            (12.50, "food", "lunch",             today.addingTimeInterval(-4 * 86400), .planned),  // 4 days ago
+            (3.25, "chai", nil,                  today.addingTimeInterval(-3 * 86400), .impulse),  // 3 days ago
+            (45.00, "shopping", "groceries",     today.addingTimeInterval(-2 * 86400), .planned),  // 2 days ago
+            (22.00, "transport", "metro",        today.addingTimeInterval(-1 * 86400), nil),       // yesterday
+            (8.75, "food", "dinner",             today.addingTimeInterval(-1 * 86400 + 7200), .impulse),  // yesterday evening
+            (15.00, "fun", "movies",             lastWeekStart.addingTimeInterval(86400), .impulse),       // last week Tue
+            (60.00, "bills", "electric",         lastWeekStart.addingTimeInterval(2 * 86400), .planned),   // last week Wed
+            (5.50, "chai", nil,                  lastWeekStart.addingTimeInterval(3 * 86400), nil),        // last week Thu
+            (30.00, "shopping", "clothes",       lastWeekStart.addingTimeInterval(4 * 86400), .impulse),   // last week Fri
+            (10.00, "health", "pharmacy",        lastWeekStart.addingTimeInterval(5 * 86400), .planned),   // last week Sat
+            (18.00, "food", "takeout",           lastWeekStart.addingTimeInterval(6 * 86400), .planned),   // last week Sun
         ]
 
         let categories: [SpendCategory] = (try? context.fetch(FetchDescriptor<SpendCategory>())) ?? []
 
-        for (amount, categoryKey, note, date) in samples {
-            let entry = Entry(amount: amount, category: categoryKey, note: note, date: date)
+        for (amount, categoryKey, note, date, intent) in samples {
+            let entry = Entry(amount: amount, category: categoryKey, note: note, date: date, intent: intent)
             context.insert(entry)
             CaptureBookkeeping.apply(modelContext: context, categories: categories, categoryKey: categoryKey)
         }

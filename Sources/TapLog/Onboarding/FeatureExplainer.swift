@@ -174,6 +174,11 @@ extension FeatureExplainerView {
                     body: "Ranked by spend, with each category's share of the total."
                 ),
                 ExplainerPoint(
+                    symbol: "bolt.fill",
+                    title: "Impulse vs. planned",
+                    body: "Only counts entries you actually marked, and says how much of the period that covers. An unmarked entry is left out rather than assumed."
+                ),
+                ExplainerPoint(
                     symbol: "flame.fill",
                     title: "Streak and freezes",
                     body: "Days logged this week. A freeze covers one missed day so a single slip doesn't reset the count."

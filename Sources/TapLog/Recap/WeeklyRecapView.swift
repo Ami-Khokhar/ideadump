@@ -129,6 +129,9 @@ struct WeeklyRecapView: View {
         let lastTotal = lastData.reduce(Decimal(0)) { $0 + $1.amount }
         let spanTitle = span == .week ? "This week" : "This month"
         let compareTitle = span == .week ? "last week" : "last month"
+        let thisIntent = RecapMath.intentBreakdown(thisData)
+        let lastIntent = RecapMath.intentBreakdown(lastData)
+        let categoryIntents = RecapMath.intentBreakdown(byCategory: thisData)
 
         return ScrollView {
             VStack(alignment: .leading, spacing: 0) {
@@ -236,6 +239,12 @@ struct WeeklyRecapView: View {
                         .padding(.top, 28)
                 }
 
+                // Impulse vs. planned — a different axis from budgets, which measure
+                // spend against a target. Kept as its own section for that reason.
+                impulseSection(this: thisIntent, previous: lastIntent)
+                    .padding(.horizontal, 28)
+                    .padding(.top, 28)
+
                 // By category
                 VStack(alignment: .leading, spacing: 0) {
                     Text("BY CATEGORY")
@@ -251,9 +260,19 @@ struct WeeklyRecapView: View {
                         HStack(spacing: 12) {
                             Text(lookup.emoji(for: item.key))
                                 .font(.body)
-                            Text(lookup.name(for: item.key))
-                                .font(.subheadline.weight(.medium))
-                                .foregroundStyle(Theme.textPrimary)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(lookup.name(for: item.key))
+                                    .font(.subheadline.weight(.medium))
+                                    .foregroundStyle(Theme.textPrimary)
+                                // The impulse read rides on the existing ranking
+                                // rather than repeating it in a second list. Only
+                                // categories with marked spend say anything.
+                                if let caption = categoryIntentCaption(categoryIntents[item.key]) {
+                                    Text(caption)
+                                        .font(.caption2)
+                                        .foregroundStyle(Theme.textTertiary)
+                                }
+                            }
                             Spacer()
                             Text("\(Money.percent(pct))")
                                 .font(.footnote)
@@ -408,6 +427,181 @@ struct WeeklyRecapView: View {
         )
     }
 
+    // MARK: - Impulse vs. planned
+
+    /// Noun for the selected span, used in copy ("this week" / "this month").
+    private var spanNoun: String { span == .week ? "week" : "month" }
+    private var compareNoun: String { span == .week ? "last week" : "last month" }
+
+    /// The period's impulse read — or an invitation when there is nothing to read.
+    ///
+    /// Nothing here is a verdict. Impulse spending is a fact about a purchase, not
+    /// a failing, so the section uses the same sage the rest of the app uses and
+    /// never reaches for clay or a warning glyph the way an over-budget row does.
+    @ViewBuilder
+    private func impulseSection(
+        this breakdown: RecapMath.IntentBreakdown,
+        previous: RecapMath.IntentBreakdown
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("IMPULSE")
+                .font(.caption2.weight(.semibold))
+                .kerning(0.9)
+                .foregroundStyle(Theme.textTertiary)
+
+            if let share = breakdown.impulseShare {
+                Text("\(Money.percent(share)) of marked spend")
+                    .font(Theme.amount(26))
+                    .foregroundStyle(Theme.textPrimary)
+                    .contentTransition(.numericText())
+                    .padding(.top, 6)
+
+                Text(impulseComparison(this: breakdown, previous: previous))
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(Theme.textSecondary)
+                    .monospacedDigit()
+                    .padding(.top, 2)
+
+                IntentSplitBar(
+                    impulse: breakdown.impulse,
+                    planned: breakdown.planned
+                )
+                .padding(.top, 14)
+
+                HStack(spacing: 16) {
+                    intentLegend(
+                        symbol: "bolt.fill",
+                        title: "Impulse",
+                        amount: breakdown.impulse,
+                        filled: true
+                    )
+                    intentLegend(
+                        symbol: "calendar",
+                        title: "Planned",
+                        amount: breakdown.planned,
+                        filled: false
+                    )
+                    Spacer(minLength: 0)
+                }
+                .padding(.top, 8)
+
+                // Coverage, always — a share of marked spend means nothing without
+                // knowing how much of the period is marked at all.
+                Text(coverageLine(breakdown))
+                    .font(.caption)
+                    .foregroundStyle(Theme.textTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 10)
+
+                if let coverage = breakdown.coverage, coverage < Self.partialCoverageThreshold {
+                    Text("The rest of this \(spanNoun) isn't marked, so read this as a partial view.")
+                        .font(.caption)
+                        .foregroundStyle(Theme.textTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 2)
+                }
+            } else {
+                // No fake 0%: with nothing marked there is no share to report, so
+                // the section explains how to start one instead.
+                Text("Nothing marked this \(spanNoun) yet.")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(Theme.textPrimary)
+                    .padding(.top, 6)
+                Text("Tap “Impulse?” beside the category as you log. Once a few entries carry an answer, this shows how much of your spending was on purpose.")
+                    .font(.caption)
+                    .foregroundStyle(Theme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 2)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(impulseAccessibilityLabel(this: breakdown, previous: previous))
+    }
+
+    /// Below this, the section says out loud that it is reading a sample.
+    private static let partialCoverageThreshold: Decimal = 0.6
+
+    private func intentLegend(
+        symbol: String,
+        title: String,
+        amount: Decimal,
+        filled: Bool
+    ) -> some View {
+        HStack(spacing: 5) {
+            // The swatch repeats the bar's fill so the two can be matched up
+            // without relying on colour memory; the glyph and word carry the
+            // meaning on their own for anyone who cannot use the colour at all.
+            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                .fill(filled ? Theme.accent : Theme.surfaceStrong)
+                .frame(width: 8, height: 8)
+            Image(systemName: symbol)
+                .font(.caption2)
+                .foregroundStyle(Theme.textSecondary)
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(Theme.textSecondary)
+            Text(Money.format(amount))
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.textPrimary)
+                .monospacedDigit()
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(title) \(Money.format(amount))")
+    }
+
+    /// Period-over-period line, in percentage points.
+    private func impulseComparison(
+        this breakdown: RecapMath.IntentBreakdown,
+        previous: RecapMath.IntentBreakdown
+    ) -> String {
+        guard let delta = RecapMath.impulseShareDelta(current: breakdown, previous: previous) else {
+            return "Nothing marked \(compareNoun) to compare with"
+        }
+        if delta == 0 {
+            return "Level with \(compareNoun)"
+        }
+        // Same convention as the total above: the arrow carries the direction, so
+        // the number stays unsigned.
+        return "\(delta > 0 ? "▲" : "▼") \(Money.points(abs(delta))) vs. \(compareNoun)"
+    }
+
+    private func coverageLine(_ breakdown: RecapMath.IntentBreakdown) -> String {
+        let entries = "\(breakdown.markedCount) of \(breakdown.entryCount) "
+            + (breakdown.entryCount == 1 ? "entry" : "entries")
+        guard let coverage = breakdown.coverage else { return "From \(entries)." }
+        return "From \(entries) — \(Money.percent(coverage)) of this \(spanNoun)'s spend."
+    }
+
+    private func impulseAccessibilityLabel(
+        this breakdown: RecapMath.IntentBreakdown,
+        previous: RecapMath.IntentBreakdown
+    ) -> String {
+        guard let share = breakdown.impulseShare else {
+            return "Impulse. Nothing marked this \(spanNoun) yet. Tap Impulse beside the category as you log."
+        }
+        return "Impulse. \(Money.percent(share)) of marked spend. "
+            + "\(impulseComparison(this: breakdown, previous: previous)). "
+            + coverageLine(breakdown)
+    }
+
+    /// Per-category caption for the BY CATEGORY list — nil when the category has
+    /// no marked spend, so unmarked categories stay exactly as they were.
+    private func categoryIntentCaption(_ breakdown: RecapMath.IntentBreakdown?) -> String? {
+        guard let breakdown, let share = breakdown.impulseShare else { return nil }
+        let headline: String
+        if share == 1 {
+            headline = "all impulse"
+        } else if share == 0 {
+            headline = "all planned"
+        } else {
+            headline = "\(Money.percent(share)) impulse"
+        }
+        // A category whose marks cover only part of its entries has to say so, or
+        // "all impulse" would speak for entries the user never answered for.
+        guard breakdown.markedCount < breakdown.entryCount else { return headline }
+        return "\(headline) · \(breakdown.markedCount) of \(breakdown.entryCount) marked"
+    }
+
     private var consistencyCard: some View {
         HStack(alignment: .top, spacing: 14) {
             WeeklyRingView(
@@ -546,6 +740,50 @@ extension Money {
         formatter.minimumFractionDigits = 0
         formatter.maximumFractionDigits = 1
         return formatter.string(from: NSDecimalNumber(decimal: value)) ?? "0%"
+    }
+
+    /// A difference between two percentages, in percentage *points* — "8 pts" from
+    /// a 0.08 share delta. Points rather than a percent-of-a-percent: 40% → 50% is
+    /// ten points, and calling it "25% more" would overstate what changed.
+    static func points(_ value: Decimal) -> String {
+        var scaled = value * 100
+        var rounded = Decimal()
+        NSDecimalRound(&rounded, &scaled, 0, .plain)
+        let number = NSDecimalNumber(decimal: rounded).intValue
+        return "\(number) pt\(number == 1 ? "" : "s")"
+    }
+}
+
+/// The period's marked spend split into impulse and planned.
+///
+/// Two segments of one bar rather than two bars: the point is the proportion
+/// between them, and the shared width makes that the thing the eye reads first.
+/// Colour is never the only carrier — the legend beneath repeats each side with
+/// its own glyph, word, and amount.
+struct IntentSplitBar: View {
+    let impulse: Decimal
+    let planned: Decimal
+
+    private var impulseFraction: CGFloat {
+        let total = impulse + planned
+        guard total > 0 else { return 0 }
+        return CGFloat(NSDecimalNumber(decimal: impulse / total).doubleValue)
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            HStack(spacing: 2) {
+                // A hairline minimum keeps a 0%/100% split legible as a split
+                // rather than reading as a single solid bar.
+                Capsule()
+                    .fill(Theme.accent)
+                    .frame(width: max(impulseFraction > 0 ? 4 : 0, geometry.size.width * impulseFraction))
+                Capsule()
+                    .fill(Theme.surfaceStrong)
+            }
+        }
+        .frame(height: 8)
+        .accessibilityHidden(true)
     }
 }
 

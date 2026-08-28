@@ -25,7 +25,7 @@ final class PersistenceTests: XCTestCase {
             note: "morning",
             date: date,
             isPending: true,
-            isPlanned: true
+            intent: .planned
         )
         context.insert(entry)
         try context.save()
@@ -36,7 +36,71 @@ final class PersistenceTests: XCTestCase {
         XCTAssertEqual(fetched.note, "morning")
         XCTAssertEqual(fetched.date, date)
         XCTAssertTrue(fetched.isPending)
-        XCTAssertTrue(fetched.isPlanned)
+        XCTAssertEqual(fetched.intent, .planned)
+    }
+
+    // MARK: - Intent (three states, and the migration into them)
+
+    /// The field exists to make "never answered" survivable, so nil has to be the
+    /// default and has to round-trip as nil rather than collapsing to a Bool.
+    func testEntryIntentDefaultsToUnmarkedAndRoundTripsEachState() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        XCTAssertNil(Entry(amount: 1, category: "chai").intent)
+
+        context.insert(Entry(amount: 1, category: "chai"))
+        context.insert(Entry(amount: 2, category: "chai", intent: .impulse))
+        context.insert(Entry(amount: 3, category: "chai", intent: .planned))
+        try context.save()
+
+        let fetched = try context.fetch(
+            FetchDescriptor<Entry>(sortBy: [SortDescriptor(\Entry.amount)])
+        )
+        XCTAssertNil(fetched[0].intent, "an untouched entry must persist as unmarked")
+        XCTAssertEqual(fetched[1].intent, .impulse)
+        XCTAssertEqual(fetched[2].intent, .planned)
+    }
+
+    /// Pre-`intent` builds stored a plain Bool. A legacy `true` was a deliberate
+    /// tap and is worth keeping; a legacy `false` is indistinguishable from never
+    /// having touched the control, so it must stay unmarked rather than becoming
+    /// "impulse" — that mistake is the whole reason the field was replaced.
+    @MainActor
+    func testLegacyPlannedFlagMigratesOnlyTheDeliberateTrues() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let legacyPlanned = Entry(amount: 10, category: "chai")
+        legacyPlanned.isPlanned = true
+        let legacyUntouched = Entry(amount: 20, category: "chai")
+        legacyUntouched.isPlanned = false
+        context.insert(legacyPlanned)
+        context.insert(legacyUntouched)
+        try context.save()
+
+        Entry.migrateLegacyPlannedMarks(container: container)
+
+        let fetched = try context.fetch(
+            FetchDescriptor<Entry>(sortBy: [SortDescriptor(\Entry.amount)])
+        )
+        XCTAssertEqual(fetched[0].intent, .planned)
+        XCTAssertNil(fetched[1].intent, "a legacy false carries no intent and must stay unmarked")
+    }
+
+    /// The migration runs at every launch, so it must never overwrite an answer
+    /// the user has since changed.
+    @MainActor
+    func testLegacyMigrationLeavesAlreadyMarkedEntriesAlone() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let entry = Entry(amount: 10, category: "chai", intent: .impulse)
+        entry.isPlanned = true // as if migrated once, then corrected by the user
+        context.insert(entry)
+        try context.save()
+
+        Entry.migrateLegacyPlannedMarks(container: container)
+
+        XCTAssertEqual(try context.fetch(FetchDescriptor<Entry>()).first?.intent, .impulse)
     }
 
     // MARK: - Visibility predicates (what each screen shows)
@@ -171,6 +235,32 @@ final class PersistenceTests: XCTestCase {
 
         let fetched = try context.fetch(FetchDescriptor<SpendCategory>()).first!
         XCTAssertEqual(fetched.budgetHealthResetDate, resetDate)
+    }
+
+    // MARK: - Undo snapshot round trip
+
+    /// Undoing a delete has to hand back the same entry, `intent` included. This
+    /// is the field most at risk: it was added last, so a snapshot that silently
+    /// drops it would look correct in every other respect while quietly throwing
+    /// away the one answer the user gave by hand.
+    func testDeletedEntrySnapshotRoundTripsIntent() {
+        for intent in [SpendIntent.impulse, .planned, nil] as [SpendIntent?] {
+            let entry = Entry(
+                amount: Decimal(string: "12.99")!,
+                category: "chai",
+                note: "morning",
+                date: Date(timeIntervalSince1970: 1_750_000_000),
+                isArchived: true,
+                intent: intent
+            )
+            let restored = DeletedEntrySnapshot(entry: entry).makeEntry()
+            XCTAssertEqual(restored.intent, intent)
+            XCTAssertEqual(restored.amount, entry.amount)
+            XCTAssertEqual(restored.category, entry.category)
+            XCTAssertEqual(restored.note, entry.note)
+            XCTAssertEqual(restored.date, entry.date)
+            XCTAssertEqual(restored.isArchived, entry.isArchived)
+        }
     }
 
     func testEditCategorySnapshotRestoresAllEditedFields() {

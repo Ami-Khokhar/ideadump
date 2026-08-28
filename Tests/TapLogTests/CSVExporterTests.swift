@@ -13,7 +13,7 @@ final class CSVExporterTests: XCTestCase {
         let csv = CSVExporter.makeCSV(entries: [entry], lookup: lookup)
         let trimmed = csv.hasSuffix("\n") ? String(csv.dropLast()) : csv
         let lines = trimmed.split(separator: "\n", omittingEmptySubsequences: false)
-        XCTAssertEqual(lines.first, "Date,Amount,Category,Note,Archived")
+        XCTAssertEqual(lines.first, "Date,Amount,Category,Note,Archived,Intent")
         XCTAssertEqual(lines.count, 2, "one header + one data line")
         return Self.parseCSVLine(String(lines[1]))
     }
@@ -49,14 +49,15 @@ final class CSVExporterTests: XCTestCase {
         return fields
     }
 
-    func testPlainRowHasFiveColumns() {
+    func testPlainRowHasSixColumns() {
         let entry = Entry(amount: 12.5, category: "chai", note: "morning")
         let fields = row(entry)
-        XCTAssertEqual(fields.count, 5)
+        XCTAssertEqual(fields.count, 6)
         XCTAssertEqual(fields[1], "12.5")
         XCTAssertEqual(fields[2], "Chai")
         XCTAssertEqual(fields[3], "morning")
         XCTAssertEqual(fields[4], "no")
+        XCTAssertEqual(fields[5], "unmarked")
         // Date round-trips through the same ISO8601 formatting the exporter uses.
         XCTAssertEqual(fields[0], entry.date.formatted(.iso8601))
     }
@@ -66,15 +67,15 @@ final class CSVExporterTests: XCTestCase {
         // The embedded newline rules out line-based helpers — assert the full document.
         XCTAssertEqual(
             CSVExporter.makeCSV(entries: [entry], lookup: lookup),
-            "Date,Amount,Category,Note,Archived\n"
-                + "\(entry.date.formatted(.iso8601)),5,\"Chai\",\"tea, extra \"\"hot\"\"\nsecond line\",no\n"
+            "Date,Amount,Category,Note,Archived,Intent\n"
+                + "\(entry.date.formatted(.iso8601)),5,\"Chai\",\"tea, extra \"\"hot\"\"\nsecond line\",no,unmarked\n"
         )
     }
 
     func testCustomCategoryNameContainingCommaIsEscaped() {
         let entry = Entry(amount: 40, category: "coffee-tea")
         let fields = row(entry)
-        XCTAssertEqual(fields.count, 5)
+        XCTAssertEqual(fields.count, 6)
         XCTAssertEqual(fields[2], "Coffee, Tea")
     }
 
@@ -94,6 +95,16 @@ final class CSVExporterTests: XCTestCase {
 
     func testPendingEntriesAreExcludedFromExport() {
         let pending = Entry(amount: 1, category: "chai", isPending: true)
-        XCTAssertEqual(CSVExporter.makeCSV(entries: [pending], lookup: lookup), "Date,Amount,Category,Note,Archived\n")
+        XCTAssertEqual(CSVExporter.makeCSV(entries: [pending], lookup: lookup), "Date,Amount,Category,Note,Archived,Intent\n")
+    }
+
+    // MARK: - Intent column
+
+    /// The whole point of the column: an entry the user never answered for must
+    /// not read as "impulse" (or as anything else) once the data leaves the app.
+    func testIntentColumnDistinguishesAllThreeStates() {
+        XCTAssertEqual(row(Entry(amount: 1, category: "chai", intent: .impulse))[5], "impulse")
+        XCTAssertEqual(row(Entry(amount: 1, category: "chai", intent: .planned))[5], "planned")
+        XCTAssertEqual(row(Entry(amount: 1, category: "chai", intent: nil))[5], "unmarked")
     }
 }
