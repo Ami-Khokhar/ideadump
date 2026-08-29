@@ -3,8 +3,8 @@ import SwiftUI
 /// The one screen that asks for money.
 ///
 /// It is built out of the same trees the rest of the app is built out of, and it
-/// arrives only at the two moments someone has just tried to do the thing it
-/// sells — a second tree, or the month view. Nobody is shown this on launch,
+/// arrives only at the moments someone has just tried to do the thing it sells —
+/// another tree, the month view, or the export. Nobody is shown this on launch,
 /// and nobody is shown it twice for the same tap.
 ///
 /// It says what it costs, once, and it says what happens if you say no: the app
@@ -20,22 +20,26 @@ struct PaywallView: View {
     let reason: Reason
 
     enum Reason {
-        case secondTree
+        case anotherTree
         case monthlyRecap
+        case csvExport
 
         var headline: String {
             switch self {
-            case .secondTree: "Grow a whole grove"
+            case .anotherTree: "Grow a whole grove"
             case .monthlyRecap: "See the longer view"
+            case .csvExport: "Take your data with you"
             }
         }
 
         var subhead: String {
             switch self {
-            case .secondTree:
-                "You've got one tree going. TapLog Pro lets you plant a target for every category you care about."
+            case .anotherTree:
+                "Your grove is full. TapLog Pro lets you plant a target for every category you care about."
             case .monthlyRecap:
                 "Your weekly recap is free forever. Pro adds the monthly one, for the patterns a week is too short to show."
+            case .csvExport:
+                "Every entry stays readable in History for free. Pro exports the lot as a spreadsheet, whenever you want it."
             }
         }
     }
@@ -125,6 +129,7 @@ struct PaywallView: View {
         VStack(alignment: .leading, spacing: 14) {
             row("A target for every category", "leaf")
             row("The monthly recap, alongside the weekly one", "chart.bar")
+            row("CSV export of everything you've logged", "square.and.arrow.up")
             row("One payment, yours for good", "checkmark.seal")
         }
     }

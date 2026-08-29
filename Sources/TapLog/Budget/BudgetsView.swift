@@ -127,7 +127,7 @@ struct BudgetsView: View {
                     .tint(Theme.accent)
             }
             .sheet(isPresented: $showingPaywall) {
-                PaywallView(reason: .secondTree)
+                PaywallView(reason: .anotherTree)
                     .applyAppearanceOverride()
                     .tint(Theme.accent)
             }

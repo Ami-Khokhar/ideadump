@@ -37,6 +37,9 @@ struct WeeklyRecapView: View {
     @State private var span: RecapSpan = .week
     @State private var showingPaywall = false
 
+    /// What the user last reached for, so the paywall opens on the right words.
+    @State private var paywallReason: PaywallView.Reason = .monthlyRecap
+
     private var pro = ProStore.shared
 
     private var lookup: CategoryLookup { CategoryLookup(categories) }
@@ -80,7 +83,7 @@ struct WeeklyRecapView: View {
                     .applyAppearanceOverride()
             }
             .sheet(isPresented: $showingPaywall) {
-                PaywallView(reason: .monthlyRecap)
+                PaywallView(reason: paywallReason)
                     .applyAppearanceOverride()
                     .tint(Theme.accent)
             }
@@ -111,6 +114,7 @@ struct WeeklyRecapView: View {
                     // showing the data for a second and taking it away is a worse
                     // answer than not showing it.
                     guard option == .week || ProGate.canUseMonthlyRecap(isPro: pro.isPro) else {
+                        paywallReason = .monthlyRecap
                         showingPaywall = true
                         return
                     }
@@ -323,16 +327,25 @@ struct WeeklyRecapView: View {
                     .padding(.top, 28)
                 }
 
-                ShareLink(
-                    item: CSVFile(text: CSVExporter.makeCSV(entries: exportEntries, lookup: lookup)),
-                    preview: SharePreview("TapLog Export")
-                ) {
-                    Text("Export CSV")
-                        .font(.subheadline.weight(.medium))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 44)
-                        .background(Theme.surface, in: Capsule())
-                        .foregroundStyle(Theme.textPrimary)
+                Group {
+                    if ProGate.canExportCSV(isPro: pro.isPro) {
+                        ShareLink(
+                            item: CSVFile(text: CSVExporter.makeCSV(entries: exportEntries, lookup: lookup)),
+                            preview: SharePreview("TapLog Export")
+                        ) {
+                            exportLabel
+                        }
+                    } else {
+                        // Shown, not hidden: a free user should know their data
+                        // can leave. The CSV is never built for them, so the
+                        // gate costs nothing to draw.
+                        Button {
+                            paywallReason = .csvExport
+                            showingPaywall = true
+                        } label: {
+                            exportLabel
+                        }
+                    }
                 }
                 .padding(.horizontal, 28)
                 .padding(.top, 24)
@@ -368,6 +381,15 @@ struct WeeklyRecapView: View {
         .padding(.vertical, 10)
         .background(Theme.accentSoft)
         .entrance()
+    }
+
+    private var exportLabel: some View {
+        Text("Export CSV")
+            .font(.subheadline.weight(.medium))
+            .frame(maxWidth: .infinity)
+            .frame(height: 44)
+            .background(Theme.surface, in: Capsule())
+            .foregroundStyle(Theme.textPrimary)
     }
 
     // MARK: - Helpers
