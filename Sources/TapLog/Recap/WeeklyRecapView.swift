@@ -327,25 +327,11 @@ struct WeeklyRecapView: View {
                     .padding(.top, 28)
                 }
 
-                Group {
-                    if ProGate.canExportCSV(isPro: pro.isPro) {
-                        ShareLink(
-                            item: CSVFile(text: CSVExporter.makeCSV(entries: exportEntries, lookup: lookup)),
-                            preview: SharePreview("TapLog Export")
-                        ) {
-                            exportLabel
-                        }
-                    } else {
-                        // Shown, not hidden: a free user should know their data
-                        // can leave. The CSV is never built for them, so the
-                        // gate costs nothing to draw.
-                        Button {
-                            paywallReason = .csvExport
-                            showingPaywall = true
-                        } label: {
-                            exportLabel
-                        }
-                    }
+                ShareLink(
+                    item: CSVFile(text: CSVExporter.makeCSV(entries: exportEntries, lookup: lookup)),
+                    preview: SharePreview("TapLog Export")
+                ) {
+                    exportLabel
                 }
                 .padding(.horizontal, 28)
                 .padding(.top, 24)

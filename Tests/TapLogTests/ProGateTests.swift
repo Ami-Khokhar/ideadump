@@ -63,11 +63,14 @@ final class ProGateTests: XCTestCase {
 
     // MARK: - The export
 
-    /// Gating the export gates the convenience, never the record. Everything
-    /// stays readable in History for free — this only decides who gets it as a
-    /// spreadsheet.
-    func testTheExportIsPaid() {
-        XCTAssertFalse(ProGate.canExportCSV(isPro: false))
+    /// The export is free, and this test exists to keep it that way.
+    ///
+    /// Deleting the app destroys the data — there is no account and no sync, and
+    /// iOS removes the App Group container with the last app using it. Export is
+    /// the only exit the data has, so putting it behind the paywall means
+    /// charging someone for the sole means of keeping their own records.
+    func testTheExportIsFreeForEveryone() {
+        XCTAssertTrue(ProGate.canExportCSV(isPro: false))
         XCTAssertTrue(ProGate.canExportCSV(isPro: true))
     }
 

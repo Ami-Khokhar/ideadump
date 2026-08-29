@@ -127,7 +127,7 @@ struct SettingsView: View {
                     if let failure = pro.failureMessage {
                         Text(failure).foregroundStyle(Theme.clay)
                     } else {
-                        Text("One payment unlocks a target for every category, the monthly recap, and CSV export.")
+                        Text("One payment unlocks a target for every category and the monthly recap.")
                     }
                 }
 

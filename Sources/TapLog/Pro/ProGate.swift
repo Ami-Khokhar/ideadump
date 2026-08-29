@@ -43,17 +43,23 @@ enum ProGate {
         isPro
     }
 
-    /// Whether the CSV export is available.
+    /// Whether the CSV export is available. It always is.
     ///
-    /// The highest-intent tap in the app: nobody exports a spreadsheet by
-    /// accident, and wanting your data in Numbers is a different relationship
-    /// with the app than logging chai. Gating it costs the daily user nothing,
-    /// which is the property every good gate has.
+    /// This was briefly a paid gate, and that was a mistake worth recording.
+    /// TapLog keeps everything on one device with no account and no sync, so
+    /// deleting the app destroys the data — iOS removes the App Group container
+    /// with the last app that uses it. Export is therefore not a convenience
+    /// sitting on top of the product; it is the only exit the data has.
     ///
-    /// It gates the *convenience*, never the data. Every entry stays readable in
-    /// History, on screen, for free, forever — a local-first app that held your
-    /// own records hostage would be a worse thing than a subscription.
+    /// Charging for it made the one pitch this app has — your records are
+    /// yours, and they never leave your device — into a bill. Two gates that
+    /// read as fair are worth more than three where one reads as a hostage
+    /// situation, and no amount of conversion is worth the review that says you
+    /// have to pay to get your own spending out.
+    ///
+    /// Kept as a function rather than deleted so the decision stays visible and
+    /// the call sites keep reading as a policy question.
     static func canExportCSV(isPro: Bool) -> Bool {
-        isPro
+        true
     }
 }
