@@ -21,15 +21,34 @@ enum AmountInputFilter {
     /// Maximum number of fractional (decimal) digits allowed when typing.
     static let maxFractionalDigits = 2
 
+    /// The mark this locale uses as a decimal point, as opposed to a grouping
+    /// separator. Read through a parameter rather than inline so the rules below
+    /// can be tested without depending on the machine running them: "." is the
+    /// decimal in en_US and the *grouping* mark in de_DE, and the two cases have
+    /// opposite answers.
+    static var localeDecimalSeparator: Character {
+        Locale.current.decimalSeparator?.first ?? "."
+    }
+
     /// Applies one concrete text-field edit. `replacement` and `range` come
     /// from `UITextFieldDelegate`, so a selection replacement is never guessed
     /// from string lengths (which cannot distinguish typing from paste).
-    static func filterEdit(current: String, range: NSRange, replacement: String) -> AmountEditResult {
+    static func filterEdit(
+        current: String,
+        range: NSRange,
+        replacement: String,
+        decimalSeparator: Character = localeDecimalSeparator
+    ) -> AmountEditResult {
         let candidate = (current as NSString).replacingCharacters(in: range, with: replacement)
         let isSingleTypedCharacter = range.length == 0 && replacement.count == 1
 
         if isSingleTypedCharacter {
-            return filterTypedEdit(candidate: candidate, current: current, replacement: replacement)
+            return filterTypedEdit(
+                candidate: candidate,
+                current: current,
+                replacement: replacement,
+                decimalSeparator: decimalSeparator
+            )
         }
 
         // Deletion should remain fluid even if it temporarily leaves an
@@ -47,13 +66,32 @@ enum AmountInputFilter {
         return filterWholeEdit(candidate)
     }
 
-    private static func filterTypedEdit(candidate: String, current: String, replacement: String) -> AmountEditResult {
+    private static func filterTypedEdit(
+        candidate: String,
+        current: String,
+        replacement: String,
+        decimalSeparator: Character
+    ) -> AmountEditResult {
         guard replacement.first?.isNumber == true || replacement == "." || replacement == "," else {
             return AmountEditResult(text: current, error: nil, restoresPrevious: true)
         }
 
-        let strippedCandidate = numericCharacters(in: candidate)
+        let strippedCandidate = strippingLeadingZeros(numericCharacters(in: candidate))
         let strippedCurrent = numericCharacters(in: current)
+
+        // A number has one decimal point. The first one typed is allowed through
+        // below; every one after it is rejected here, so "15.5.2.275.57" can no
+        // longer be built one key at a time — which is exactly what the keypad
+        // let you do, because the guard underneath only ever caught a *different*
+        // separator arriving second.
+        //
+        // Deliberately scoped to the decimal mark alone. The other separator is
+        // grouping, and "1,20,000" is still typed one comma at a time.
+        if let typed = replacement.first,
+           typed == decimalSeparator,
+           strippedCurrent.contains(decimalSeparator) {
+            return AmountEditResult(text: current, error: nil, restoresPrevious: true)
+        }
 
         // Once a single separator is being used as a decimal, a second,
         // different separator is malformed interactive input (e.g. 1.2,).
@@ -119,6 +157,20 @@ enum AmountInputFilter {
 
     private static func numericCharacters(in value: String) -> String {
         value.filter { $0.isNumber || $0 == "." || $0 == "," || $0 == "-" }
+    }
+
+    /// Drops leading zeros from the integer part, so tapping 0-2-5 reads as 25
+    /// rather than 025. Money is never written with them, and an amount padded
+    /// out with zeros looks like a reference number rather than a price.
+    ///
+    /// A single 0 survives, because it is the first keystroke of 0.50. Only the
+    /// integer part is touched — the fraction keeps every zero it was given, and
+    /// so does a value that merely *contains* a zero, like 100.
+    static func strippingLeadingZeros(_ value: String) -> String {
+        guard value.first == "0" else { return value }
+        let integerEnd = value.firstIndex { $0 == "." || $0 == "," } ?? value.endIndex
+        let trimmed = value[..<integerEnd].drop { $0 == "0" }
+        return (trimmed.isEmpty ? "0" : String(trimmed)) + value[integerEnd...]
     }
 
     private static func fractionalDigits(in value: String, separator: Character) -> Int {

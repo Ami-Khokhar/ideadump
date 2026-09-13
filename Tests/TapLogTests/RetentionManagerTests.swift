@@ -235,6 +235,46 @@ final class RetentionManagerTests: XCTestCase {
         XCTAssertEqual(retention.streakFreezes, 2, "freeze not consumed")
     }
 
+    // MARK: - Freeze button availability
+
+    /// The recap's "Use a freeze" button asked a different question than
+    /// `useStreakFreeze` answered, so after one use it stayed on screen and did
+    /// nothing for the rest of the week. One property now answers both.
+    func testFreezeAvailabilityGoesFalseOnceSpent() {
+        seedCurrentWeek(
+            mask: [true, false, false, false, false, false, false],
+            streak: 0,
+            freezes: 3,
+            weeklyTarget: 5
+        )
+        let retention = RetentionManager(defaults: defaults)
+
+        XCTAssertTrue(retention.canUseStreakFreeze)
+        XCTAssertTrue(retention.useStreakFreeze())
+        XCTAssertFalse(retention.canUseStreakFreeze,
+                       "the button must not offer a freeze this week again")
+        XCTAssertFalse(retention.useStreakFreeze())
+    }
+
+    /// Every case where the button is hidden must be a case where the action
+    /// would refuse, and the reverse.
+    func testFreezeAvailabilityAgreesWithTheAction() {
+        for (mask, freezes, target) in [
+            ([true, false, false, false, false, false, false], 0, 5),
+            ([true, true, true, false, false, false, false], 2, 3),
+            ([true, false, false, false, false, false, false], 2, 5),
+            ([false, false, false, false, false, false, false], 3, 7)
+        ] as [([Bool], Int, Int)] {
+            UserDefaults.standard.removePersistentDomain(forName: suiteName)
+            seedCurrentWeek(mask: mask, streak: 0, freezes: freezes, weeklyTarget: target)
+            let retention = RetentionManager(defaults: defaults)
+
+            let offered = retention.canUseStreakFreeze
+            XCTAssertEqual(offered, retention.useStreakFreeze(),
+                           "mask \(mask), freezes \(freezes), target \(target)")
+        }
+    }
+
     // MARK: - Legacy migration
 
     func testLegacyStateMigratesOnceAndTargetValuesWin() {

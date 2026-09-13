@@ -13,14 +13,6 @@ struct LogHomeView: View {
     @Environment(RetentionManager.self) private var retention
     @EnvironmentObject private var undoStack: UndoStack
 
-    /// Whether the note field holds keyboard focus.
-    ///
-    /// The in-app keypad and the system keyboard both want the bottom ~330pt of
-    /// the screen, and the system keyboard wins by drawing over everything. That
-    /// put the note field the user was typing into *underneath* the keypad —
-    /// invisible and unreachable for as long as they typed.
-    @FocusState private var noteFocused: Bool
-
     @AppStorage("lastUsedCategory") private var lastUsedCategoryKey: String = SpendCategory.fallbackKey
 
     @Query(sort: \SpendCategory.sortOrder) private var categories: [SpendCategory]
@@ -32,8 +24,14 @@ struct LogHomeView: View {
 
     @State private var amountText = ""
     @State private var selectedCategoryKey = ""
+    /// Never typed on this screen any more — the note field was removed from
+    /// capture. It survives because a share-sheet import or deep link can carry
+    /// a note in through `applyPrefill`, and because the History edit sheet can
+    /// add one afterwards.
     @State private var note = ""
-    /// nil until the user answers — see `intentButton`.
+    /// nil until the user answers — see `intentButton`. Unmarked is a real
+    /// third state, not a missing value: Recap reports shares over marked spend
+    /// only, so an unanswered entry makes no claim either way.
     @State private var intent: SpendIntent?
     @State private var showingCategoryPicker = false
     @State private var showingManageCategories = false
@@ -46,10 +44,6 @@ struct LogHomeView: View {
     let onLogged: (() -> Void)?
     let onCancelOnboarding: (() -> Void)?
     let onPrefillConsumed: (() -> Void)?
-    /// Opens the Budgets screen — where the grove strip goes. Routed through the
-    /// host rather than presented here so it takes the same first-run-explainer
-    /// path as the menu item, instead of a second way in that skips it.
-    let onOpenBudgets: (() -> Void)?
     /// When true the logo splash is skipped — used by OpenCaptureIntent.
     let skipSplash: Bool
 
@@ -66,30 +60,6 @@ struct LogHomeView: View {
         }
     }
 
-    /// Budget trees for the strip and the tile badges.
-    ///
-    /// Cost: one pass over `activeEntries` plus a report per budgeted category
-    /// over that category's own slice — the same order as the tile row's
-    /// existing suggestion scan, and no work at all when nobody has
-    /// set a budget. It is read exactly once per body pass in `mainContent` and
-    /// handed down, because a computed property read from inside `tileButton`
-    /// would redo the whole thing once per tile.
-    private var groveTrees: [GroveTree] {
-        GroveStripModel.trees(categories: categories, entries: activeEntries)
-    }
-
-    private var todayEntries: [Entry] {
-        // `isDateInToday` alone covers the whole calendar day, so an entry dated
-        // later today landed in the hero total the moment it was created — the
-        // one number on this screen that is meant to say what has been spent.
-        let now = Date.now
-        return activeEntries.filter {
-            Calendar.current.isDateInToday($0.date) && $0.date <= now
-        }
-    }
-    private var todayTotal: Decimal {
-        todayEntries.reduce(Decimal(0)) { $0 + $1.amount }
-    }
     private var canLog: Bool {
         AmountInputFilter.isValid(amountText)
     }
@@ -97,10 +67,21 @@ struct LogHomeView: View {
     var body: some View {
         ZStack {
             // Background
-            Theme.background.ignoresSafeArea()
+            PaperGround().ignoresSafeArea()
 
-            // Logo (fades out as content fades in)
-            logoView
+            // No grove here. A horizon was tried behind the amount and removed:
+            // it gave the eye a second place to land on a screen whose job is
+            // one number. The trees have a screen of their own on Budgets,
+            // which is where they are big enough to read.
+            //
+            // The vines are the exception, and only because they stay in the
+            // margins: they frame the number instead of sitting beside it.
+            VineBorder()
+                .opacity(openingPhase)
+                .ignoresSafeArea()
+
+            // The opening plant (fades out as content fades in)
+            openingView
                 .opacity(1 - openingPhase)
                 .ignoresSafeArea()
 
@@ -110,17 +91,20 @@ struct LogHomeView: View {
         }
         .onAppear {
             applyPrefill()
-            if skipSplash || reduceMotion {
-                // Intent launch — skip straight to capture, no logo delay.
+            if skipSplash || reduceMotion || isOnboarding {
+                // Straight to capture, no opening. Reduce Motion is included
+                // because the plant is decoration: someone who asked for no
+                // motion gains nothing from a still of it standing in the way
+                // of the keypad for a second and a half. The guided first-log
+                // step skips it too — that is a step inside onboarding, not
+                // someone opening the app.
                 openingPhase = 1
-            } else {
-                // Fade transition: logo holds for 1.0s, then smoothly dissolves to content over 0.8s
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    withAnimation(.spring(response: 0.8, dampingFraction: 1.0)) {
-                        openingPhase = 1
-                    }
-                }
             }
+            // Otherwise the opening runs, on this and every ordinary launch.
+            // Nothing to schedule here: the dissolve is triggered by the
+            // animation itself, through `revealCapture`, because only it knows
+            // when it started drawing. Measured from this point the plant grew
+            // behind the launch image and was over before anyone saw it.
 #if DEBUG
             // Test hook: `simctl launch ... -autolog 42` logs an expense without a
             // human at the keypad. Debug-only — a shipped build that logs money
@@ -165,10 +149,20 @@ struct LogHomeView: View {
         }
     }
 
-    // MARK: - Logo (animated)
+    // MARK: - Opening
 
-    private var logoView: some View {
-        AnimatedLogoView()
+    private var openingView: some View {
+        SeedGrowthView(onFinished: revealCapture)
+    }
+
+    /// Dissolves the opening through to the capture screen. Called when the
+    /// wordmark settles, so the plant does not add a second toll on top of its
+    /// own.
+    private func revealCapture() {
+        guard openingPhase < 1 else { return }
+        withAnimation(.spring(response: 0.6, dampingFraction: 1.0)) {
+            openingPhase = 1
+        }
     }
 
     // MARK: - Main Content
@@ -178,100 +172,40 @@ struct LogHomeView: View {
     /// Everything above them scrolls, which is what keeps this usable on a 4.7"
     /// device where the keypad alone claims most of the viewport.
     private var mainContent: some View {
-        // Derived once per pass and passed down — see `groveTrees`.
-        let trees = groveTrees
-        let treesByCategory = Dictionary(trees.map { ($0.categoryKey, $0) }) { first, _ in first }
-
-        return ScrollView(.vertical, showsIndicators: false) {
+        ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 0) {
-                statusBar
-                // Nothing to show before the first budget exists, and a stub row
-                // on a fresh install would be pure clutter on the one screen the
-                // app asks to stay calm.
-                if !trees.isEmpty {
-                    GroveStrip(trees: trees) { onOpenBudgets?() }
-                }
-                Spacer(minLength: 20)
+                // Deliberately empty above the amount. This screen used to open
+                // with a streak wreath, today's total and a "Use the keypad"
+                // hint stacked over the number they were competing with. All
+                // three are gone: the streak has its own screen, today's total
+                // is on History, and the hint taught a keypad that is already
+                // the only thing on the lower half of the screen.
+                //
+                // No trees either, in any form — a grove strip, tile badges and
+                // a background horizon were each tried and each gave the eye a
+                // second place to land. What survives is the one 2pt rule under
+                // each tile, which adds no object to the row.
+                Spacer(minLength: 48)
                 amountArea
-                Spacer(minLength: 20)
+                Spacer(minLength: 36)
                 categoryLine
-                tileRow(trees: treesByCategory)
-                noteField
+                tileRow()
             }
         }
         .scrollBounceBehavior(.basedOnSize)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 0) {
-                // Yield the bottom to the system keyboard rather than fight it.
-                // The inset shrinks, SwiftUI lifts the scrolling content clear of
-                // the keyboard, and the note stays visible while it is typed.
-                if !noteFocused {
-                    keypad
-                }
-                // The Log pill stays either way: a note is usually the last thing
-                // added before logging, and hiding the finish button behind a
-                // keyboard dismissal would add a step to the app's whole point.
+                // Unconditional now. The keypad used to yield the bottom of the
+                // screen whenever the note field raised the system keyboard;
+                // with the note field gone from capture, nothing on this screen
+                // summons a keyboard, so the keypad is always the thing here.
+                keypad
                 logButton
                     .padding(.bottom, CaptureBottomBar.logButtonBottomPadding)
                     .padding(.top, CaptureBottomBar.logButtonLiftPadding)
             }
-            .background(Theme.background)
+            .background(Theme.paper)
         }
-    }
-
-    // MARK: - 1. Status Bar
-
-    private var statusBar: some View {
-        HStack(spacing: 10) {
-            miniWreath
-
-            Text(Date.now.formatted(.dateTime.weekday(.abbreviated)))
-                .font(.subheadline)
-                .foregroundStyle(Theme.textSecondary)
-
-            Spacer()
-
-            if isOnboarding {
-                Button {
-                    onCancelOnboarding?()
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(Theme.textTertiary)
-                }
-            }
-
-            (Text("Today · ")
-                .font(.subheadline)
-                .foregroundStyle(Theme.textSecondary)
-                .monospacedDigit()
-            + Text(Money.format(todayTotal))
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Theme.textPrimary)
-                .monospacedDigit())
-                .contentTransition(.numericText())
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 16)
-        .padding(.trailing, 40)
-        .animation(reduceMotion ? nil : Motion.stateChange, value: todayTotal)
-    }
-
-    /// This week's streak, as the wreath rather than the abstract ring that used
-    /// to sit here. The grove is a few points below it on this same screen, so
-    /// the mark had to be botanical *and* unmistakably not a tree — see
-    /// `WreathArt` for why a wreath and not a small plant.
-    ///
-    /// Costs the same as the ring did: `daysLoggedThisWeek` and `weeklyTarget`
-    /// are exactly the two values the ring's fraction was derived from, and the
-    /// mark is a handful of paths in one `Canvas`.
-    private var miniWreath: some View {
-        let logged = retention.daysLoggedThisWeek
-        let target = retention.weeklyTarget
-        return WreathMark(daysLogged: logged, target: target, color: Theme.accent)
-            .frame(width: 24, height: 24)
-            .accessibilityElement()
-            .accessibilityLabel("Logged \(logged) of \(target) days this week")
     }
 
     // MARK: - 2. Amount Area
@@ -284,27 +218,27 @@ struct LogHomeView: View {
     /// puts the amount, the tiles and Log inside one thumb arc.
     private var amountArea: some View {
         VStack(spacing: 8) {
-            if amountText.isEmpty {
-                Text("Use the keypad, then Log.")
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.textTertiary)
-                    .transition(.opacity)
-            }
+            // The "Use the keypad, then Log." hint used to sit here. It taught a
+            // keypad that already fills the lower half of the screen, and it sat
+            // directly above the one number this screen exists for.
 
-            let fontSize = AmountFont.fontSize(for: amountText, dynamicTypeSize: dynamicTypeSize)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
+            let fontSize = AmountFont.focalFontSize(for: amountText, dynamicTypeSize: dynamicTypeSize)
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(Money.currencySymbol)
-                    .font(AmountFont.symbolFont(for: amountText, dynamicTypeSize: dynamicTypeSize))
+                    .font(Theme.focal(fontSize * 0.38, weight: .regular))
                     .foregroundStyle(Theme.textTertiary)
                     .accessibilityHidden(true)
                 Text(amountText.isEmpty ? "0" : amountText)
-                    .font(Theme.amount(fontSize))
-                    .foregroundStyle(amountText.isEmpty ? Theme.textTertiary : Theme.textPrimary)
+                    // Serif digits are proportional by default, so the amount
+                    // would shift sideways as each key lands. Monospacing the
+                    // digits keeps it still while it grows.
+                    .font(Theme.focal(fontSize, weight: .regular).monospacedDigit())
+                    .foregroundStyle(amountText.isEmpty ? Theme.textTertiary : Theme.ink)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.5)
+                    .minimumScaleFactor(0.4)
                     .contentTransition(.numericText())
             }
-            .frame(height: AmountLayout.heroHeight(fontSize: fontSize))
+            .frame(height: AmountLayout.focalHeroHeight(fontSize: fontSize))
             .animation(reduceMotion ? nil : Motion.gentleFast, value: amountText)
 
             if let error = amountError {
@@ -365,7 +299,7 @@ struct LogHomeView: View {
             .frame(height: CaptureBottomBar.keyHeight)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
-        .buttonStyle(ZenPress())
+        .buttonStyle(PressStyle())
     }
 
     // MARK: - Keypad input
@@ -399,7 +333,7 @@ struct LogHomeView: View {
         amountText = result.text
     }
 
-    // MARK: - 3. Category + Intent Line
+    // MARK: - 3. Category Line
 
     private var categoryLine: some View {
         HStack(spacing: 8) {
@@ -424,17 +358,17 @@ struct LogHomeView: View {
     /// Three-state intent control: unmarked → impulse → planned → unmarked.
     ///
     /// Cycling rather than a segmented control, for two reasons. The line is the
-    /// most contested one-line strip on the screen and a third option would either
-    /// widen it or shrink the category name; and — more importantly — the happy
-    /// path must stay untouched. Unmarked is the resting state, so logging is
-    /// still amount → Log with no detour, and the control costs a tap only when
-    /// the user chooses to answer.
+    /// most contested one-line strip on the screen and a third option would
+    /// either widen it or shrink the category name; and — more importantly — the
+    /// happy path must stay untouched. Unmarked is the resting state, so logging
+    /// is still amount → Log with no detour, and the control costs a tap only
+    /// when the user chooses to answer.
     ///
     /// The order answers the question the resting label asks. "Impulse?" is an
     /// invitation, so the first tap says yes; the second corrects it to Planned;
     /// the third takes the answer back. Unmarked stays tertiary and glyph-less so
-    /// it reads as a prompt rather than a value, and each marked state carries its
-    /// own symbol — the two are never told apart by colour, which they share.
+    /// it reads as a prompt rather than a value, and each marked state carries
+    /// its own symbol — the two are never told apart by colour, which they share.
     private var intentButton: some View {
         Button {
             let next = nextIntent(after: intent)
@@ -497,11 +431,14 @@ struct LogHomeView: View {
 
     // MARK: - 4. Tile Row
 
-    private func tileRow(trees: [String: GroveTree]) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
+    private func tileRow() -> some View {
+        // Derived once per pass and handed down. Reading it inside `tileBody`
+        // would redo the whole scan once per tile.
+        let states = tileStates
+        return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
                 ForEach(topCategories) { category in
-                    tileButton(category, tree: trees[category.key])
+                    tileBody(category, state: states[category.key] ?? .noBudget)
                 }
                 moreTile
             }
@@ -509,23 +446,21 @@ struct LogHomeView: View {
         }
     }
 
-    /// A budgeted category carries its tree in the tile's top corner, so the
-    /// state is legible *before* the tap rather than after it. Unbudgeted tiles
-    /// are untouched — including the label VoiceOver reads, which is only
-    /// overridden where there is a silhouette it cannot see.
-    @ViewBuilder
-    private func tileButton(_ category: SpendCategory, tree: GroveTree?) -> some View {
-        if let tree {
-            tileBody(category, tree: tree)
-                .accessibilityLabel(tree.accessibilityLabel)
-        } else {
-            tileBody(category, tree: nil)
+    /// Budget state per category, as the three values the tile rule can show.
+    ///
+    /// The tiles used to carry a tree badge here. A silhouette at 14pt was never
+    /// really legible, and five of them beside five emoji made the row the
+    /// busiest thing on a screen whose job is one number. A 2pt rule along the
+    /// tile's bottom edge says the same thing without adding an object.
+    private var tileStates: [String: TileBudgetState] {
+        var result: [String: TileBudgetState] = [:]
+        for tree in GroveStripModel.trees(categories: categories, entries: activeEntries) {
+            result[tree.categoryKey] = tree.isOver ? .over : .within
         }
+        return result
     }
 
-    /// The badge is an overlay: it takes no layout space, so the tile keeps its
-    /// size and the row keeps its tap targets.
-    private func tileBody(_ category: SpendCategory, tree: GroveTree?) -> some View {
+    private func tileBody(_ category: SpendCategory, state: TileBudgetState) -> some View {
         let isSelected = selectedCategoryKey == category.key
         return Button {
             selectedCategoryKey = category.key
@@ -539,26 +474,48 @@ struct LogHomeView: View {
                     .fontWeight(isSelected ? .semibold : .medium)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
+
+                // The state rule. Drawn for every tile, transparent when there
+                // is no budget, so a budgeted and an unbudgeted tile stay
+                // exactly the same height and the row never jumps.
+                //
+                // Inset rather than run to the tile's edges: at the full width
+                // the 14pt corner radius clipped both ends and the rule read as
+                // a stray dash floating under the label. Pulled in, it reads as
+                // something drawn on purpose.
+                Rectangle()
+                    .fill(state.ruleColor)
+                    .frame(height: 2)
+                    .padding(.horizontal, 14)
+                    .padding(.top, 10)
+                    .padding(.bottom, 9)
             }
             .frame(width: 62)
-            .padding(.vertical, 12)
+            .padding(.top, 12)
             .background(
                 isSelected ? Theme.accentSoft : Theme.surface,
                 in: RoundedRectangle(cornerRadius: 14, style: .continuous)
             )
-            .overlay(alignment: .topTrailing) {
-                if let tree {
-                    TreeStateGlyph(state: tree.mark, color: tree.tint)
-                        .frame(width: 14, height: 18)
-                        .padding(.top, 5)
-                        .padding(.trailing, 5)
-                }
-            }
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .scaleEffect(isSelected ? 1.03 : 1)
             .animation(reduceMotion ? nil : Motion.gentleFast, value: isSelected)
         }
         .buttonStyle(.plain)
+        // The rule's colour is the only visual difference between a tile within
+        // target and one over it, and colour may not carry state on its own.
+        // VoiceOver gets the word instead.
+        .accessibilityLabel(
+            state.spokenSuffix.isEmpty
+                ? category.name
+                : "\(category.name), \(state.spokenSuffix)"
+        )
     }
+
+    /// Matches the tile height exactly. A tile's state rule occupies 10pt of
+    /// padding above it, 2pt of rule and 9pt below; "More" has no budget state,
+    /// so it pads by that same 21pt rather than drawing a rule it could never
+    /// fill. Keep the two in step or the row's tiles stop lining up.
+    private var moreTileBottomPadding: CGFloat { 21 }
 
     /// Opens the full category picker. Labelled "More" rather than "Other" because
     /// "Other" is also a real category that usually sits in the row right beside
@@ -577,26 +534,11 @@ struct LogHomeView: View {
                     .foregroundStyle(Theme.textSecondary)
             }
             .frame(width: 62)
-            .padding(.vertical, 12)
+            .padding(.top, 12)
+            .padding(.bottom, moreTileBottomPadding)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(.plain)
-    }
-
-    // MARK: - 5. Note Field
-
-    private var noteField: some View {
-        TextField("Note (optional)", text: $note)
-            .multilineTextAlignment(.center)
-            .font(.subheadline)
-            .foregroundStyle(Theme.textTertiary)
-            .padding(.vertical, 6)
-            .padding(.horizontal, 40)
-            .focused($noteFocused)
-            // Return dismisses rather than inserting a newline the note has no
-            // room to show, which also brings the keypad straight back.
-            .submitLabel(.done)
-            .onSubmit { noteFocused = false }
     }
 
     // MARK: - 6. Log Button
@@ -615,7 +557,7 @@ struct LogHomeView: View {
                 )
                 .foregroundStyle(canLog ? Color.white : Theme.textTertiary)
         }
-        .buttonStyle(ZenPress())
+        .buttonStyle(PressStyle())
         .disabled(!canLog)
         .padding(.horizontal, 28)
         .padding(.top, CaptureBottomBar.logButtonTopPadding)
@@ -631,9 +573,14 @@ struct LogHomeView: View {
         if let amountText = prefill.amountText {
             self.amountText = amountText
         }
-        if let note = prefill.note {
-            self.note = note
-        }
+        // Always assigned, never merged. The note is the one prefill field with
+        // no control on this screen, so a value left over from an earlier
+        // activation sits there invisibly and attaches itself to whatever is
+        // logged next — a `taplog://log?note=lunch` link followed by an
+        // unrelated tap on Log filed a chai as "lunch". The amount above is
+        // merged rather than cleared because it *is* visible, and a bare
+        // "open the keypad" link should not wipe a number already on screen.
+        self.note = prefill.note ?? ""
         if let query = prefill.categoryQuery {
             let lowered = query.lowercased()
             if let match = categories.first(where: {
@@ -701,7 +648,7 @@ struct LogHomeView: View {
                 try modelContext.save()
             } catch {
                 // The entry is still persisted — counters must stay as they are.
-                print("TapLog: Failed to persist undo of entry: \(error)")
+                Log.capture.error("Failed to persist undo of entry: \(Log.describe(error), privacy: .public)")
                 return
             }
             CaptureBookkeeping.revert(modelContext: modelContext, categories: categories, categoryKey: categoryKey, entryDate: entry.date)
@@ -713,10 +660,6 @@ struct LogHomeView: View {
         amountText = ""
         note = ""
         intent = nil
-        // Logging finishes the note too; without this the keypad would stay
-        // hidden behind a keyboard focused on a field that is now empty.
-        noteFocused = false
-
         amountError = nil
         onLogged?()
 
@@ -773,6 +716,35 @@ struct LogHomeView: View {
 /// only thing down here and silently wrong the moment the keypad arrived —
 /// "Undo" ended up sitting on the backspace key. Deriving both from the same
 /// numbers is what keeps them from drifting apart again.
+/// What the 2pt rule under a category tile can say.
+///
+/// Three states, not six: the tile row answers "is this one fine?" at a glance
+/// before the tap. The full six-state tree vocabulary belongs on Budgets, where
+/// a drawing has the room to earn the distinction.
+enum TileBudgetState {
+    case within, over, noBudget
+
+    /// Transparent for an unbudgeted category, so the rule still occupies its
+    /// 2pt and every tile in the row keeps the same height.
+    var ruleColor: Color {
+        switch self {
+        case .within:   Theme.accent
+        case .over:     Theme.clay
+        case .noBudget: .clear
+        }
+    }
+
+    /// Appended to the tile's spoken label, because the rule's colour cannot
+    /// carry the state by itself.
+    var spokenSuffix: String {
+        switch self {
+        case .within:   "within target"
+        case .over:     "over target"
+        case .noBudget: ""
+        }
+    }
+}
+
 enum CaptureBottomBar {
     static let keyHeight: CGFloat = 56
     static let keySpacing: CGFloat = 10

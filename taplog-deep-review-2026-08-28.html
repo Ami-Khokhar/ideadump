@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TapLog Deep Review — 28 Aug 2026</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    color: #1a1917;
+    background: #ffffff;
+    max-width: 76ch;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+    line-height: 1.6;
+  }
+  h1 { font-size: 1.9rem; margin: 0 0 4px; }
+  h2 { font-size: 1.35rem; margin: 40px 0 10px; border-bottom: 2px solid #e4e0d8; padding-bottom: 6px; }
+  h3 { font-size: 1.05rem; margin: 24px 0 6px; }
+  .meta { color: #6e6a60; font-size: 0.9rem; margin-bottom: 28px; }
+  code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.85em; background: #f2f0ec; border-radius: 4px; padding: 1px 5px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92rem; margin: 12px 0; }
+  th, td { text-align: left; padding: 8px 10px; border: 1px solid #e4e0d8; vertical-align: top; }
+  th { background: #f7f5f2; }
+  .ok { color: #52745a; font-weight: 600; white-space: nowrap; }
+  .risk { color: #a34f35; font-weight: 600; }
+  .scorebar { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0; }
+  .score { border: 1px solid #e4e0d8; border-radius: 10px; padding: 10px 14px; min-width: 130px; background: #f7f5f2; }
+  .score b { font-size: 1.4rem; }
+  .score span { display: block; font-size: 0.78rem; color: #6e6a60; text-transform: uppercase; letter-spacing: 0.05em; }
+  .verdict { background: #edf2ee; border-left: 4px solid #6b8f71; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 20px 0; }
+  ul { padding-left: 22px; }
+  li { margin-bottom: 6px; }
+  .footnote { color: #6e6a60; font-size: 0.85rem; border-top: 1px solid #e4e0d8; margin-top: 48px; padding-top: 14px; }
+</style>
+</head>
+<body>
+
+<h1>TapLog Deep Review</h1>
+<p class="meta">Branch <code>budget-trees-redesign</code> · 28 Aug 2026 · ~15k lines Swift, 3 targets, 295 tests · four independent review passes (product, UI/UX, simplicity, tech) · verified against the Aug 25 hands-on punch list.</p>
+
+<div class="scorebar">
+  <div class="score"><span>Product</span><b>6</b>/10</div>
+  <div class="score"><span>UI / UX</span><b>7.5</b>/10</div>
+  <div class="score"><span>Simplicity</span><b>4.5</b>/10</div>
+  <div class="score"><span>Tech</span><b>7.5</b>/10</div>
+</div>
+
+<div class="verdict">
+<strong>The bottleneck is not the code.</strong> TapLog is an unusually well-crafted free utility — seven capture front doors, honest data design, restrained gamification, 295 real tests — wearing four contradictory marketing outfits, with no way to take money, no reason to come back, and about a third more codebase than its stage of life justifies. The engineering scores run two points ahead of the product score, and the gap is strategy, not skill.
+</div>
+
+<h2>1. What's genuinely strong</h2>
+<ul>
+  <li><strong>Capture breadth is real and unified.</strong> Home keypad, widget one-tap quick-log (learns your top 3 patterns and logs without opening the app), Action Button / Control Center, headless Siri, lock-screen widgets, deep links, share-sheet SMS parsing — all funneled through one <code>CaptureBookkeeping</code> path so streaks, learning, and widget reloads stay consistent.</li>
+  <li><strong>Every Aug 25 finding was properly fixed</strong> — root-caused, commented, and in the two math cases pinned by tests (see §2).</li>
+  <li><strong>Honest data design.</strong> Three-state spend intent that refuses to fabricate a 0%; recap coverage disclosure ("8 of 14 entries — 57% of this week's spend"); clamped absurd percentages; Decimal end-to-end for money.</li>
+  <li><strong>Restrained gamification.</strong> Trees wilt but never die; overspend copy is factual; streak freezes are earned, never sold. The guardrails doc is honored in code.</li>
+  <li><strong>The privacy claim is verifiable.</strong> Zero networking symbols, zero third-party dependencies, zero analytics, one App Group entitlement.</li>
+  <li><strong>Dark mode, Reduce Motion, and VoiceOver</strong> are designed, not inherited — every Canvas has a worded accessibility label.</li>
+</ul>
+
+<h2>2. The Aug 25 punch list — all seven closed</h2>
+<table>
+  <tr><th>Finding (25 Aug)</th><th>Status</th><th>How</th></tr>
+  <tr><td>CRITICAL — amount field drops focus per keystroke</td><td class="ok">Fixed ×2</td><td>Custom in-app keypad on the home (<code>LogHomeView.swift:304-379</code>); <code>AmountTextField</code> made idempotent + acquisition-only focus for its two remaining users</td></tr>
+  <tr><td>HIGH — recap chart off-by-one in Sunday-first locales</td><td class="ok">Fixed + tests</td><td><code>todayIndex</code> derives from the same <code>weekOfYear</code> interval; labels rotate <code>veryShortWeekdaySymbols</code>; tests pin <code>firstWeekday</code> 1 and 2</td></tr>
+  <tr><td>HIGH — category tiles reshuffle non-deterministically</td><td class="ok">Fixed</td><td>Deterministic tie-breaks (score → display order → key) in both sorts, <code>TimeBucket.swift:126-135</code></td></tr>
+  <tr><td>HIGH — capture screen clips tiles under Log button</td><td class="ok">Fixed</td><td>GeometryReader construction removed in the keypad redesign</td></tr>
+  <tr><td>MEDIUM — undo toast covers Log button 5s</td><td class="ok">Fixed</td><td>Toast offset derived from the same <code>CaptureBottomBar</code> constants</td></tr>
+  <tr><td>LOW — <code>TileGrid.swift</code> dead code</td><td class="ok">Deleted</td><td>Zero references remain</td></tr>
+  <tr><td>LOW — deep link w/ unknown category silently ignored</td><td class="ok">Fixed*</td><td>Falls back visibly to Other on the live path; the old silent path survives only in <code>CaptureForm</code>'s now-dead create mode</td></tr>
+</table>
+<p class="meta">*Caveat: nothing has had a hands-on simulator pass <em>since</em> the keypad redesign. The fixes are verified in code and tests, not on-screen.</p>
+
+<h2>3. Where all four angles converge</h2>
+
+<h3><span class="risk">Blocking</span> — There is no way to take money, and the docs disagree about what to charge</h3>
+<p>The only "Pro" in the app is <code>@AppStorage("isProDemo")</code> — toggleable in two debug menus, <strong>read by nothing</strong>. No StoreKit, no paywall, no locked feature. The pitch sells a $2–4/mo subscription; the landing page, GTM doc, and launch kit all sell a ₹299–499 lifetime unlock. The launch kit's Day-30 gate ("15+ Lifetime Pro sales") is currently unrunnable. Worse: everything every pricing doc lists as Pro (custom categories, recaps, CSV, the quick-log widget) already shipped free, and the one ownable surface — the budget grove — appears in no pricing doc at all.</p>
+
+<h3><span class="risk">Blocking</span> — A habit loop with a reward and no trigger</h3>
+<p>The action→reward chain is genuinely good (log → haptic → tree-state toast → wreath → weekly recap). But there are <strong>zero notifications anywhere in the codebase</strong> — not even the weekly nudge the app's own retention doc sanctions — and the payoff surfaces (Recap, Budgets) hide behind the top-right ⋯ menu. The recap tease fires only after 5 logs <em>and</em> only if the user already found Recap themselves. In the category with the worst first-month churn, the loop depends entirely on unprompted user initiative.</p>
+
+<h3><span class="risk">Positioning</span> — Marketing sells a different app than engineering built</h3>
+<p>Every GTM asset sells "the 2-second logger, anti-subscription, for Action Button owners." The last two months of engineering built "a zen budgeting grove with impulse awareness" — trees on the capture screen, tiles, toast, and recap, in <strong>zero marketing sentences</strong>. The pitch's headline auto-capture from bank notifications doesn't exist in the build; the landing page invents features outright (smart recurring tags, custom OLED themes). The pitch targets the post-Mint US market in dollars while the product formats ₹, seeds a "chai" category, and parses Rs/INR SMS. Both splits need a decision, not a merge.</p>
+
+<h3>Simplicity — Hardened like a five-year-old app with a million users</h3>
+<p>The core promise is served by ~2,500 lines; ~8k more are retention scaffolding, a botanical metaphor rendered <em>three</em> ways (~950 lines of vector art), two parallel category-learning systems (the 227-line Bayesian <code>TimeBucket</code> ranker recounts entries from scratch while <code>SpendCategory.logCount</code> — maintained for exactly this purpose — goes unread), versioned onboarding migrations for builds no user ever ran, and ~530 lines of provably dead code kept alive partly by its own tests (the legacy <code>AmountInputFilter</code> path has 16 tests and zero production callers; <code>CaptureForm</code>'s entire create mode is unreachable). A full simplification pass removes ~30% of the codebase with the capture loop, budgets, widget, recap, and CSV intact.</p>
+
+<h3><span class="risk">Data integrity</span> — Split-brain stores between app and extensions</h3>
+<p>The store resolver's "nothing is ever copied" policy means an install that ever ran without the App Group entitlement keeps history in Application Support forever — a path the widget process can't see. A widget quick-log then opens/creates the <em>group</em> store and writes there: <strong>two live stores, permanently divergent</strong>. And the detection signal lies: <code>isUsingSharedStore</code> reports intent, not outcome — if the group store probes writable but fails to open, the app silently runs on the fallback while Settings suppresses the very warning built for this case.</p>
+
+<h2>4. Product — 6/10</h2>
+<p><strong>Promise vs delivery:</strong> capture is credibly ≤5s from seven front doors; the widget's learned one-tap quick-log is the fastest capture in the category and the best feature nobody markets. Two self-inflicted wounds: the 1.8s splash ceremony spends a third of the "2 seconds" budget on plain launches (only intent launches skip it), and the pitch's headline auto-capture mode is unshipped — the share extension is the closest thing and requires manually sharing an SMS.</p>
+<p><strong>Onboarding is the best-executed area (8/10):</strong> one blocking beat, the first log happens on the real home screen, categories and front doors defer until relevant, and a widget/Siri first log skips the whole flow. But the payoff half-lands: no tree exists at first log (budgets are never mentioned in onboarding), the recap is empty, and the Action Button — the marquee acquisition hook — isn't configured until a beat many users never reach.</p>
+<p><strong>Retention mechanics deviate from their own spec:</strong> the doc promises a missed week restarts the streak at 1 with a welcome-back nudge — code resets to 0, no nudge; phases 2–4 (insight cards, share card, recurring detection) are unbuilt.</p>
+<p><strong>The unvalidated thesis:</strong> the developer already concluded once that manual logging fails as a paid product. This redesign added craft and mechanics — but no new evidence that anyone pays. The hardware hooks (Action Button, Siri) have never had a real-device QA pass.</p>
+
+<h2>5. UI / UX — 7.5/10</h2>
+<p>The capture screen hierarchy, recap honesty, empty states, dark mode, and Reduce Motion handling are well above indie baseline, and the tree metaphor is load-bearing — state encodes a two-period budget history and the same derivation feeds strip, badges, rows, and toast. Top issues by user pain:</p>
+<ul>
+  <li><strong>Note field stacks the system keyboard on top of the pinned keypad</strong> (<code>LogHomeView.swift:567</code>) — a QWERTY rises under a ~330pt keypad the user can't dismiss, leaving ~250pt of viewport on a 6.1" phone. Needs a hands-on check; the geometry is in the constants.</li>
+  <li><strong>Every non-capture surface hides behind the top-right ⋯ menu</strong> — History, Recap, Budgets, Settings all live one reach to the hardest corner plus a menu hop. Recap, the retention payoff, has no surfaced entry point at all.</li>
+  <li><strong>The Budgets grove card can't hold a real grove</strong> — draws every budget at 48×60 in a non-wrapping HStack; 6+ budgets compress or clip. <code>GroveStrip</code> already solved this with a cap.</li>
+  <li><strong>The intent control is a hidden three-state cycle</strong> — a caption-sized button whose resting label doesn't advertise that "Planned" exists; low marking coverage degrades the app's most differentiated recap feature.</li>
+  <li><strong>A failed Log is silent</strong> — the save error is caught, printed, and swallowed; the button just doesn't work at the one moment the core promise fails.</li>
+</ul>
+<p><strong>Style forks:</strong> <code>CaptureForm</code> (every History tap lands here), <code>CategoryManageView</code>, and the widget still use stock system styling — iOS-blue caret and red errors in a sage app. <strong>Accessibility gaps:</strong> the recap bar chart has no VoiceOver treatment at all; category tiles and the span toggle don't expose <code>.isSelected</code>; the keypad and tiles stop scaling at accessibility type sizes. <strong>Localization:</strong> zero scaffolding — ~150 hardcoded English strings.</p>
+
+<h2>6. Simplicity — 4.5/10</h2>
+<p>The code is clean, commented, and locally justified — the problem is the portfolio, not the parts. Ranked delete/fold list (lines removed × risk reduced):</p>
+<ul>
+  <li><strong>Gut the onboarding machine</strong> (~1,000 lines w/ tests): 13 interacting flags across three persistence layers, a 0.4s dispatch timer feeding UI decisions, cross-process reconciliation, and migrations for pre-release builds. The codebase itself says why: "the home tab IS the capture form" — an app like that barely needs onboarding.</li>
+  <li><strong>Replace the Bayesian tile ranker with a <code>logCount</code> sort</strong> (budgeted-first): behaviorally indistinguishable with ~13 categories, unifies two parallel learning systems, −750 lines.</li>
+  <li><strong>Delete the spend-intent axis</strong> (~700 lines) — a user logging chai in 5 seconds will not curate intent metadata — <em>or</em> keep it and fix its discoverability (§5); it can't stay half-visible.</li>
+  <li><strong>Delete the provably dead code</strong> (~530 src + ~350 test lines, zero behavior change): legacy filter path, CaptureForm create mode, <code>TimeBucket.label/.icon</code>, <code>isProDemo</code>, unshipped-build migrations, un-gated launch-arg hooks.</li>
+  <li><strong>Cut the share extension + pending pipeline</strong> (~400 lines) until a user asks — or promote it to the marquee feature (§8, week 1). It's currently a whole unvalidated product feature threading <code>isPending</code> through every query.</li>
+</ul>
+<p>Test allocation is inverted: 47% of test lines pin the four subsystems a simplicity pass would shrink — the change-tax that keeps the over-engineered versions alive — while the actual capture save path is comparatively thin.</p>
+
+<h2>7. Tech — 7.5/10</h2>
+<p><strong>Architecture:</strong> "MV + pure logic enums" — no view models, and none missed; every hairy computation lives in a stateless, calendar-injectable enum, which is why 295 real tests exist without a UI rig. Survives six months, with two refactors due: <code>ContentView</code>'s onboarding orchestration (the highest regression-risk file) and the two 800-line views.</p>
+<p><strong>Top risks beyond the split-brain store (§3):</strong></p>
+<ul>
+  <li><strong>Streak weeks are Monday-hardcoded while recap weeks follow the locale</strong> (<code>RetentionManager.swift:149,241-248</code> vs <code>RecapMath.swift:14</code>) — in India (Sunday-first), a Sunday log counts toward this week's recap and <em>last</em> week's streak.</li>
+  <li><strong>Release builds honor test launch arguments</strong> — <code>-autolog</code>, <code>-route</code>, <code>-appearance</code>, <code>-seedSampleData</code> are not <code>#if DEBUG</code>-guarded.</li>
+  <li><strong>The share extension can crash the host app's share sheet</strong> (uses the <code>fatalError</code> store path instead of the throwing one), and its bare-number fallback will parse an OTP SMS as a ₹482,910 pending entry — gate it behind a debit/spent/paid keyword.</li>
+  <li><strong>No CI</strong> — 295 hand-run tests and a committed generated <code>.xcodeproj</code> beside <code>project.yml</code> is a classic drift pair. One GitHub Actions job locks it in.</li>
+  <li>31 <code>print()</code> calls are the only error channel — move store fallbacks and migration failures to <code>os.Logger</code> before TestFlight.</li>
+</ul>
+<p><strong>Verified sound:</strong> Decimal for money end-to-end, complete WidgetCenter reload discipline, correct <code>@MainActor</code> usage, exemplary <code>isPlanned→intent</code> migration, no risky force-unwraps beyond the practically-safe <code>Calendar</code> family.</p>
+
+<h2>8. The order of operations</h2>
+<table>
+  <tr><th>When</th><th>What</th></tr>
+  <tr><td><strong>First</strong></td><td><strong>Decide what TapLog is — before writing more code.</strong> It was dropped once as a paid product; this branch added craft, not evidence. Either (a) commit to one story — India-first, ₹ lifetime unlock, the grove as the hero — and run the launch kit's Day-30 gate for real, or (b) declare it a portfolio piece / free utility and stop hardening it. Everything below only matters under (a).</td></tr>
+  <tr><td><strong>Week 1</strong></td><td><strong>Make it sellable and re-visitable.</strong> Wire one real StoreKit paywall gating forward-looking value (free = one budget tree; Pro = the grove + monthly depth) rather than clawing back shipped features. Add the one weekly "your recap is ready" notification the retention doc already sanctions. Plant the first tree in onboarding beat 3. Pull Recap and Budgets out from behind the ⋯ menu.</td></tr>
+  <tr><td><strong>Week 2</strong></td><td><strong>Close the integrity holes, then simplify.</strong> Fix <code>isUsingSharedStore</code> to report the store that actually opened; add a one-time supervised copy into the group container; align streak weeks with locale weeks; guard the launch hooks; de-fatalError the share extension. Then take the free 30%: dead code, one learning system, one botanical renderer at small sizes, and gut the onboarding machine.</td></tr>
+  <tr><td><strong>Before TestFlight</strong></td><td><strong>One hands-on device pass + CI.</strong> Nothing has been driven by hand since the keypad redesign — check the note-field/keyboard collision first. Then the Action Button and widgets on a real iPhone, and a single GH Actions job running the 295 tests.</td></tr>
+</table>
+
+<p class="footnote">Compiled from four independent review passes (product, UI/UX, simplicity, tech) over branch <code>budget-trees-redesign</code> on 28 Aug 2026, cross-checked against <code>REVIEW-simulator-2026-08-25.md</code>, <code>investor-pitch.md</code>, <code>build-plan.md</code>, and the GTM documents.</p>
+
+</body>
+</html>

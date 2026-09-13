@@ -9,6 +9,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(RetentionManager.self) private var retention
+    @EnvironmentObject private var undoStack: UndoStack
 
     @AppStorage("currencyCode", store: Money.sharedDefaults)
     private var currencyCode = Locale.current.currency?.identifier ?? "USD"
@@ -176,6 +177,12 @@ struct SettingsView: View {
             }
         }
         .tint(Theme.accent)
+        // Clearing every entry is the one action here that can be refused, and
+        // this is a sheet: the root's toast sits behind it. Same reason
+        // EntryListView carries its own.
+        .overlay(alignment: .bottom) {
+            UndoToast(bottomInset: UndoToast.sheetInset)
+        }
     }
 
     /// A wiped history is a clean slate: entries go, and so do the counters,
@@ -186,12 +193,17 @@ struct SettingsView: View {
         for entry in all {
             modelContext.delete(entry)
         }
-        do {
-            try modelContext.save()
-        } catch {
-            print("TapLog: Failed to clear entries: \(error)")
-            return
-        }
+        // Without the rollback the deletes stay staged in the context: every
+        // @Query has already re-rendered empty, and the next successful save
+        // anywhere in the app would commit them. The user would see a wiped
+        // history sitting beside a live streak and a recap that still counts
+        // the entries — and then the entries would come back on relaunch.
+        guard EntryPersistence.commit(
+            message: EntryPersistence.clearAllFailureMessage,
+            save: { try modelContext.save() },
+            rollback: { modelContext.rollback() },
+            report: undoStack.report
+        ) else { return }
         CaptureBookkeeping.resetCategoryUsage(modelContext: modelContext)
         StoreLocator.sharedDefaults.removeObject(forKey: "logsLogged")
         retention.resetAll()

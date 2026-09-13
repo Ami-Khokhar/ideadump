@@ -70,7 +70,7 @@ struct FirstBudgetView: View {
             }
             .scrollContentBackground(.hidden)
             .floatingToolbarScrollEdge()
-            .background(Theme.background)
+            .background(PaperGround())
             .navigationTitle("Plant a tree")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

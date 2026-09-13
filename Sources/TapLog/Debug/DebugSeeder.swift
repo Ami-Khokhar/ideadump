@@ -20,7 +20,7 @@ enum DebugSeeder {
         do {
             try context.save()
         } catch {
-            print("TapLog: Failed to seed categories: \(error)")
+            Log.capture.error("Failed to seed categories: \(Log.describe(error), privacy: .public)")
         }
     }
 
@@ -101,7 +101,7 @@ enum DebugSeeder {
         do {
             try context.save()
         } catch {
-            print("TapLog: Failed to save sample data: \(error)")
+            Log.capture.error("Failed to save sample data: \(Log.describe(error), privacy: .public)")
         }
 
         // Update streaks to reflect last week's activity.

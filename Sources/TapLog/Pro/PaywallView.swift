@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 /// The one screen that asks for money.
 ///
@@ -12,6 +13,12 @@ import SwiftUI
 /// delete.
 struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
+
+    /// Read here rather than passed in: this sheet has three call sites, all of
+    /// them already inside the container, and the evidence belongs to the screen
+    /// that shows it rather than to whichever screen happened to open it.
+    @Query(filter: #Predicate<Entry> { !$0.isArchived && !$0.isPending })
+    private var entries: [Entry]
 
     var store: ProStore = .shared
 
@@ -48,7 +55,12 @@ struct PaywallView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
-                    grove
+                    let evidence = PaywallEvidence.make(entries: entries)
+                    if evidence.isWorthShowing {
+                        record(evidence)
+                    } else {
+                        grove
+                    }
                     headline
                     included
                     if let failure = store.failureMessage {
@@ -89,6 +101,26 @@ struct PaywallView: View {
             }
         }
         .tint(Theme.accent)
+    }
+
+    /// The user's own record, in place of the decorative grove. Shown only once
+    /// there is enough of it to mean something (`PaywallEvidence.isWorthShowing`).
+    private func record(_ evidence: PaywallEvidence) -> some View {
+        VStack(spacing: 6) {
+            Text(evidence.summaryLine)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Theme.textPrimary)
+                .multilineTextAlignment(.center)
+            Text("Your record so far, kept on this phone.")
+                .font(.caption)
+                .foregroundStyle(Theme.textTertiary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14)
+        .padding(.horizontal, 16)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Your record so far: \(evidence.summaryLine), kept on this phone.")
     }
 
     /// The grove, as a promise rather than a diagram: one tree the user already

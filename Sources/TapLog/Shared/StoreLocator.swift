@@ -75,7 +75,7 @@ enum StoreLocator {
                 recordHistoryIfPresent(at: url, container: container)
                 return .success(OpenedStore(container: container, url: url))
             } catch {
-                print("TapLog: SwiftData store unusable at \(url.path): \(error) — trying next location")
+                Log.store.warning("SwiftData store unusable at \(url.path, privacy: .public): \(Log.describe(error), privacy: .public) — trying next location")
             }
         }
         return .failure(StoreError.noUsableStore)
@@ -122,7 +122,7 @@ enum StoreLocator {
             do {
                 return try openContainer(at: url)
             } catch {
-                print("TapLog: SwiftData store unusable at \(url.path): \(error) — trying next location")
+                Log.store.warning("SwiftData store unusable at \(url.path, privacy: .public): \(Log.describe(error), privacy: .public) — trying next location")
             }
         }
         throw StoreError.noUsableStore
@@ -333,9 +333,9 @@ enum StoreLocator {
             // ordering decision, so writing it before a successful save would
             // point the app at a store that does not yet have the data.
             markAsHoldingHistory(group)
-            print("TapLog: healed a split store — copied \(result.entries) entries and \(result.categoriesAdded + result.categoriesUpdated) categories into the App Group")
+            Log.store.notice("healed a split store — copied \(result.entries, privacy: .public) entries and \(result.categoriesAdded + result.categoriesUpdated, privacy: .public) categories into the App Group")
         } catch {
-            print("TapLog: could not heal the split store: \(error) — continuing on the existing one")
+            Log.store.error("could not heal the split store: \(Log.describe(error), privacy: .public) — continuing on the existing one")
         }
     }
 
@@ -382,7 +382,7 @@ enum StoreLocator {
         // this store in the first place.
         let marker = dataMarkerURL(for: url)
         if !FileManager.default.createFile(atPath: marker.path, contents: Data()) {
-            print("TapLog: could not record the history marker at \(marker.path) — store selection will fall back to file presence")
+            Log.store.warning("could not record the history marker at \(marker.path, privacy: .public) — store selection will fall back to file presence")
         }
     }
 

@@ -36,12 +36,18 @@ struct QuickLogIntent: AppIntent {
         do {
             try context.save()
         } catch {
-            print("TapLog: Failed to save quick log: \(error)")
+            Log.intents.error("Failed to save quick log: \(Log.describe(error), privacy: .public)")
             throw TapLogIntentError.saveFailed
         }
 
         // Same bookkeeping as the home screen: category learning, log totals, streaks.
         CaptureBookkeeping.apply(modelContext: context, categories: categories, categoryKey: categoryKey)
+
+        // Leave the app a note, so a mis-tap gets the same undo every other front
+        // door already offers. Nothing here reaches the user until they open the app.
+        WidgetLogReceipt.write(
+            WidgetLogReceipt(createdAt: entry.createdAt, amount: validatedAmount, categoryKey: categoryKey)
+        )
         return .result()
     }
 }

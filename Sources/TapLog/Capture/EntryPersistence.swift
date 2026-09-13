@@ -26,6 +26,19 @@ enum EntryPersistence {
     /// Shown when an edit could not be written. Nothing changed, so it says so.
     static let editFailureMessage = "Couldn't save that change — nothing changed."
 
+    // History's own refusals. Each one names the row's actual state afterwards,
+    // because the animation has already run: the row slid away and slid back,
+    // and without a message that reads as the app losing the gesture.
+    static let confirmFailureMessage = "Couldn't add that one — it's still pending."
+    static let discardFailureMessage = "Couldn't discard that one — it's still pending."
+    static let archiveFailureMessage = "Couldn't archive that — nothing changed."
+    static let unarchiveFailureMessage = "Couldn't restore that — nothing changed."
+    static let deleteFailureMessage = "Couldn't delete that — nothing changed."
+
+    /// Shown when clearing the whole history is refused. The dialog promised to
+    /// remove everything permanently, so a refusal has to say that it did not.
+    static let clearAllFailureMessage = "Couldn't clear your history — nothing was removed."
+
     /// Runs `save`. On refusal it undoes the in-memory change via `rollback` and
     /// hands `message` to `report`, returning false so the caller can stop
     /// before any of its success bookkeeping runs.
@@ -40,7 +53,7 @@ enum EntryPersistence {
             try save()
             return true
         } catch {
-            print("TapLog: \(message) — \(error)")
+            Log.capture.error("\(message, privacy: .public) — \(Log.describe(error), privacy: .public)")
             rollback()
             report(message)
             return false

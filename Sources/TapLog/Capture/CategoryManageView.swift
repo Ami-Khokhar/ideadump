@@ -117,7 +117,7 @@ struct CategoryManageView: View {
         do {
             try modelContext.save()
         } catch {
-            print("TapLog: Failed to delete categories: \(error)")
+            Log.capture.error("Failed to delete categories: \(Log.describe(error), privacy: .public)")
         }
     }
 }
@@ -131,7 +131,17 @@ struct EditCategorySheet: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
+    /// Needed only to count the budgets that already exist: this sheet can
+    /// create one, and the free limit is a count across all of them.
+    @Query private var allCategories: [SpendCategory]
+
+    private var pro = ProStore.shared
+
     let category: SpendCategory
+
+    init(category: SpendCategory) {
+        self.category = category
+    }
 
     @State private var name = ""
     @State private var emoji = ""
@@ -139,6 +149,20 @@ struct EditCategorySheet: View {
     @State private var period: BudgetPeriod = .weekly
     @State private var errorMessage: String?
     @State private var loaded = false
+    @State private var showingPaywall = false
+
+    /// True when this category has no budget yet and every free slot is taken.
+    ///
+    /// BudgetsView's `+` was the only place that asked `ProGate`, and this sheet
+    /// reaches the same editor by a different route — Log → More → Manage → a
+    /// category. A one-door lock on a two-door room is not a lock. Editing an
+    /// existing budget stays open at any count: the limit is on planting a new
+    /// tree, not on tending the ones already growing.
+    private var budgetIsLocked: Bool {
+        guard category.budgetTarget == nil else { return false }
+        let budgetCount = allCategories.filter { $0.budgetTarget != nil }.count
+        return !ProGate.canPlantAnotherTree(existingBudgetCount: budgetCount, isPro: pro.isPro)
+    }
 
     private static let emojiSuggestions = ["☕️", "🍽️", "🚌", "🏠", "🛍️", "🧾", "🎉", "💊", "🎮", "🐶", "✈️", "📦"]
 
@@ -171,15 +195,29 @@ struct EditCategorySheet: View {
                     }
                 }
                 Section {
-                    BudgetTargetEditor(
-                        categoryKey: category.key,
-                        amount: $budgetAmount,
-                        period: $period
-                    )
+                    if budgetIsLocked {
+                        Button {
+                            showingPaywall = true
+                        } label: {
+                            Label(
+                                "Grow a fourth tree",
+                                systemImage: "lock"
+                            )
+                            .foregroundStyle(Theme.accent)
+                        }
+                    } else {
+                        BudgetTargetEditor(
+                            categoryKey: category.key,
+                            amount: $budgetAmount,
+                            period: $period
+                        )
+                    }
                 } header: {
                     Text("Budget")
                 } footer: {
-                    Text("Spend limit per period. Set to zero for no budget.")
+                    Text(budgetIsLocked
+                         ? "Three budgets are free. Unlock TapLog Pro for the rest."
+                         : "Spend limit per period. Set to zero for no budget.")
                 }
                 if let errorMessage {
                     Section {
@@ -211,6 +249,11 @@ struct EditCategorySheet: View {
                 }
                 period = category.budgetPeriod ?? .weekly
             }
+            .sheet(isPresented: $showingPaywall) {
+                PaywallView(reason: .anotherTree)
+                    .applyAppearanceOverride()
+                    .tint(Theme.accent)
+            }
         }
     }
 
@@ -220,7 +263,7 @@ struct EditCategorySheet: View {
 
         let original = EditCategorySnapshot(category: category)
 
-        if budgetAmount > 0 {
+        if budgetAmount > 0, !budgetIsLocked {
             category.budgetTarget = budgetAmount
             category.budgetPeriod = period
         } else {

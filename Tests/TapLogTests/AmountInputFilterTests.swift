@@ -125,6 +125,125 @@ final class AmountInputFilterTests: XCTestCase {
         XCTAssertNil(third.error)
     }
 
+    /// The keypad let a second decimal point through, so 15.5.2.275.57 could be
+    /// typed one key at a time: the guard below only caught a *different*
+    /// separator arriving second, never a repeat of the same one.
+    func testTypingSecondDecimalSeparatorRestoresPreviousValue() {
+        let result = AmountInputFilter.filterEdit(
+            current: "15.5",
+            range: NSRange(location: 4, length: 0),
+            replacement: ".",
+            decimalSeparator: "."
+        )
+        XCTAssertTrue(result.restoresPrevious)
+        XCTAssertEqual(result.text, "15.5")
+    }
+
+    func testRepeatedDecimalSeparatorsNeverAccumulate() {
+        var current = ""
+        for key in ["1", "5", ".", "5", ".", "2", ".", "2", "7", "5", ".", "5", "7"] {
+            let result = AmountInputFilter.filterEdit(
+                current: current,
+                range: NSRange(location: (current as NSString).length, length: 0),
+                replacement: key,
+                decimalSeparator: "."
+            )
+            if !result.restoresPrevious { current = result.text }
+        }
+        XCTAssertEqual(current, "15.52", "only one decimal point, capped at two fractional digits")
+    }
+
+    /// Grouping is not the decimal mark, so it may legitimately repeat —
+    /// 1,20,000 is typed one comma at a time in an en_IN locale.
+    func testRepeatedGroupingSeparatorIsStillAccepted() {
+        let result = AmountInputFilter.filterEdit(
+            current: "1,20",
+            range: NSRange(location: 4, length: 0),
+            replacement: ",",
+            decimalSeparator: "."
+        )
+        XCTAssertFalse(result.restoresPrevious)
+        XCTAssertEqual(result.text, "1,20,")
+    }
+
+    /// In a comma-decimal locale the roles swap: the dot groups and may repeat,
+    /// the comma is the decimal point and may not.
+    func testDecimalSeparatorRuleFollowsTheLocaleNotTheGlyph() {
+        let repeatedComma = AmountInputFilter.filterEdit(
+            current: "12,5",
+            range: NSRange(location: 4, length: 0),
+            replacement: ",",
+            decimalSeparator: ","
+        )
+        XCTAssertTrue(repeatedComma.restoresPrevious)
+
+        let repeatedDot = AmountInputFilter.filterEdit(
+            current: "1.200",
+            range: NSRange(location: 5, length: 0),
+            replacement: ".",
+            decimalSeparator: ","
+        )
+        XCTAssertFalse(repeatedDot.restoresPrevious)
+        XCTAssertEqual(repeatedDot.text, "1.200.")
+    }
+
+    // MARK: - Leading Zeros
+
+    func testTypingDigitAfterLoneZeroReplacesIt() {
+        let result = AmountInputFilter.filterEdit(
+            current: "0", range: NSRange(location: 1, length: 0), replacement: "2"
+        )
+        XCTAssertEqual(result.text, "2")
+        XCTAssertNil(result.error)
+    }
+
+    func testLeadingZerosNeverAccumulate() {
+        var current = ""
+        for key in ["0", "2", "5"] {
+            let result = AmountInputFilter.filterEdit(
+                current: current,
+                range: NSRange(location: (current as NSString).length, length: 0),
+                replacement: key
+            )
+            if !result.restoresPrevious { current = result.text }
+        }
+        XCTAssertEqual(current, "25")
+    }
+
+    func testLoneZeroSurvivesSoDecimalsCanBeTyped() {
+        let zero = AmountInputFilter.filterEdit(
+            current: "", range: NSRange(location: 0, length: 0), replacement: "0"
+        )
+        XCTAssertEqual(zero.text, "0")
+
+        let separator = AmountInputFilter.filterEdit(
+            current: "0", range: NSRange(location: 1, length: 0), replacement: ".", decimalSeparator: "."
+        )
+        XCTAssertEqual(separator.text, "0.")
+
+        let fraction = AmountInputFilter.filterEdit(
+            current: "0.", range: NSRange(location: 2, length: 0), replacement: "5"
+        )
+        XCTAssertEqual(fraction.text, "0.5")
+        XCTAssertEqual(Money.parse(fraction.text), Decimal(string: "0.5"))
+    }
+
+    func testInteriorAndFractionalZerosAreUntouched() {
+        XCTAssertEqual(AmountInputFilter.strippingLeadingZeros("100"), "100")
+        XCTAssertEqual(AmountInputFilter.strippingLeadingZeros("10.05"), "10.05")
+        XCTAssertEqual(AmountInputFilter.strippingLeadingZeros("0.50"), "0.50")
+        XCTAssertEqual(AmountInputFilter.strippingLeadingZeros("00"), "0")
+        XCTAssertEqual(AmountInputFilter.strippingLeadingZeros("007"), "7")
+        XCTAssertEqual(AmountInputFilter.strippingLeadingZeros("0,50"), "0,50")
+    }
+
+    func testTypingZeroAfterANonZeroDigitStillAppends() {
+        let result = AmountInputFilter.filterEdit(
+            current: "1", range: NSRange(location: 1, length: 0), replacement: "0"
+        )
+        XCTAssertEqual(result.text, "10")
+    }
+
     func testTypingCommaDecimalOneEditAtATime() {
         let first = AmountInputFilter.filterEdit(
             current: "12", range: NSRange(location: 2, length: 0), replacement: ","

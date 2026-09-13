@@ -32,6 +32,38 @@ final class RetentionManager {
         self.calendar = calendar
     }
 
+    // MARK: - Observation
+
+    /// The only stored property that changes, and the reason this class is
+    /// observable at all.
+    ///
+    /// Every value below is computed over `UserDefaults`, and the `@Observable`
+    /// macro instruments *stored* properties only — so without this there was
+    /// nothing for SwiftUI to track, and no view that reads a streak, a target
+    /// or a freeze was ever invalidated when one changed. The symptoms were
+    /// visible: the Settings "log target" stepper wrote the new value and left
+    /// its own label at the old one, and spending a streak freeze produced no
+    /// feedback at all. Reads go through `store`, which registers the
+    /// dependency; writes go through `put`/`drop`, which bump this.
+    private var revision = 0
+
+    /// `defaults` for reading. Touching `revision` on the way through is what
+    /// tells the observation machinery that this read depends on it.
+    private var store: UserDefaults {
+        _ = revision
+        return defaults
+    }
+
+    private func put(_ value: Any?, _ key: String) {
+        revision &+= 1
+        defaults.set(value, forKey: key)
+    }
+
+    private func drop(_ key: String) {
+        revision &+= 1
+        defaults.removeObject(forKey: key)
+    }
+
     // MARK: - Legacy migration
 
     /// One-time move of retention state from `UserDefaults.standard` — where it
@@ -60,42 +92,42 @@ final class RetentionManager {
     /// How many days per week the user aims to log (3–7, default 5).
     var weeklyTarget: Int {
         get {
-            let raw = defaults.integer(forKey: Keys.weeklyTarget)
+            let raw = store.integer(forKey: Keys.weeklyTarget)
             return raw == 0 ? 5 : max(3, min(7, raw))
         }
-        set { defaults.set(max(3, min(7, newValue)), forKey: Keys.weeklyTarget) }
+        set { put(max(3, min(7, newValue)), Keys.weeklyTarget) }
     }
 
     // MARK: - Streak
 
     /// Consecutive weeks the user has hit their target.
     var currentStreak: Int {
-        get { defaults.integer(forKey: Keys.currentStreak) }
+        get { store.integer(forKey: Keys.currentStreak) }
         set {
-            defaults.set(newValue, forKey: Keys.currentStreak)
+            put(newValue, Keys.currentStreak)
             if newValue > longestStreak { longestStreak = newValue }
         }
     }
 
     /// All-time best streak.
     var longestStreak: Int {
-        get { defaults.integer(forKey: Keys.longestStreak) }
-        set { defaults.set(newValue, forKey: Keys.longestStreak) }
+        get { store.integer(forKey: Keys.longestStreak) }
+        set { put(newValue, Keys.longestStreak) }
     }
 
     // MARK: - Streak Freezes
 
     /// Number of stored streak freezes (0–3). Earned every 10 logs.
     var streakFreezes: Int {
-        get { min(3, defaults.integer(forKey: Keys.streakFreezes)) }
-        set { defaults.set(min(3, max(0, newValue)), forKey: Keys.streakFreezes) }
+        get { min(3, store.integer(forKey: Keys.streakFreezes)) }
+        set { put(min(3, max(0, newValue)), Keys.streakFreezes) }
     }
 
     /// Total lifetime log count (used to award freezes).
     var totalLogs: Int {
-        get { defaults.integer(forKey: Keys.totalLogs) }
+        get { store.integer(forKey: Keys.totalLogs) }
         set {
-            defaults.set(newValue, forKey: Keys.totalLogs)
+            put(newValue, Keys.totalLogs)
             // Award a freeze every 10 logs, up to max 3.
             let newFreezes = newValue / 10
             if newFreezes > streakFreezes {
@@ -109,29 +141,29 @@ final class RetentionManager {
     /// The first day of the current tracking week, in the user's own calendar.
     private var weekStartDate: Date {
         get {
-            if let stored = defaults.object(forKey: Keys.weekStartDate) as? Date {
+            if let stored = store.object(forKey: Keys.weekStartDate) as? Date {
                 return stored
             }
             let start = Self.weekStart(containing: Date(), calendar: calendar)
-            defaults.set(start, forKey: Keys.weekStartDate)
+            put(start, Keys.weekStartDate)
             return start
         }
-        set { defaults.set(newValue, forKey: Keys.weekStartDate) }
+        set { put(newValue, Keys.weekStartDate) }
     }
 
     /// 7-element array indexed from `weekStartDate`: 0 = the week's first day …
     /// 6 = its last. `true` = logged that day.
     private var weeklyMask: [Bool] {
-        get { (defaults.array(forKey: Keys.weeklyMask) as? [Bool]) ?? Array(repeating: false, count: 7) }
-        set { defaults.set(newValue, forKey: Keys.weeklyMask) }
+        get { (store.array(forKey: Keys.weeklyMask) as? [Bool]) ?? Array(repeating: false, count: 7) }
+        set { put(newValue, Keys.weeklyMask) }
     }
 
     /// Whether the current week was saved by consuming a streak freeze.
     /// Separate from `weekResolved` so that a freeze does not block a later
     /// target completion from extending the streak.
     private var weekFrozen: Bool {
-        get { defaults.bool(forKey: Keys.weekFrozen) }
-        set { defaults.set(newValue, forKey: Keys.weekFrozen) }
+        get { store.bool(forKey: Keys.weekFrozen) }
+        set { put(newValue, Keys.weekFrozen) }
     }
 
     // MARK: - Computed
@@ -163,7 +195,7 @@ final class RetentionManager {
 
         // If target just got hit this log, check if last week's streak needs resolving.
         // A freeze can coexist with a target completion — they are independent.
-        if targetMet && !defaults.bool(forKey: Keys.weekResolved) {
+        if targetMet && !store.bool(forKey: Keys.weekResolved) {
             extendStreak()
         }
     }
@@ -174,8 +206,18 @@ final class RetentionManager {
     /// already been met (to avoid wasting a freeze on a resolved week). Using a
     /// freeze does **not** prevent `recordLogDay` from later extending the streak
     /// if the target is subsequently met.
+    /// Whether "Use a freeze" would actually do anything.
+    ///
+    /// The recap's button condition and this method's guard were written
+    /// separately and disagreed about `weekFrozen`: after one use the button
+    /// stayed on screen and returned `false` for the rest of the week. One
+    /// property now answers both, so they cannot drift apart again.
+    var canUseStreakFreeze: Bool {
+        streakFreezes > 0 && !weekFrozen && !targetMet
+    }
+
     func useStreakFreeze() -> Bool {
-        guard streakFreezes > 0, !weekFrozen, !targetMet else { return false }
+        guard canUseStreakFreeze else { return false }
         streakFreezes -= 1
         weekFrozen = true
         return true
@@ -212,8 +254,8 @@ final class RetentionManager {
         totalLogs = 0
         weekStartDate = Self.weekStart(containing: Date(), calendar: calendar)
         weeklyMask = Array(repeating: false, count: 7)
-        defaults.set(false, forKey: Keys.weekResolved)
-        defaults.set(false, forKey: Keys.weekFrozen)
+        put(false, Keys.weekResolved)
+        put(false, Keys.weekFrozen)
     }
 
     /// The user's display-friendly streak description, or nil if streak is 0.
@@ -276,10 +318,10 @@ final class RetentionManager {
     /// credit a day the user has not lived yet, and dropping can only ever cost
     /// progress, never invent it.
     private func migrateWeekAlignmentIfNeeded() {
-        guard !defaults.bool(forKey: Keys.weekAlignmentMigrated) else { return }
-        defaults.set(true, forKey: Keys.weekAlignmentMigrated)
+        guard !store.bool(forKey: Keys.weekAlignmentMigrated) else { return }
+        put(true, Keys.weekAlignmentMigrated)
 
-        guard let storedStart = defaults.object(forKey: Keys.weekStartDate) as? Date else { return }
+        guard let storedStart = store.object(forKey: Keys.weekStartDate) as? Date else { return }
         let alignedStart = Self.weekStart(containing: storedStart, calendar: calendar)
         guard let shift = calendar.dateComponents([.day], from: alignedStart, to: storedStart).day,
               shift != 0
@@ -307,8 +349,8 @@ final class RetentionManager {
         // week's data is gone.
         let lastWeekDaysLogged = weeklyMask.filter(\.self).count
         let lastWeekTarget = weeklyTarget
-        let lastWeekWasUnresolved = !defaults.bool(forKey: Keys.weekResolved)
-        let lastWeekWasFrozen = defaults.bool(forKey: Keys.weekFrozen)
+        let lastWeekWasUnresolved = !store.bool(forKey: Keys.weekResolved)
+        let lastWeekWasFrozen = store.bool(forKey: Keys.weekFrozen)
 
         // Resolve the previous week before opening the new one.
         // - Target met: increment the streak exactly once.
@@ -326,13 +368,13 @@ final class RetentionManager {
         // Advance into the new week with a fresh, unresolved window.
         weekStartDate = thisWeekStart
         weeklyMask = Array(repeating: false, count: 7)
-        defaults.set(false, forKey: Keys.weekResolved)
-        defaults.set(false, forKey: Keys.weekFrozen)
+        put(false, Keys.weekResolved)
+        put(false, Keys.weekFrozen)
     }
 
     /// Called when the current week's target is first met — extends the streak.
     private func extendStreak() {
         currentStreak += 1
-        defaults.set(true, forKey: Keys.weekResolved)
+        put(true, Keys.weekResolved)
     }
 }

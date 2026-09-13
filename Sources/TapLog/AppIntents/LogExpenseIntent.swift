@@ -10,38 +10,60 @@ struct LogExpenseIntent: AppIntent {
     static var openAppWhenRun: Bool = false
     static var isDiscoverable: Bool = true
 
-    @Parameter(title: "Amount")
+    @Parameter(title: "Amount", requestValueDialog: "How much did you spend?")
     var amount: Double
+
+    /// An entity rather than a String so it can appear in an `AppShortcut` phrase
+    /// ("Log chai in TapLog") — phrases only interpolate `AppEntity`/`AppEnum`.
+    @Parameter(title: "Category", requestValueDialog: "What category was this expense?")
+    var category: CategoryEntity
 
     @Parameter(title: "Note")
     var note: String?
 
-    /// An entity rather than a String so it can appear in an `AppShortcut` phrase
-    /// ("Log chai in TapLog") — phrases only interpolate `AppEntity`/`AppEnum`.
-    @Parameter(title: "Category")
-    var category: CategoryEntity?
+    /// Siri and Shortcuts never prompt for an optional parameter, so the note is
+    /// asked for in `perform()` instead. Users who never add notes can switch the
+    /// question off in their own shortcut; a note passed in is never re-asked.
+    @Parameter(title: "Ask for Note", default: true)
+    var askForNote: Bool
+
+    static var parameterSummary: some ParameterSummary {
+        Summary("Log \(\.$amount) in \(\.$category)") {
+            \.$note
+            \.$askForNote
+        }
+    }
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        let validatedAmount = try TapLogIntentAmountValidator.validate(amount)
+        let validatedAmount: Decimal
+        do {
+            validatedAmount = try TapLogIntentAmountValidator.validate(amount)
+        } catch {
+            // Ask again rather than end the shortcut on a typo like "0".
+            throw $amount.needsValueError("Enter an amount greater than zero. How much did you spend?")
+        }
+
+        var rawNote = note
+        if rawNote == nil, askForNote {
+            rawNote = try await $note.requestValue("Any note? Say “skip” for none.")
+        }
+        let cleanedNote = Self.cleanedNote(rawNote)
+
         // Reuses the process-wide container. Siri runs this intent inside the
         // app's own process, where a container is already open.
         let container = try StoreLocator.container()
         let context = container.mainContext
         let categories = (try? context.fetch(FetchDescriptor<SpendCategory>())) ?? []
 
-        let categoryKey = Self.resolvedKey(
-            entity: category,
-            categories: categories,
-            lastUsed: UserDefaults.standard.string(forKey: "lastUsedCategory")
-        )
+        let categoryKey = Self.resolvedKey(entity: category, categories: categories)
 
-        let entry = Entry(amount: validatedAmount, category: categoryKey, note: note)
+        let entry = Entry(amount: validatedAmount, category: categoryKey, note: cleanedNote)
         context.insert(entry)
         do {
             try context.save()
         } catch {
-            print("TapLog: Failed to save entry from Siri: \(error)")
+            Log.intents.error("Failed to save entry from Siri: \(Log.describe(error), privacy: .public)")
             throw TapLogIntentError.saveFailed
         }
 
@@ -52,27 +74,30 @@ struct LogExpenseIntent: AppIntent {
         return .result(dialog: "Logged \(Money.format(validatedAmount)) in \(categoryName).")
     }
 
-    /// Voice logging used to file everything under "Other". `category` was an
-    /// optional `String`, and Siri never prompts for optional parameters, so it
-    /// always arrived nil and fell straight through to the fallback key. When
-    /// nothing is spoken we now reuse the category the user last logged — the same
-    /// one the capture screen preselects — before giving up on "Other".
+    /// Words that answer the note question with "no note". Siri transcribes a
+    /// spoken "skip" as "Skip." — case and trailing punctuation are ignored.
+    private static let skipWords: Set<String> = ["skip", "no", "none", "nope", "nothing", "no note"]
+
+    /// Trims the note and turns an empty answer or a skip word into no note.
+    static func cleanedNote(_ raw: String?) -> String? {
+        guard let trimmed = raw?.trimmingCharacters(in: .whitespacesAndNewlines) else { return nil }
+        let word = trimmed.lowercased().trimmingCharacters(in: .punctuationCharacters)
+        if word.isEmpty || skipWords.contains(word) { return nil }
+        return trimmed
+    }
+
     static func resolvedKey(
-        entity: CategoryEntity?,
-        categories: [SpendCategory],
-        lastUsed: String?
+        entity: CategoryEntity,
+        categories: [SpendCategory]
     ) -> String {
-        if let entity, categories.contains(where: { $0.key == entity.id }) {
+        if categories.contains(where: { $0.key == entity.id }) {
             return entity.id
-        }
-        if let lastUsed, categories.contains(where: { $0.key == lastUsed }) {
-            return lastUsed
         }
         return SpendCategory.fallbackKey
     }
 
-    /// String-based resolution, kept for callers that only have text (deep links,
-    /// Shortcuts actions built before categories were an entity).
+    /// String-based resolution for callers that only have text, such as deep
+    /// links and older Shortcuts actions.
     static func resolveCategoryKey(_ raw: String?, categories: [SpendCategory]) -> String {
         guard let raw = raw?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
             return SpendCategory.fallbackKey

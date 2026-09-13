@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TapLog — The 2-Second Expense Log for iPhone</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090c15;
+      --card-bg: #111625;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover: rgba(255, 255, 255, 0.12);
+      --text-main: #f4f6fa;
+      --text-muted: #8b95a5;
+      --text-faint: #525c6e;
+      --accent: #d4a373;
+      --accent-glow: rgba(212, 163, 115, 0.15);
+      --accent-subtle: #faedcd;
+      --brand-navy: #0e1526;
+      --green: #2ec4b6;
+      --green-glow: rgba(46, 196, 182, 0.15);
+      --red: #e71d36;
+      --mono: 'Geist Mono', monospace;
+      --sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: var(--sans);
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    /* Subtle background grid inspired by Linear/Raycast */
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse 60% 50% at 50% 0%, #000 70%, transparent 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Nav */
+    nav {
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+      text-decoration: none;
+    }
+
+    .logo-badge {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+
+    .nav-link:hover {
+      color: var(--text-main);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 980px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--text-main);
+      color: var(--bg);
+    }
+
+    .btn-primary:hover {
+      background: #ffffff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--card-hover);
+    }
+
+    /* Hero */
+    .hero {
+      padding: 80px 0 60px;
+      text-align: center;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 14px;
+      border-radius: 980px;
+      background: rgba(212, 163, 115, 0.1);
+      border: 1px solid rgba(212, 163, 115, 0.25);
+      color: var(--accent-subtle);
+      font-size: 0.82rem;
+      font-weight: 500;
+      font-family: var(--mono);
+      margin-bottom: 24px;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent);
+    }
+
+    h1 {
+      font-size: clamp(2.4rem, 5vw, 3.8rem);
+      font-weight: 700;
+      letter-spacing: -0.035em;
+      line-height: 1.1;
+      margin-bottom: 20px;
+      color: #ffffff;
+    }
+
+    .hero-sub {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      max-width: 580px;
+      margin: 0 auto 36px;
+    }
+
+    .hero-cta-group {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .hero-meta {
+      font-size: 0.85rem;
+      color: var(--text-faint);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .hero-meta span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Interactive Frame / Visual Demo */
+    .demo-wrapper {
+      margin: 40px auto 100px;
+      max-width: 860px;
+      background: radial-gradient(circle at 50% 0%, rgba(212, 163, 115, 0.08), transparent 70%), var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 36px;
+      position: relative;
+      box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.6);
+    }
+
+    .interactive-demo {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 40px;
+      align-items: center;
+    }
+
+    @media (max-width: 768px) {
+      .interactive-demo {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Mock Phone Screen */
+    .phone-mock {
+      background: #000000;
+      border: 8px solid #1e2433;
+      border-radius: 38px;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(255,255,255,0.1);
+      position: relative;
+      width: 100%;
+      max-width: 320px;
+      margin: 0 auto;
+    }
+
+    .phone-notch {
+      width: 100px;
+      height: 24px;
+      background: #1e2433;
+      margin: 0 auto;
+      border-bottom-left-radius: 14px;
+      border-bottom-right-radius: 14px;
+    }
+
+    .phone-screen {
+      padding: 24px 20px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: 480px;
+    }
+
+    .phone-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--text-faint);
+    }
+
+    .amount-display {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px 16px;
+      text-align: center;
+    }
+
+    .amount-val {
+      font-family: var(--mono);
+      font-size: 2.4rem;
+      font-weight: 600;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+    }
+
+    .category-chips {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 10px 4px;
+      font-size: 0.75rem;
+      text-align: center;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .chip.active {
+      background: rgba(212, 163, 115, 0.2);
+      border-color: var(--accent);
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    .numpad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: auto;
+    }
+
+    .num-key {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 12px;
+      padding: 12px 0;
+      font-family: var(--mono);
+      font-size: 1.1rem;
+      text-align: center;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .num-key:active {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .demo-callouts {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .callout-card {
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+    }
+
+    .callout-card h3 {
+      font-size: 1rem;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #ffffff;
+    }
+
+    .callout-card p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* 3 Pillars / Lego Blocks */
+    .section-title {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    .section-title h2 {
+      font-size: 2rem;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+      color: #ffffff;
+    }
+
+    .section-title p {
+      color: var(--text-muted);
+      font-size: 1rem;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-bottom: 120px;
+    }
+
+    .feature-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .feature-card:hover {
+      border-color: var(--card-hover);
+      transform: translateY(-2px);
+    }
+
+    .feature-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      margin-bottom: 20px;
+      color: var(--accent);
+    }
+
+    .feature-card h3 {
+      font-size: 1.15rem;
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
+      color: #ffffff;
+    }
+
+    .feature-card p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    /* Comparison vs Subscription apps */
+    .comparison-section {
+      margin-bottom: 120px;
+    }
+
+    .comparison-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      overflow: hidden;
+    }
+
+    .table-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      padding: 18px 28px;
+      border-bottom: 1px solid var(--card-border);
+      font-size: 0.92rem;
+      align-items: center;
+    }
+
+    .table-header {
+      background: rgba(255, 255, 255, 0.02);
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .table-row:last-child {
+      border-bottom: none;
+    }
+
+    .badge-check {
+      color: var(--green);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge-cross {
+      color: var(--text-faint);
+    }
+
+    /* Pricing Section */
+    .pricing-section {
+      margin-bottom: 120px;
+      text-align: center;
+    }
+
+    .pricing-card {
+      max-width: 440px;
+      margin: 0 auto;
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.7)), var(--card-bg);
+      border: 1px solid rgba(212, 163, 115, 0.3);
+      border-radius: 28px;
+      padding: 40px 32px;
+      box-shadow: 0 0 50px -10px var(--accent-glow);
+    }
+
+    .price-tag {
+      margin: 20px 0 28px;
+    }
+
+    .price-amount {
+      font-family: var(--mono);
+      font-size: 3.2rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.03em;
+    }
+
+    .price-period {
+      color: var(--accent);
+      font-weight: 500;
+      font-size: 0.9rem;
+      display: block;
+      margin-top: 4px;
+    }
+
+    .pricing-features {
+      list-style: none;
+      text-align: left;
+      margin-bottom: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      font-size: 0.92rem;
+      color: var(--text-muted);
+    }
+
+    .pricing-features li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pricing-features li svg {
+      flex-shrink: 0;
+      color: var(--accent);
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--card-border);
+      padding: 40px 0 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: var(--text-faint);
+    }
+
+    @media (max-width: 640px) {
+      .hero { padding: 50px 0 30px; }
+      .table-row { grid-template-columns: 1.5fr 1fr 1fr; padding: 14px 16px; font-size: 0.82rem; }
+      footer { flex-direction: column; gap: 16px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+
+  <div class="container">
+    <!-- Navbar -->
+    <nav>
+      <a href="#" class="logo">
+        <div class="logo-badge">⚡️</div>
+        TapLog
+      </a>
+      <div class="nav-actions">
+        <a href="#pricing" class="nav-link">Pricing</a>
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#get-started" class="btn btn-secondary">Get TestFlight</a>
+      </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="badge-pill">
+        <span class="badge-dot"></span>
+        NATIVE IOS &bull; LOCAL-FIRST &bull; ONE-TIME UNLOCK
+      </div>
+      <h1>Log expenses in 2 seconds.<br>Never lose track again.</h1>
+      <p class="hero-sub">
+        The private, zero-friction iPhone expense tracker. Open straight to keypad with your Action Button or Siri. No bank sync, no accounts, and no monthly subscription.
+      </p>
+      <div class="hero-cta-group" id="get-started">
+        <a href="#" class="btn btn-primary" style="padding: 14px 28px; font-size: 1rem;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Get TapLog for iPhone
+        </a>
+      </div>
+      <div class="hero-meta">
+        <span>🔒 100% Offline SQLite</span>
+        <span>⚡️ 0 Setup Shortcuts</span>
+        <span>♾️ Own it forever</span>
+      </div>
+    </section>
+
+    <!-- Interactive / Tactile Demo Block -->
+    <div class="demo-wrapper">
+      <div class="interactive-demo">
+        <!-- Interactive phone component -->
+        <div class="phone-mock">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="phone-header">
+              <span>Action Button Triggered</span>
+              <span style="font-family: var(--mono); color: var(--green);">0.4s</span>
+            </div>
+            
+            <div class="amount-display">
+              <div class="amount-val" id="demo-amount">₹ 150</div>
+            </div>
+
+            <div class="category-chips">
+              <div class="chip active" onclick="setCategory(this, 'Coffee')">☕️ Coffee</div>
+              <div class="chip" onclick="setCategory(this, 'Food')">🍔 Food</div>
+              <div class="chip" onclick="setCategory(this, 'Metro')">🚇 Metro</div>
+              <div class="chip" onclick="setCategory(this, 'Grocery')">🥦 Grocery</div>
+              <div class="chip" onclick="setCategory(this, 'Bills')">⚡️ Bills</div>
+              <div class="chip" onclick="setCategory(this, 'Misc')">📦 Misc</div>
+            </div>
+
+            <div class="numpad">
+              <div class="num-key" onclick="pressNum('1')">1</div>
+              <div class="num-key" onclick="pressNum('2')">2</div>
+              <div class="num-key" onclick="pressNum('3')">3</div>
+              <div class="num-key" onclick="pressNum('4')">4</div>
+              <div class="num-key" onclick="pressNum('5')">5</div>
+              <div class="num-key" onclick="pressNum('6')">6</div>
+              <div class="num-key" onclick="pressNum('7')">7</div>
+              <div class="num-key" onclick="pressNum('8')">8</div>
+              <div class="num-key" onclick="pressNum('9')">9</div>
+              <div class="num-key" onclick="pressNum('C')" style="color: var(--accent);">C</div>
+              <div class="num-key" onclick="pressNum('0')">0</div>
+              <div class="num-key" onclick="pressSave()" style="background: var(--text-main); color: var(--bg); font-weight: 700;">✓</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Callouts -->
+        <div class="demo-callouts">
+          <div class="callout-card">
+            <h3>🔘 Zero-Tap Action Button Launch</h3>
+            <p>One click on the side of your iPhone 15 Pro / 16 Pro brings up the keypad instantly. No splash screens, no tab bar hopping.</p>
+          </div>
+          <div class="callout-card">
+            <h3>🗣️ Prebuilt Siri Voice Logging</h3>
+            <p>"Hey Siri, log an expense in TapLog" — ships with native App Shortcuts ready out of the box without building workflows in Apple Shortcuts.</p>
+          </div>
+          <div class="callout-card">
+            <h3>🗄️ Strict Local-First Privacy</h3>
+            <p>Your financial transactions live exclusively in a local SQLite file on your device. Zero servers, zero trackers, zero bank API logins.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3 Core Pillars -->
+    <section id="features">
+      <div class="section-title">
+        <h2>Designed to eliminate logging failure</h2>
+        <p>Most expense apps fail because entering a single transaction takes 15 seconds. TapLog cuts it to two.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">⚡️</div>
+          <h3>Frictionless Capture</h3>
+          <p>Instant numeric keypad focus, haptic confirmation, smart recurring tags, and swift category selection designed for single-hand use.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3>Clean Recaps & Trends</h3>
+          <p>Understand your weekly and monthly burn rate at a glance without complex charts or overwhelming multi-account balance sheets.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📁</div>
+          <h3>Pure Data Portability</h3>
+          <p>Your money, your data. Export your full transaction history to clean CSV format for Excel, Google Sheets, or Notion in one tap.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Comparison Table -->
+    <section class="comparison-section">
+      <div class="section-title">
+        <h2>Why TapLog feels different</h2>
+        <p>We built the anti-subscription, anti-bloat alternative.</p>
+      </div>
+
+      <div class="comparison-card">
+        <div class="table-row table-header">
+          <div>Capability</div>
+          <div>Typical Finance SaaS</div>
+          <div style="color: var(--accent);">TapLog</div>
+        </div>
+        <div class="table-row">
+          <div>Time to log a purchase</div>
+          <div class="badge-cross">12–18 seconds</div>
+          <div class="badge-check">Under 2.5 seconds</div>
+        </div>
+        <div class="table-row">
+          <div>Requires Bank Linking / Login</div>
+          <div class="badge-cross">Yes (Mandatory)</div>
+          <div class="badge-check">Zero Accounts / Offline</div>
+        </div>
+        <div class="table-row">
+          <div>Hardware Action Button Integration</div>
+          <div class="badge-cross">None / Manual Setup</div>
+          <div class="badge-check">Native AppShortcut</div>
+        </div>
+        <div class="table-row">
+          <div>Pricing Model</div>
+          <div class="badge-cross">₹299–₹699 / Month</div>
+          <div class="badge-check">₹299 / Lifetime</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing-section" id="pricing">
+      <div class="section-title">
+        <h2>Simple, honest ownership</h2>
+        <p>Free to capture forever. Unlock power tools with a single lifetime purchase.</p>
+      </div>
+
+      <div class="pricing-card">
+        <span class="badge-pill" style="margin-bottom: 8px;">EARLY ADOPTER UNLOCK</span>
+        <div class="price-tag">
+          <span class="price-amount">₹299</span>
+          <span class="price-period">one-time payment &bull; lifetime license</span>
+        </div>
+
+        <ul class="pricing-features">
+          <li>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Unlimited instant manual & voice capture (Free)</span>
+          </li>
+          <li>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Unlimited custom categories & custom tags</span>
+          </li>
+          <li>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Weekly & monthly deep spending recaps</span>
+          </li>
+          <li>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Full CSV / Excel transaction export</span>
+          </li>
+          <li>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Zero recurring subscriptions forever</span>
+          </li>
+        </ul>
+
+        <a href="#get-started" class="btn btn-primary" style="width: 100%; padding: 14px;">
+          Claim Lifetime Access
+        </a>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <div>&copy; 2026 TapLog. Crafted for local-first speed on iOS.</div>
+      <div style="display: flex; gap: 20px;">
+        <a href="#" class="nav-link">Privacy</a>
+        <a href="#" class="nav-link">TestFlight</a>
+        <a href="https://x.com" class="nav-link">Twitter/X</a>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    let currentVal = '150';
+
+    function pressNum(char) {
+      if (char === 'C') {
+        currentVal = '0';
+      } else {
+        if (currentVal === '0') currentVal = '';
+        if (currentVal.length < 6) currentVal += char;
+      }
+      document.getElementById('demo-amount').innerText = '₹ ' + (currentVal || '0');
+    }
+
+    function setCategory(el, name) {
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function pressSave() {
+      const display = document.getElementById('demo-amount');
+      const prev = display.innerText;
+      display.innerText = 'Saved! ✓';
+      display.style.color = 'var(--green)';
+      setTimeout(() => {
+        display.innerText = prev;
+        display.style.color = '#ffffff';
+      }, 900);
+    }
+  </script>
+</body>
+</html>

@@ -45,6 +45,35 @@ struct BudgetsView: View {
             }
     }
 
+    /// `budgetReports` reduced to the shape `GroveSceneModel` expects, in the
+    /// same most-pressed-first order. This is the one conversion point, so the
+    /// header scene and the per-row species below are always derived from the
+    /// same list.
+    private var groveTrees: [GroveTree] {
+        budgetReports.map { report in
+            let cadence = report.period == .monthly ? "month" : "week"
+            return GroveTree(
+                categoryKey: report.categoryKey,
+                name: lookup.name(for: report.categoryKey),
+                health: report.health,
+                detail: Self.statusText(for: report, cadence: cadence),
+                utilization: report.utilization ?? 0
+            )
+        }
+    }
+
+    /// Plants for the header grove. This screen has room for the full strip,
+    /// unlike the capture screen's `GroveStripModel.maxStripTrees` cap.
+    private var grovePlants: [GrovePlant] {
+        GroveSceneModel.plants(from: groveTrees, maxPlants: 7)
+    }
+
+    /// Keyed by category so a row can look up the exact plant the header drew
+    /// for it — same species, same tint — instead of re-deriving one.
+    private var grovePlantsByCategory: [String: GrovePlant] {
+        Dictionary(uniqueKeysWithValues: grovePlants.map { ($0.categoryKey, $0) })
+    }
+
     var body: some View {
         NavigationStack {
             Group {
@@ -75,7 +104,7 @@ struct BudgetsView: View {
                     }
                     .scrollContentBackground(.hidden)
                     .floatingToolbarScrollEdge()
-                    .background(Theme.background)
+                    .background(PaperGround())
                 }
             }
             .navigationTitle("Budgets")
@@ -180,7 +209,7 @@ struct BudgetsView: View {
                         .background(Theme.accent, in: Capsule())
                         .foregroundStyle(Color.white)
                 }
-                .buttonStyle(ZenPress())
+                .buttonStyle(PressStyle())
                 .padding(.horizontal, 28)
                 .padding(.top, 30)
                 .entrance(delay: 0.2)
@@ -195,7 +224,7 @@ struct BudgetsView: View {
             .padding(.bottom, 40)
         }
         .floatingToolbarScrollEdge()
-        .background(Theme.background)
+        .background(PaperGround())
     }
 
     // MARK: - Grove Band
@@ -203,36 +232,19 @@ struct BudgetsView: View {
     private var groveCard: some View {
         let groveSummary = computeGroveSummary()
         return VStack(alignment: .leading, spacing: 0) {
-            // Trees in a row.
-            //
-            // Capped like `GroveStrip`: at 48pt apiece these run off the right
-            // edge of the card from the seventh budget on, and a tree drawn
-            // half-outside its own card is worse than one not drawn. The caption
-            // below counts every budget, drawn or not, and the rows underneath
-            // name them all — so nothing is hidden, only undrawn. `budgetReports`
-            // leads with the most-pressed budget, so an overspend is always
-            // among the ones that fit.
-            HStack(alignment: .bottom, spacing: 8) {
-                ForEach(budgetReports.prefix(GroveStripModel.maxStripTrees), id: \.categoryKey) { report in
-                    VStack(spacing: 0) {
-                        TreeMark(
-                            state: TreeHealthMark(report.health),
-                            color: report.isOver ? Theme.clay : Theme.accent
-                        )
-                        .frame(width: 48, height: 60)
-                    }
-                }
-                Spacer(minLength: 0)
-            }
-            .frame(maxWidth: .infinity)
+            // The full grove scene, expanded. This is the one place on the app
+            // where the grove gets to be big — every budgeted category up to
+            // `GroveSceneModel`'s default cap, laid out on real ground instead
+            // of the capture screen's cramped strip. `GroveScene` carries its
+            // own single VoiceOver summary, so nothing here adds a second one.
+            GroveScene(plants: grovePlants)
+                .frame(height: 180)
+                .frame(maxWidth: .infinity)
 
-            // Divider
-            Rectangle()
-                .fill(Theme.hairline)
-                .frame(height: 1)
-                .padding(.top, 12)
-
-            // Caption
+            // No divider here on purpose. `GroveScene` already draws its own
+            // ground line across the full width, so a hairline underneath it
+            // put two parallel rules a few points apart and read as a mistake.
+            // The ground line is the divider.
             Text(groveSummary)
                 .font(.footnote)
                 .foregroundStyle(Theme.textSecondary)
@@ -296,6 +308,10 @@ struct BudgetsView: View {
         let isExpanded = expandedCategory == report.categoryKey
         let cadence = report.period == .monthly ? "month" : "week"
         let utilization = NSDecimalNumber(decimal: report.utilization ?? 0).doubleValue
+        // Same plant the header grove drew for this category, so the row's
+        // species always matches. Falls back to the plain mark when a budget
+        // sits past the header's plant cap.
+        let plant = grovePlantsByCategory[report.categoryKey]
 
         return VStack(alignment: .leading, spacing: 0) {
             // Main row
@@ -305,11 +321,21 @@ struct BudgetsView: View {
                 }
             } label: {
                 HStack(spacing: 12) {
-                    // Tree mark
-                    TreeMark(
-                        state: TreeHealthMark(report.health),
-                        color: report.isOver ? Theme.clay : Theme.accent
-                    )
+                    // Tree mark — species-matched to the header grove when available.
+                    Group {
+                        if let plant {
+                            SpeciesTreeMark(
+                                state: TreeHealthMark(report.health),
+                                species: plant.species,
+                                color: report.isOver ? Theme.clay : Theme.accent
+                            )
+                        } else {
+                            TreeMark(
+                                state: TreeHealthMark(report.health),
+                                color: report.isOver ? Theme.clay : Theme.accent
+                            )
+                        }
+                    }
                     .frame(width: 42, height: 53)
 
                     VStack(alignment: .leading, spacing: 6) {
@@ -357,7 +383,7 @@ struct BudgetsView: View {
                 }
                 .padding(.vertical, 10)
             }
-            .buttonStyle(ZenPress())
+            .buttonStyle(PressStyle())
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(accessibilityLabel(for: report))
 
@@ -434,6 +460,8 @@ struct BudgetsView: View {
             }
         }
         .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .organicBackground(.tile, seed: report.categoryKey, fill: Theme.surface)
     }
 
     private func accessibilityLabel(for report: BudgetCalculator.Report) -> String {

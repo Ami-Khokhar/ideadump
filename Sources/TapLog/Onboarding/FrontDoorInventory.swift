@@ -44,6 +44,14 @@ final class FrontDoorInventory: ObservableObject {
         }
 
         if #available(iOS 18.0, *) {
+            // Says whether the control is placed, never *where*. iOS 18 lets one
+            // control live in Control Center, on the Lock Screen, or bound to the
+            // Action Button, and `ControlInfo` carries only a `kind` — there is
+            // no placement to read. The row this feeds is named for the control
+            // rather than for Control Center because of it: a row headed
+            // "Control Center" reporting "Added" was claiming a location iOS had
+            // not given us, and it told people they had set up something they
+            // hadn't.
             hasControl = try? await !ControlCenter.shared.currentControls().isEmpty
         } else {
             // Controls don't exist before iOS 18, so the row isn't shown there

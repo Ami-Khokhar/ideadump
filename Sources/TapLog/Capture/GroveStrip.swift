@@ -193,7 +193,7 @@ struct GroveStrip: View {
             .padding(.top, 12)
             .contentShape(Rectangle())
         }
-        .buttonStyle(ZenPress())
+        .buttonStyle(PressStyle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(GroveStripModel.accessibilityLabel(for: trees))
         .accessibilityHint("Opens Budgets")

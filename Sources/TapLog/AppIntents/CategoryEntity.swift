@@ -66,10 +66,11 @@ struct CategoryEntityQuery: EntityStringQuery {
         return all.filter { $0.name.lowercased().contains(needle) }
     }
 
-    /// Shown in the Shortcuts picker. Most-used first, matching how the capture
-    /// screen orders its tiles.
+    /// Shown in the Shortcuts picker, and as the list when a shortcut asks for the
+    /// category. Every category, most-used first, matching how the capture screen
+    /// orders its tiles — a capped list left the rest unpickable.
     @MainActor
     func suggestedEntities() async throws -> [CategoryEntity] {
-        Array(allCategories().prefix(8))
+        allCategories()
     }
 }

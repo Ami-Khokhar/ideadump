@@ -108,6 +108,13 @@ struct CaptureForm: View {
                 CategoryManageView()
             }
         }
+        // A refused save reports through the same toast, and this form stays on
+        // screen when that happens — so without a copy here the one message
+        // telling the user their edit did not save rendered two sheets below
+        // them.
+        .overlay(alignment: .bottom) {
+            UndoToast(bottomInset: UndoToast.sheetInset)
+        }
     }
 
     private func categoryButton(_ category: SpendCategory) -> some View {
@@ -205,7 +212,7 @@ struct CaptureForm: View {
                 try modelContext.save()
             } catch {
                 // The edit is still persisted — counters must stay as they are.
-                print("TapLog: Failed to persist undo of edit: \(error)")
+                Log.capture.error("Failed to persist undo of edit: \(Log.describe(error), privacy: .public)")
                 return
             }
             if previous.isPending {

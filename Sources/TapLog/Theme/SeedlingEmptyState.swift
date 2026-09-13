@@ -22,13 +22,13 @@ struct SeedlingEmptyState: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            TreeMark(state: .seedling, color: Theme.accent)
+            TreeMark(state: .seedling, color: Theme.fern)
                 .frame(width: 54, height: 68)
                 .entrance()
 
             Text(title)
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(Theme.textPrimary)
+                .foregroundStyle(Theme.ink)
                 .padding(.top, 18)
                 .entrance(delay: 0.08)
 

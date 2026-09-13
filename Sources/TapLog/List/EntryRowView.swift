@@ -4,12 +4,30 @@ struct EntryRowView: View {
     let entry: Entry
     let lookup: CategoryLookup
 
+    /// Built-in categories (the thirteen `BotanicalStamp` cases) get the unified
+    /// hand-inked mark. A category whose key isn't one of those — a user's own
+    /// custom category, or one they picked a specific emoji for — keeps that
+    /// emoji instead of collapsing to the shared `.other` fallback stamp, which
+    /// would erase the choice the user actually made. `stamp(for:)` still owns
+    /// the fallback for anything that needs a mark elsewhere (chips, etc.); this
+    /// row only reaches for a stamp when the category truly is one of the set.
+    private var builtInStamp: BotanicalStamp? {
+        BotanicalStamp(rawValue: entry.category)
+    }
+
     var body: some View {
         HStack(spacing: 12) {
-            Text(lookup.emoji(for: entry.category))
-                .font(.title3)
-                .frame(width: 36, height: 36)
-                .background(Theme.surface, in: Circle())
+            Group {
+                if let stamp = builtInStamp {
+                    BotanicalStampView(stamp: stamp, color: Theme.fern)
+                        .frame(width: 22, height: 22)
+                } else {
+                    Text(lookup.emoji(for: entry.category))
+                        .font(.title3)
+                }
+            }
+            .frame(width: 36, height: 36)
+            .background(Theme.surface, in: Circle())
             VStack(alignment: .leading, spacing: 2) {
                 Text(lookup.name(for: entry.category))
                     .font(.body.weight(.medium))

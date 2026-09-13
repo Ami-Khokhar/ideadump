@@ -35,6 +35,13 @@ struct ContentView: View {
     @State private var activeDeferredPrompt: DeferredPrompt?
     @State private var loggedInCurrentSession = false
     @State private var suppressDeferredPromptsThisSession = false
+    /// Set when a log lands, cleared when the undo toast for it goes away.
+    ///
+    /// A prompt presented while the toast is alive would cover it and take the
+    /// undo with it — the toast is an overlay on this root, so any sheet sits on
+    /// top. Waiting for the toast to clear also means waiting on the toast's own
+    /// signal rather than a second guessed delay.
+    @State private var awaitingPromptCheck = false
     /// Destination to open once a first-run explainer is dismissed. Set only by
     /// `openRoute`, so the explainer and the screen it describes are presented
     /// one after the other rather than stacked as two sheets.
@@ -63,16 +70,14 @@ struct ContentView: View {
 
     private var hasConfirmedEntry: Bool { !confirmedEntries.isEmpty }
 
-    /// The logo plays once, on the first launch, and never again.
+    /// Whether this launch suppresses the opening animation.
     ///
-    /// It costs 1.8 seconds before the keypad is usable. That is a fair price to
-    /// introduce an app nobody has seen; it is a toll on someone opening it for
-    /// the eleventh time to log a ₹20 chai before the queue moves — and this app's
-    /// entire pitch is that logging takes about five seconds. An intent launch
-    /// skips it for the same reason, only harder: that user has already said what
-    /// they came to do.
+    /// One case only: a widget or Siri activation. That user has already said
+    /// what they came to do, and this app's entire pitch is that logging takes
+    /// about five seconds — an animation is not worth a third of that when the
+    /// amount is already on its way in. Every ordinary launch plays it.
     private var skipSplash: Bool {
-        intentDirectCapture || hasLaunchedBefore
+        intentDirectCapture
     }
 
     /// A category counts as budgeted only with both halves set — a target with no
@@ -87,6 +92,10 @@ struct ContentView: View {
                 isOnboarding: isOnboardingCapture,
                 prefill: prefill,
                 onLogged: {
+                    // A log is what earns the next setup prompt, but the undo
+                    // toast owns the screen for the five seconds after it. Arm
+                    // the check and let the toast finish; see `awaitingPromptCheck`.
+                    awaitingPromptCheck = true
                     // The first log completes core onboarding, but never interrupts
                     // the capture surface with a second setup screen.
                     guard isOnboardingCapture else { return }
@@ -99,9 +108,6 @@ struct ContentView: View {
                 },
                 onPrefillConsumed: {
                     prefill = nil
-                },
-                onOpenBudgets: {
-                    openRoute(.budgets)
                 },
                 skipSplash: skipSplash
             )
@@ -151,6 +157,10 @@ struct ContentView: View {
         .onAppear {
             // Consume any pending intent activation written before the UI was ready.
             consumePendingIntent()
+            // A widget tap can cold-launch the app, and this view can appear before
+            // the didBecomeActive subscriber below is listening. The receipt is
+            // consumed once, so running it in both places offers the undo exactly once.
+            offerWidgetUndo()
             // Reconcile durable SwiftData truth before deciding whether to show
             // welcome or deferred prompts after a cold relaunch.
             reconcileOnboarding(with: confirmedEntries.count)
@@ -186,6 +196,7 @@ struct ContentView: View {
         // intent wrote its payload while the app was suspended.
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             consumePendingIntent()
+            offerWidgetUndo()
             reconcileOnboarding(with: confirmedEntries.count)
             handleLaunchFlow()
         }
@@ -211,6 +222,19 @@ struct ContentView: View {
         .onOpenURL { url in
             guard let prefill = CapturePrefill(url: url) else { return }
             routeToDirectCapture(prefill: prefill, recordDirectUse: true)
+        }
+        // A receipt held back by the guard in `offerWidgetUndo` gets its chance
+        // here: closing the sheet is the screen becoming clear, and no
+        // activation notification fires for that.
+        .onChange(of: route) { _, newValue in
+            if newValue == nil { offerWidgetUndo() }
+        }
+        // The toast going away is the screen becoming free — whether it timed
+        // out or the user took the log back with Undo.
+        .onChange(of: undoStack.current == nil) { _, isClear in
+            guard isClear, awaitingPromptCheck else { return }
+            awaitingPromptCheck = false
+            presentDeferredPromptIfDue()
         }
         .sheet(item: $route, onDismiss: continueAfterExplainer) { route in
             Group {
@@ -351,6 +375,47 @@ struct ContentView: View {
 
     // MARK: - Onboarding
 
+    /// Shows the five-second undo toast for an expense the widget logged while the
+    /// app was closed. The widget cannot show a toast of its own — it has no screen
+    /// after the tap — so the app owes the user one the next time it opens.
+    ///
+    /// Silent when nothing is pending, when the log is older than the receipt's
+    /// window, or when the entry has already been removed some other way.
+    private func offerWidgetUndo() {
+        // The toast is an overlay on the root, so a sheet or a cover sits on top
+        // of it. Consuming the receipt behind one would spend the widget's only
+        // undo on a toast nobody can see — and `consume` clears the slot, so it
+        // could never be offered again. Leave it where it is instead: whichever
+        // comes first, a clear screen or the end of the receipt's window.
+        guard route == nil, onboardingStep == nil, deferredPrompt == nil else { return }
+        guard let receipt = WidgetLogReceipt.consume() else { return }
+        let stamp = receipt.createdAt
+        let descriptor = FetchDescriptor<Entry>(predicate: #Predicate<Entry> { $0.createdAt == stamp })
+        guard let entry = try? modelContext.fetch(descriptor).first else { return }
+
+        let name = CategoryLookup(allCategories).name(for: entry.category)
+
+        // A widget tap is a log too, and this toast gives the same clean
+        // hand-off the keypad's does. Without this, someone who only ever logs
+        // from the widget would never be offered the setup prompts at all.
+        awaitingPromptCheck = true
+
+        // Leads with the source and stays short: the toast is one line wide, and
+        // "Logged ₹80.00 · Chai from the widget" truncated to "from the…".
+        undoStack.record("Widget logged \(Money.format(entry.amount)) · \(name)") {
+            let undone = CaptureBookkeeping.undoLog(
+                entry: entry,
+                modelContext: modelContext,
+                categories: allCategories
+            )
+            // `undo()` clears the toast before running this, so a refused undo
+            // would otherwise look exactly like one that worked.
+            if !undone {
+                undoStack.report("Could not undo that. The expense is still in History.")
+            }
+        }
+    }
+
     private func handleLaunchFlow() {
         // Slight delay so a cold-start deep link (widget/Siri) can arrive first and
         // suppress the welcome — don't ambush someone who came to log something.
@@ -389,29 +454,46 @@ struct ContentView: View {
                 }
             }
 
-            guard OnboardingFlow.canScheduleDeferredPrompts(
-                onboardingActive: onboardingActive,
-                hasOnboardingCover: onboardingStep != nil,
-                routeActive: route != nil,
-                deferredPromptActive: deferredPrompt != nil,
-                activeDeferredPrompt: activeDeferredPrompt != nil,
-                prefillActive: prefill != nil,
-                loggedInCurrentSession: loggedInCurrentSession,
-                suppressForCurrentSession: suppressDeferredPromptsThisSession
-            ) else { return }
-            if OnboardingFlow.shouldOfferCategories(confirmedLogCount: confirmedEntries.count) {
-                deferredPrompt = .categories
-            } else if OnboardingFlow.shouldOfferFirstBudget(
-                confirmedLogCount: confirmedEntries.count,
-                hasAnyBudget: hasAnyBudget
-            ) {
-                deferredPrompt = .firstBudget
-            } else if OnboardingFlow.shouldOfferFasterWays(
-                confirmedLogCount: confirmedEntries.count,
-                isFirstLogSession: loggedInCurrentSession
-            ) {
-                deferredPrompt = .fasterWays
-            }
+        }
+    }
+
+    /// Offers the next setup prompt, if one is due.
+    ///
+    /// This used to run on the 0.4-second launch timer above, which put the
+    /// sheet on screen 0.4s into a 2.1-second opening animation — the plant was
+    /// still sprouting behind it and the wordmark had not appeared yet. The two
+    /// clocks never knew about each other.
+    ///
+    /// It now follows a log instead, which is both a settled screen and the
+    /// moment each of these is actually about: the user has just categorised
+    /// something, just spent against a budget they do not have yet, or just
+    /// typed an amount they could have logged from the widget.
+    ///
+    /// The conditions are re-checked here rather than when the log happened, so
+    /// a log the user took back with Undo cannot leave a prompt behind.
+    private func presentDeferredPromptIfDue() {
+        guard OnboardingFlow.canScheduleDeferredPrompts(
+            onboardingActive: onboardingActive,
+            hasOnboardingCover: onboardingStep != nil,
+            routeActive: route != nil,
+            deferredPromptActive: deferredPrompt != nil,
+            activeDeferredPrompt: activeDeferredPrompt != nil,
+            prefillActive: prefill != nil,
+            loggedInCurrentSession: loggedInCurrentSession,
+            suppressForCurrentSession: suppressDeferredPromptsThisSession
+        ) else { return }
+        if OnboardingFlow.shouldOfferCategories(confirmedLogCount: confirmedEntries.count) {
+            deferredPrompt = .categories
+        } else if OnboardingFlow.shouldOfferFirstBudget(
+            confirmedLogCount: confirmedEntries.count,
+            hasAnyBudget: hasAnyBudget
+        ) {
+            deferredPrompt = .firstBudget
+        } else if OnboardingFlow.shouldOfferFasterWays(
+            confirmedLogCount: confirmedEntries.count,
+            isFirstLogSession: loggedInCurrentSession
+        ) {
+            deferredPrompt = .fasterWays
         }
     }
 

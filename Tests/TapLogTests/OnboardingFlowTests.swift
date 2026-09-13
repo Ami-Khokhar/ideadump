@@ -1,4 +1,5 @@
 import XCTest
+import SwiftData
 @testable import TapLog
 
 final class OnboardingFlowTests: XCTestCase {
@@ -119,38 +120,175 @@ final class OnboardingFlowTests: XCTestCase {
         XCTAssertEqual(
             LogExpenseIntent.resolvedKey(
                 entity: CategoryEntity(id: "metro", name: "Metro", emoji: "🚇"),
-                categories: siriCategories,
-                lastUsed: "chai"
+                categories: siriCategories
             ),
             "metro",
-            "a category named in the phrase must beat the last-used fallback"
+            "a category named in the phrase resolves directly to its entity key"
         )
     }
 
-    func testSilentCategoryFallsBackToLastUsedNotOther() {
-        // The regression this pins: `category` was an optional String, Siri never
-        // prompts for optional parameters, so every voice log landed in "Other".
+    func testRequiredCategoryResolvesToItsEntityKey() {
         XCTAssertEqual(
-            LogExpenseIntent.resolvedKey(entity: nil, categories: siriCategories, lastUsed: "chai"),
+            LogExpenseIntent.resolvedKey(
+                entity: CategoryEntity(id: "chai", name: "Chai", emoji: "☕️"),
+                categories: siriCategories
+            ),
             "chai"
         )
     }
 
     func testDeletedCategoriesFallThroughToOther() {
-        // A shortcut built against a category the user has since deleted, and a
-        // stale last-used key, must both degrade rather than resurrect the key.
+        // A shortcut built against a category the user has since deleted must
+        // degrade rather than resurrect the key.
         XCTAssertEqual(
             LogExpenseIntent.resolvedKey(
                 entity: CategoryEntity(id: "removed", name: "Removed", emoji: "❓"),
-                categories: siriCategories,
-                lastUsed: "alsoRemoved"
+                categories: siriCategories
             ),
             SpendCategory.fallbackKey
         )
         XCTAssertEqual(
-            LogExpenseIntent.resolvedKey(entity: nil, categories: siriCategories, lastUsed: nil),
+            LogExpenseIntent.resolvedKey(
+                entity: CategoryEntity(id: "alsoRemoved", name: "Also Removed", emoji: "❓"),
+                categories: siriCategories
+            ),
             SpendCategory.fallbackKey
         )
+    }
+
+    // MARK: - Log Expense shortcut
+
+    func testNoteAnswerSkipsOnEmptyOrSkipWord() {
+        XCTAssertNil(LogExpenseIntent.cleanedNote(nil))
+        XCTAssertNil(LogExpenseIntent.cleanedNote(""))
+        XCTAssertNil(LogExpenseIntent.cleanedNote("   "))
+        XCTAssertNil(LogExpenseIntent.cleanedNote("skip"))
+        XCTAssertNil(LogExpenseIntent.cleanedNote("Skip."), "Siri's transcription of a spoken skip")
+        XCTAssertNil(LogExpenseIntent.cleanedNote("No"))
+        XCTAssertNil(LogExpenseIntent.cleanedNote("nothing"))
+        XCTAssertNil(LogExpenseIntent.cleanedNote("-"))
+        XCTAssertEqual(LogExpenseIntent.cleanedNote("  dinner with Raj "), "dinner with Raj")
+        XCTAssertEqual(LogExpenseIntent.cleanedNote("no sugar"), "no sugar", "only a whole-answer skip word is dropped")
+    }
+
+    /// The category question lists `suggestedEntities()`. It used to stop at 8,
+    /// so with the 13 default categories "Rent" and friends could not be picked.
+    @MainActor
+    func testCategoryQuestionOffersEveryCategory() async throws {
+        let context = try StoreLocator.container().mainContext
+        let stored = try context.fetchCount(FetchDescriptor<SpendCategory>())
+        XCTAssertGreaterThan(stored, 8, "the test host seeds the default categories")
+
+        let offered = try await CategoryEntityQuery().suggestedEntities()
+        XCTAssertEqual(offered.count, stored)
+    }
+
+    /// Runs the real intent against the real store: amount, category and note
+    /// land in one entry the app reads.
+    @MainActor
+    func testLogExpenseIntentSavesEntryToStore() async throws {
+        let context = try StoreLocator.container().mainContext
+        let categories = try context.fetch(FetchDescriptor<SpendCategory>())
+        let chai = try XCTUnwrap(categories.first { $0.key == "chai" })
+        let note = "intent-test-\(UUID().uuidString)"
+
+        var intent = LogExpenseIntent()
+        intent.amount = 42.5
+        intent.category = CategoryEntity(id: chai.key, name: chai.name, emoji: chai.emoji)
+        intent.note = "  \(note) "
+        intent.askForNote = true // a note passed in must not be asked again
+        _ = try await intent.perform()
+
+        let saved = try context.fetch(FetchDescriptor<Entry>(predicate: #Predicate { $0.note == note }))
+        XCTAssertEqual(saved.count, 1)
+        let entry = try XCTUnwrap(saved.first)
+        XCTAssertEqual(entry.amount, Decimal(string: "42.5"))
+        XCTAssertEqual(entry.category, "chai")
+        XCTAssertFalse(entry.isPending)
+
+        // Leave the simulator's store as we found it.
+        context.delete(entry)
+        try context.save()
+        CaptureBookkeeping.revert(modelContext: context, categories: categories, categoryKey: "chai", entryDate: entry.date)
+    }
+
+    @MainActor
+    func testLogExpenseIntentRejectsZeroAmountWithoutSaving() async throws {
+        let context = try StoreLocator.container().mainContext
+        let before = try context.fetchCount(FetchDescriptor<Entry>())
+
+        var intent = LogExpenseIntent()
+        intent.amount = 0
+        intent.category = CategoryEntity(id: "chai", name: "Chai", emoji: "☕️")
+        intent.askForNote = false
+        do {
+            _ = try await intent.perform()
+            XCTFail("a zero amount must be asked for again, not logged")
+        } catch {}
+
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<Entry>()), before)
+    }
+
+    // MARK: - Widget quick-log
+
+    /// The widget's buttons run `QuickLogIntent` in the widget's own process.
+    /// Nothing covered it, so this runs it against the real store the way a tap does.
+    @MainActor
+    func testWidgetQuickLogSavesEntry() async throws {
+        let context = try StoreLocator.container().mainContext
+        let categories = try context.fetch(FetchDescriptor<SpendCategory>())
+        let chai = try XCTUnwrap(categories.first { $0.key == "chai" })
+        let marker = Decimal(string: "4242.42")!
+
+        _ = try await QuickLogIntent(amount: 4242.42, category: chai.key).perform()
+
+        let saved = try context.fetch(FetchDescriptor<Entry>(predicate: #Predicate { $0.amount == marker }))
+        XCTAssertEqual(saved.count, 1)
+        let entry = try XCTUnwrap(saved.first)
+        XCTAssertEqual(entry.category, "chai")
+        XCTAssertNil(entry.note, "a widget tap carries no note")
+        XCTAssertFalse(entry.isPending)
+
+        context.delete(entry)
+        try context.save()
+        CaptureBookkeeping.revert(modelContext: context, categories: categories, categoryKey: "chai", entryDate: entry.date)
+    }
+
+    /// A widget built against a category the user has since deleted must file the
+    /// expense under Other rather than lose it.
+    @MainActor
+    func testWidgetQuickLogFallsBackToOtherForDeletedCategory() async throws {
+        let context = try StoreLocator.container().mainContext
+        let categories = try context.fetch(FetchDescriptor<SpendCategory>())
+        let marker = Decimal(string: "4343.43")!
+
+        _ = try await QuickLogIntent(amount: 4343.43, category: "deleted-category").perform()
+
+        let saved = try context.fetch(FetchDescriptor<Entry>(predicate: #Predicate { $0.amount == marker }))
+        let entry = try XCTUnwrap(saved.first)
+        XCTAssertEqual(entry.category, SpendCategory.fallbackKey)
+
+        context.delete(entry)
+        try context.save()
+        CaptureBookkeeping.revert(
+            modelContext: context,
+            categories: categories,
+            categoryKey: SpendCategory.fallbackKey,
+            entryDate: entry.date
+        )
+    }
+
+    @MainActor
+    func testWidgetQuickLogRejectsInvalidAmountWithoutSaving() async throws {
+        let context = try StoreLocator.container().mainContext
+        let before = try context.fetchCount(FetchDescriptor<Entry>())
+
+        do {
+            _ = try await QuickLogIntent(amount: 0, category: "chai").perform()
+            XCTFail("a zero amount must not be logged")
+        } catch {}
+
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<Entry>()), before)
     }
 
     func testAmountLayoutRemainsBoundedAndGrowsWithText() {

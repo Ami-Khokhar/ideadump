@@ -142,7 +142,7 @@ struct OnboardingCategoriesView: View {
         do {
             try modelContext.save()
         } catch {
-            print("TapLog: Failed to save category selection: \(error)")
+            Log.capture.error("Failed to save category selection: \(Log.describe(error), privacy: .public)")
         }
         onContinue()
     }

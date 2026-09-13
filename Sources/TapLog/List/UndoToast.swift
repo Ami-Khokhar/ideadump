@@ -21,6 +21,23 @@ struct TreeConfirmation: Equatable {
 struct UndoToast: View {
     @EnvironmentObject private var undoStack: UndoStack
 
+    /// How far the toast floats above the bottom edge.
+    ///
+    /// Defaults to clearing the capture screen's pinned keypad-and-Log bar,
+    /// which is the only place this used to be shown. A sheet has no such bar,
+    /// so the screens presented as one pass `sheetInset` instead and the toast
+    /// sits a normal margin off the bottom.
+    var bottomInset: CGFloat = CaptureBottomBar.height + CaptureBottomBar.toastGap
+
+    /// Bottom margin for a toast shown inside a presented sheet.
+    ///
+    /// A sheet needs its own copy of this view at all: the root's overlay is
+    /// *behind* anything presented over it, so an archive, a delete or an edit
+    /// performed from History recorded a perfectly good undo that the user could
+    /// never see or reach, and a save that failed inside the edit sheet reported
+    /// the failure to a surface nobody was looking at.
+    static let sheetInset: CGFloat = 16
+
     var body: some View {
         VStack {
             Spacer()
@@ -82,11 +99,11 @@ struct UndoToast: View {
                 .background(Theme.toast, in: Capsule())
                 .overlay(Capsule().strokeBorder(Theme.hairline))
                 .padding(.horizontal, 16)
-                // Clears the home screen's whole pinned bottom bar — keypad and
-                // Log pill both — rather than just the pill: an overlapping
-                // toast blocked back-to-back logging for its full 5s window,
-                // and "Undo" landed squarely on the backspace key.
-                .padding(.bottom, CaptureBottomBar.height + CaptureBottomBar.toastGap)
+                // On the home screen this clears the whole pinned bottom bar —
+                // keypad and Log pill both — rather than just the pill: an
+                // overlapping toast blocked back-to-back logging for its full 5s
+                // window, and "Undo" landed squarely on the backspace key.
+                .padding(.bottom, bottomInset)
                 // Fades in and rises out of the gap it already leaves above the
                 // bar — the same 14pt-ish lift the rest of the app enters with.
                 // Sliding in from the screen edge instead, as this did, swept

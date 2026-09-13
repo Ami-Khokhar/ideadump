@@ -106,7 +106,7 @@ struct SetupFrontDoorsView: View {
     private var handsFreeCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             cardTitle("Log hands-free", icon: "mic.fill", tint: Theme.clay)
-            Text("Say “Hey Siri, log an expense in TapLog.” Siri asks for the amount, logs it without opening TapLog, and confirms the saved amount and category.")
+            Text("Say “Hey Siri, log an expense in TapLog.” Siri asks for the amount, then the category, logs it without opening TapLog, and confirms the saved amount and category.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 
@@ -183,10 +183,15 @@ struct SetupFrontDoorsView: View {
                     steps: "Long-press the Lock Screen, tap Customize, choose Lock Screen, then Add Widgets and pick TapLog."
                 )
                 if #available(iOS 18.0, *) {
+                    // Named for the control, not for Control Center. iOS only
+                    // reports that the control is placed somewhere — see
+                    // `FrontDoorInventory.refresh` — so a row headed "Control
+                    // Center" was reading "Added" to people who had put the
+                    // control on the Lock Screen or the Action Button instead.
                     frontDoorRow(
                         id: .controlCenter,
-                        title: "Control Center",
-                        summary: "A swipe down from anywhere.",
+                        title: "Log expense control",
+                        summary: "Control Center, Lock Screen or Action Button.",
                         installed: inventory.hasControl,
                         steps: "Open Control Center, tap +, then Add a Control, and choose TapLog's Log expense."
                     )
@@ -198,7 +203,7 @@ struct SetupFrontDoorsView: View {
                     // There is no API to ask whether a Shortcut is bound to the
                     // Action Button, so this row never claims to know.
                     installed: nil,
-                    steps: "Settings → Action Button → Shortcut → Open Expense Capture."
+                    steps: "Settings → Action Button → Shortcut → Log Expense. Siri asks for the amount, then the category, and saves without opening TapLog."
                 )
 
                 Text("These steps happen in iOS. TapLog can't open a Settings pane for you.")

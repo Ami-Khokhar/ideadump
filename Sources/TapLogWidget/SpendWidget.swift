@@ -11,6 +11,16 @@ struct QuickButton: Identifiable {
     var id: String { "\(categoryKey)-\(amount)" }
 }
 
+/// Shown before any history exists, and whenever the store cannot be read.
+/// Deliberately not main-actor isolated: `placeholder(in:)` is nonisolated.
+private var defaultQuickButtons: [QuickButton] {
+    [
+        QuickButton(amount: 10, categoryKey: "chai", emoji: "☕️", label: "☕️ \(Money.format(10))"),
+        QuickButton(amount: 40, categoryKey: "transport", emoji: "🚌", label: "🚌 \(Money.format(40))"),
+        QuickButton(amount: 120, categoryKey: "food", emoji: "🍽️", label: "🍽️ \(Money.format(120))"),
+    ]
+}
+
 struct SpendSnapshot: TimelineEntry {
     let date: Date
     let total: Decimal
@@ -23,7 +33,13 @@ struct SpendSnapshot: TimelineEntry {
 /// which shadows the SwiftData model of the same name.
 @MainActor
 private func loadTodaySnapshot() -> SpendSnapshot {
-    let container = StoreLocator.makeContainer()
+    // `makeContainer()` traps when no candidate store opens. A trap here kills the
+    // widget process and leaves the user staring at "Unable to Load", so the
+    // timeline degrades to an empty snapshot instead — the same choice the share
+    // extension makes.
+    guard let container = try? StoreLocator.container() else {
+        return SpendSnapshot(date: .now, total: 0, count: 0, quickButtons: defaultQuickButtons)
+    }
     let context = container.mainContext
     let now = Date.now
     let startOfDay = Calendar.current.startOfDay(for: now)
@@ -67,23 +83,16 @@ private func makeQuickButtons(context: ModelContext) -> [QuickButton] {
     let lookup = Dictionary(uniqueKeysWithValues: categories.map { ($0.key, $0) })
 
     // Group by (category, rounded amount) and count
-    struct Pattern: Hashable {
-        let categoryKey: String
-        let amount: Decimal
-    }
-    var counts: [Pattern: Int] = [:]
+    var counts: [QuickButtonRanking.Pattern: Int] = [:]
     for entry in entries {
         // Round to nearest common amount bucket
         let rounded = roundAmount(entry.amount)
-        let key = Pattern(categoryKey: entry.category, amount: rounded)
+        let key = QuickButtonRanking.Pattern(categoryKey: entry.category, amount: rounded)
         counts[key, default: 0] += 1
     }
 
-    // Sort by frequency, take top 3
-    let top = counts
-        .sorted { $0.value > $1.value }
-        .prefix(3)
-        .map { (pattern, count) in
+    let top = QuickButtonRanking.top(counts)
+        .map { pattern in
             let cat = lookup[pattern.categoryKey]
             let emoji = cat?.emoji ?? "🏷️"
             let amountDouble = NSDecimalNumber(decimal: pattern.amount).doubleValue
@@ -97,14 +106,10 @@ private func makeQuickButtons(context: ModelContext) -> [QuickButton] {
 
     // If no history, show sensible defaults
     if top.isEmpty {
-        return [
-            QuickButton(amount: 10, categoryKey: "chai", emoji: "☕️", label: "☕️ \(Money.format(10))"),
-            QuickButton(amount: 40, categoryKey: "transport", emoji: "🚌", label: "🚌 \(Money.format(40))"),
-            QuickButton(amount: 120, categoryKey: "food", emoji: "🍽️", label: "🍽️ \(Money.format(120))"),
-        ]
+        return defaultQuickButtons
     }
 
-    return Array(top)
+    return top
 }
 
 /// Round amounts to common buckets to group similar purchases.
@@ -124,11 +129,7 @@ struct SpendProvider: TimelineProvider {
             date: .now,
             total: 0,
             count: 0,
-            quickButtons: [
-                QuickButton(amount: 10, categoryKey: "chai", emoji: "☕️", label: "☕️ \(Money.format(10))"),
-                QuickButton(amount: 40, categoryKey: "transport", emoji: "🚌", label: "🚌 \(Money.format(40))"),
-                QuickButton(amount: 120, categoryKey: "food", emoji: "🍽️", label: "🍽️ \(Money.format(120))"),
-            ]
+            quickButtons: defaultQuickButtons
         )
     }
 
@@ -175,32 +176,61 @@ struct SpendWidgetEntryView: View {
     // MARK: - Small Widget
 
     private var smallView: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline) {
-                Label("Today", systemImage: "creditcard")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                Spacer()
+        ZStack(alignment: .bottomTrailing) {
+            // Decorative watermark — sits behind the copy at low opacity so the
+            // spend total stays the thing the eye lands on first.
+            TreeStateGlyph(state: .growing, color: Theme.moss)
+                .widgetAccentable()
+                .frame(width: 42, height: 52)
+                .opacity(0.16)
+                .padding(.trailing, -4)
+                .padding(.bottom, -4)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline) {
+                    Label("Today", systemImage: "creditcard")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                Text(Money.format(entry.total))
+                    .font(.title2.bold())
+                    .monospacedDigit()
+                    .minimumScaleFactor(0.7)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+                Link(destination: URL(string: "taplog://log")!) {
+                    Text("Log expense →")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.tint)
+                }
             }
-            Text(Money.format(entry.total))
-                .font(.title2.bold())
-                .monospacedDigit()
-                .minimumScaleFactor(0.7)
-                .lineLimit(1)
-            Spacer(minLength: 0)
-            Link(destination: URL(string: "taplog://log")!) {
-                Text("Log expense →")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.tint)
-            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .containerBackground(for: .widget) { Color(.systemBackground) }
     }
 
     // MARK: - Medium Widget
 
     private var mediumView: some View {
+        ZStack(alignment: .topTrailing) {
+            // Same decorative watermark as the small size, tucked into the
+            // corner clear of the quick-log buttons below.
+            TreeStateGlyph(state: .growing, color: Theme.moss)
+                .widgetAccentable()
+                .frame(width: 36, height: 44)
+                .opacity(0.16)
+                .padding(.top, -4)
+                .padding(.trailing, 2)
+                .accessibilityHidden(true)
+
+            mediumContent
+        }
+        .containerBackground(for: .widget) { Color(.systemBackground) }
+    }
+
+    private var mediumContent: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
                 Label("Today", systemImage: "creditcard")
@@ -243,7 +273,6 @@ struct SpendWidgetEntryView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .containerBackground(for: .widget) { Color(.systemBackground) }
     }
 
     private func quickLogButton(amount: Double, category: String, label: String) -> some View {

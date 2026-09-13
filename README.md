@@ -73,10 +73,16 @@ Button / widget-on-lock-screen checks, and capture timing — see `build-plan.md
    - **Siri keypad:** say “Hey Siri, open capture in TapLog” — TapLog opens the keypad
      and focuses the amount. This is the same route as the **Open Expense Capture** action.
    - **Siri hands-free / Shortcuts:** say “Hey Siri, log an expense in TapLog”, or open
-     Shortcuts → TapLog → “Log Expense”; Siri asks for the amount and logs without opening
-     TapLog.
+     Shortcuts → TapLog → “Log Expense”; Siri asks for the amount, then the category, then
+     an optional note (say “skip” for none), and logs without opening TapLog.
    - **Action Button (iPhone 15 Pro+):** Settings → Action Button → Shortcut → choose
-     **Open Expense Capture**.
+     **Log Expense** for the headless amount → category → note prompts and silent save.
+   - **Your own shortcut:** add the **Log Expense** action to any shortcut (Home Screen
+     icon, Back Tap, Lock Screen, automations). Fix any field to a value or a variable to
+     skip its question, or turn off **Ask for Note** to log with just amount and category.
+     *Simulator:* the App Shortcut tiles show “Unable to run App Shortcut” on the default
+     ad-hoc simulator signature (linkd rejects a client with no team ID). Device builds are
+     team-signed and unaffected; a **Log Expense** action inside your own shortcut runs either way.
    - **Widget:** long-press the home screen → + → TapLog → add the medium widget; tap
      ☕️/$12 to log instantly.
    - **Lock Screen widget:** long-press the Lock Screen → Customize → Lock Screen →

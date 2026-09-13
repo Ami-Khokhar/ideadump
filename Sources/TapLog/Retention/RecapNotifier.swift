@@ -107,7 +107,7 @@ final class RecapNotifier: NSObject {
         )
         center.add(request) { error in
             if let error {
-                print("TapLog: Failed to schedule the weekly recap notification — \(error)")
+                Log.retention.error("Failed to schedule the weekly recap notification — \(Log.describe(error), privacy: .public)")
             }
         }
     }
@@ -148,7 +148,7 @@ final class RecapNotifier: NSObject {
 
         center.requestAuthorization(options: [.alert, .sound]) { [weak self] granted, error in
             if let error {
-                print("TapLog: Notification permission request failed — \(error)")
+                Log.retention.error("Notification permission request failed — \(Log.describe(error), privacy: .public)")
             }
             guard granted else { return }
             Task { @MainActor in

@@ -23,7 +23,7 @@ enum CaptureBookkeeping {
             do {
                 try modelContext.save()
             } catch {
-                print("TapLog: Failed to save category log count: \(error)")
+                Log.capture.error("Failed to save category log count: \(Log.describe(error), privacy: .public)")
             }
         }
 
@@ -54,7 +54,7 @@ enum CaptureBookkeeping {
             do {
                 try modelContext.save()
             } catch {
-                print("TapLog: Failed to save reverted category count: \(error)")
+                Log.capture.error("Failed to save reverted category count: \(Log.describe(error), privacy: .public)")
             }
         }
 
@@ -77,6 +77,49 @@ enum CaptureBookkeeping {
         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
     }
 
+    /// Deletes a logged entry and takes its bookkeeping back with it.
+    ///
+    /// `revert` alone is only half an undo — it fixes the counters and leaves the
+    /// row. The two halves have to stay together, and in the right order: the
+    /// counters are only safe to move once the store has accepted the delete.
+    ///
+    /// Returns false when the store refuses, in which case nothing was reverted
+    /// and the entry is still the user's. The rollback is what makes that second
+    /// half true: `delete` only stages the removal, so without it the next
+    /// successful save from anywhere in the app would commit this one behind the
+    /// user's back — long after the toast said the undo had failed.
+    @MainActor
+    @discardableResult
+    static func undoLog(
+        entry: Entry,
+        modelContext: ModelContext,
+        categories: [SpendCategory],
+        defaults: UserDefaults = StoreLocator.sharedDefaults
+    ) -> Bool {
+        // Read before the delete: afterwards the object is no longer in the store
+        // and its properties are not ours to trust.
+        let categoryKey = entry.category
+        let entryDate = entry.date
+
+        modelContext.delete(entry)
+        do {
+            try modelContext.save()
+        } catch {
+            modelContext.rollback()
+            Log.capture.error("Failed to undo a logged entry: \(Log.describe(error), privacy: .public)")
+            return false
+        }
+
+        revert(
+            modelContext: modelContext,
+            categories: categories,
+            categoryKey: categoryKey,
+            entryDate: entryDate,
+            defaults: defaults
+        )
+        return true
+    }
+
     /// Zeroes every category's usage counter — part of the clean-slate wipe when
     /// all entries are deleted, so tiles don't keep ranking deleted history.
     @MainActor
@@ -88,7 +131,7 @@ enum CaptureBookkeeping {
         do {
             try modelContext.save()
         } catch {
-            print("TapLog: Failed to reset category usage: \(error)")
+            Log.capture.error("Failed to reset category usage: \(Log.describe(error), privacy: .public)")
         }
     }
 }

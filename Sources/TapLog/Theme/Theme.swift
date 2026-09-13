@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-/// Zen design system: warm-neutral paper palette in light mode, warm near-black in
+/// TapLog design system: warm-neutral paper palette in light mode, warm near-black in
 /// dark mode, one sage accent. Everything adapts to the system appearance for free.
 enum Theme {
     // MARK: Colors
@@ -51,6 +51,36 @@ enum Theme {
     static let toastAccent = adaptive(light: 0x7FA085, dark: 0x6B8F71)
     static let toastClay = adaptive(light: 0xC08E70, dark: 0xB5836A)
 
+    // MARK: Botanical palette
+
+    /// Semantic tokens for the botanical UI redesign, adopted surface by surface.
+    /// Existing `accent` and `clay` remain the live tokens across the app.
+    /// The autumn/over-target role reuses `Theme.clay` — no separate autumn color.
+
+    /// Off-white field-journal ground.
+    static let paper = adaptive(light: 0xF8F5EE, dark: 0x121110)
+
+    /// Primary text and numerals.
+    static let ink = adaptive(light: 0x20231F, dark: 0xF0EEEB)
+
+    /// Primary action — healthy foliage.
+    static let moss = adaptive(light: 0x2F5D43, dark: 0x5E8F6E)
+
+    /// Secondary botanical linework and nav tint.
+    static let fern = adaptive(light: 0x5F7D62, dark: 0x7E9A80)
+
+    /// Soft selection and quiet grouped surfaces.
+    static let lichen = adaptive(light: 0xDDE7D7, dark: 0x24302A)
+
+    /// Trunks and branch strokes.
+    static let bark = adaptive(light: 0x6B4F3A, dark: 0x9A7B62)
+
+    /// Sparse progress flower — marigold.
+    static let bloomMarigold = adaptive(light: 0xD9A441, dark: 0xE0B45E)
+
+    /// Sparse progress flower — dusty rose.
+    static let bloomRose = adaptive(light: 0xC0849A, dark: 0xCE96AA)
+
     // MARK: Helpers
 
     /// Builds a dynamic color from two hex values (0xRRGGBB), optionally with alpha.
@@ -70,11 +100,17 @@ enum Theme {
     static func amount(_ size: CGFloat, weight: Font.Weight = .bold) -> Font {
         .system(size: size, weight: weight, design: .rounded).monospacedDigit()
     }
+
+    /// Editorial serif for focal amounts and recap headlines — the one expressive
+    /// voice, paired with the app's rounded/sans utility voice everywhere else.
+    static func focal(_ size: CGFloat, weight: Font.Weight = .semibold) -> Font {
+        .system(size: size, weight: weight, design: .serif)
+    }
 }
 
 // MARK: - Motion
 
-/// Zen motion language — soft fades and gentle slides, nothing springy or bouncy.
+/// Motion language — soft fades and gentle slides, nothing springy or bouncy.
 /// The undo toast slides up and fades: a whisper, not an announcement.
 enum Motion {
     /// Micro-interactions: presses, chip toggles.
@@ -92,7 +128,7 @@ enum Motion {
     static let stateChange = Animation.easeInOut(duration: standard)
 }
 
-/// Zen entrance: fades in and rises 14pt on a gentle curve. Pass `delay` to stagger
+/// Entrance: fades in and rises 14pt on a gentle curve. Pass `delay` to stagger
 /// siblings so the eye lands on the hero first, then drifts down the screen.
 struct Entrance: ViewModifier {
     var delay: Double = 0
@@ -116,7 +152,7 @@ extension View {
 }
 
 /// Press feedback: the label settles gently into the tap — a whisper, not a bounce.
-struct ZenPress: ButtonStyle {
+struct PressStyle: ButtonStyle {
     var scale: CGFloat = 0.97
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -200,6 +236,43 @@ enum AmountFont {
         return Theme.amount(size * 0.5, weight: .semibold)
     }
 
+    /// Base size for the focal serif amount on the capture screen.
+    ///
+    /// Much larger than `baseFontSize` because the capture screen now carries
+    /// nothing above the number — no streak, no total, no hint — so the amount
+    /// is the only thing the eye has to land on and can afford the room.
+    static let focalBaseSize: CGFloat = 104
+
+    /// Floor for the focal amount. Serif digits are wider than the rounded face,
+    /// so a long grouped value has to shrink further before it fits.
+    static let focalMinSize: CGFloat = 44
+
+    /// The focal amount's size for `text`, shrinking as the value lengthens.
+    ///
+    /// A separate ramp from `fontSize(for:)` rather than a scaled copy of it:
+    /// the serif face starts nearly twice as large and runs out of width sooner,
+    /// so the two curves bend at different digit counts.
+    static func focalFontSize(for text: String, dynamicTypeSize: DynamicTypeSize = .large) -> CGFloat {
+        let count = text.count
+        let base: CGFloat
+        switch count {
+        case 0...3:
+            base = focalBaseSize
+        case 4...6:
+            let t = CGFloat(count - 3) / 3.0
+            base = focalBaseSize - t * (focalBaseSize - 78)
+        case 7...9:
+            let t = CGFloat(count - 6) / 3.0
+            base = 78 - t * (78 - 58)
+        default:
+            base = focalMinSize
+        }
+
+        let traits = UITraitCollection(preferredContentSizeCategory: dynamicTypeSize.uiContentSizeCategory)
+        let scaled = UIFontMetrics(forTextStyle: .largeTitle).scaledValue(for: base, compatibleWith: traits)
+        return min(max(focalMinSize, scaled), 124)
+    }
+
     /// Computes the adaptive font size based on character count.
     ///
     /// The curve is piecewise-linear:
@@ -259,6 +332,13 @@ enum AmountLayout {
 
     static func heroHeight(fontSize: CGFloat) -> CGFloat {
         min(max(92, fieldHeight(fontSize: fontSize) + 28), 132)
+    }
+
+    /// Row height for the focal serif amount. Taller than `heroHeight` because
+    /// the focal face is larger, and serif ascenders and descenders need more
+    /// room than the rounded digits did.
+    static func focalHeroHeight(fontSize: CGFloat) -> CGFloat {
+        min(max(132, fontSize + 46), 190)
     }
 
     static func fieldWidth(text: String, fontSize: CGFloat, maxWidth: CGFloat) -> CGFloat {

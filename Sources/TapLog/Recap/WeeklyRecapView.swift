@@ -58,12 +58,19 @@ struct WeeklyRecapView: View {
                 .padding(.top, 16)
                 .padding(.bottom, 12)
 
+                // The page's top edge: a quiet rule with a few leaf marks,
+                // framing the spread the way a field journal underlines its
+                // header. Purely decorative — it carries no data of its own.
+                RecapGroundOrnament()
+                    .padding(.horizontal, 28)
+                    .padding(.bottom, 4)
+
                 if logsLogged >= 5 && !recapTeaseDismissed {
                     recapTeaseBanner
                 }
                 recapContent
             }
-            .background(Theme.background)
+            .background(PaperGround())
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
@@ -136,7 +143,7 @@ struct WeeklyRecapView: View {
                             in: Capsule()
                         )
                 }
-                .buttonStyle(ZenPress())
+                .buttonStyle(PressStyle())
             }
         }
         .padding(4)
@@ -171,7 +178,7 @@ struct WeeklyRecapView: View {
                             .foregroundStyle(Theme.textSecondary)
                             .entrance()
                         Text(Money.format(thisTotal))
-                            .font(Theme.amount(46))
+                            .font(Theme.focal(46))
                             .foregroundStyle(Theme.textPrimary)
                             .contentTransition(.numericText())
                             .entrance(delay: 0.08)
@@ -290,8 +297,8 @@ struct WeeklyRecapView: View {
                                 ? item.value / thisTotal
                                 : 0
                             HStack(spacing: 12) {
-                                Text(lookup.emoji(for: item.key))
-                                    .font(.body)
+                                BotanicalStampView(stamp: BotanicalStamp.stamp(for: item.key))
+                                    .frame(width: 22, height: 22)
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(lookup.name(for: item.key))
                                         .font(.subheadline.weight(.medium))
@@ -335,7 +342,13 @@ struct WeeklyRecapView: View {
                 }
                 .padding(.horizontal, 28)
                 .padding(.top, 24)
-                .padding(.bottom, 40)
+
+                // The page's bottom edge, mirroring the rule under the header
+                // so the spread reads as framed on both sides.
+                RecapGroundOrnament()
+                    .padding(.horizontal, 28)
+                    .padding(.top, 20)
+                    .padding(.bottom, 24)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -430,8 +443,8 @@ struct WeeklyRecapView: View {
         let fraction = min(1, max(0, NSDecimalNumber(decimal: report.utilization ?? 0).doubleValue))
         let cadence = report.period == .monthly ? "month" : "week"
         return HStack(spacing: 12) {
-            Text(lookup.emoji(for: report.categoryKey))
-                .font(.body)
+            BotanicalStampView(stamp: BotanicalStamp.stamp(for: report.categoryKey))
+                .frame(width: 22, height: 22)
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Text(lookup.name(for: report.categoryKey))
@@ -653,7 +666,7 @@ struct WeeklyRecapView: View {
                 Text(consistencyFootnote)
                     .font(.caption)
                     .foregroundStyle(Theme.textSecondary)
-                if !retention.targetMet && retention.streakFreezes > 0 {
+                if retention.canUseStreakFreeze {
                     Button {
                         _ = retention.useStreakFreeze()
                     } label: {
@@ -691,7 +704,7 @@ struct WeeklyRecapView: View {
     }
 
     private var consistencyFootnote: String {
-        guard !retention.targetMet else { return "Target met — nice week." }
+        guard !retention.targetMet else { return "Target met this week." }
         if retention.currentStreak == 0 && retention.daysLoggedThisWeek == 0 {
             return "Log once today to start building momentum."
         }
@@ -818,6 +831,45 @@ extension Money {
         NSDecimalRound(&rounded, &scaled, 0, .plain)
         let number = NSDecimalNumber(decimal: rounded).intValue
         return "\(number) pt\(number == 1 ? "" : "s")"
+    }
+}
+
+/// A quiet field-journal flourish: a thin rule with three small fixed leaf
+/// marks, framing the top and bottom edge of the recap spread.
+///
+/// Purely decorative — it carries no data, sits above or below the content
+/// that does, and never touches a chart, bar, or number. The geometry is
+/// fixed rather than randomized, so the ornament is identical on every
+/// render, launch, and device.
+private struct RecapGroundOrnament: View {
+    var body: some View {
+        Canvas { context, size in
+            let midY = size.height / 2
+
+            var line = Path()
+            line.move(to: CGPoint(x: 0, y: midY))
+            line.addLine(to: CGPoint(x: size.width, y: midY))
+            context.stroke(line, with: .color(Theme.fern.opacity(0.35)), lineWidth: 1)
+
+            for fraction: CGFloat in [0.18, 0.5, 0.82] {
+                let center = CGPoint(x: size.width * fraction, y: midY)
+                var leaf = Path()
+                leaf.move(to: CGPoint(x: center.x, y: center.y - 5))
+                leaf.addCurve(
+                    to: CGPoint(x: center.x, y: center.y + 5),
+                    control1: CGPoint(x: center.x + 5, y: center.y - 2),
+                    control2: CGPoint(x: center.x + 5, y: center.y + 2)
+                )
+                leaf.addCurve(
+                    to: CGPoint(x: center.x, y: center.y - 5),
+                    control1: CGPoint(x: center.x - 5, y: center.y + 2),
+                    control2: CGPoint(x: center.x - 5, y: center.y - 2)
+                )
+                context.fill(leaf, with: .color(Theme.fern.opacity(0.5)))
+            }
+        }
+        .frame(height: 12)
+        .accessibilityHidden(true)
     }
 }
 

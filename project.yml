@@ -57,6 +57,17 @@ targets:
       # Only the extension-safe quick-log intent belongs in the widget target.
       # Foreground intents and AppShortcutsProvider are app-only metadata.
       - path: Sources/TapLog/AppIntents/QuickLogIntent.swift
+      # Just enough of the botanical tree art to render one decorative glyph on
+      # the widget. TreeMark.swift needs BudgetCalculator.swift for its
+      # TreeHealthMark(_:) extension; TreeStateGlyph.swift is the small
+      # silhouette variant built for badge-sized rendering; Theme.swift supplies
+      # the adaptive palette (and is referenced by TreeStateGlyph's #Preview).
+      # None of the three touch SwiftData models or app-only view types beyond
+      # what this target already compiles (Entry, SpendCategory).
+      - path: Sources/TapLog/Budget/BudgetCalculator.swift
+      - path: Sources/TapLog/Budget/TreeMark.swift
+      - path: Sources/TapLog/Budget/TreeStateGlyph.swift
+      - path: Sources/TapLog/Theme/Theme.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.amteshwar.taplog.widget

@@ -70,7 +70,7 @@ final class ShareViewController: UIViewController {
         // app, while they are looking at it. Failing returns false and the caller
         // already has the label for it.
         guard let container = try? StoreLocator.container() else {
-            print("TapLog Share: No usable store — cannot save pending entry")
+            Log.share.error("No usable store — cannot save pending entry")
             return false
         }
         let context = container.mainContext
@@ -87,7 +87,7 @@ final class ShareViewController: UIViewController {
             try context.save()
             return true
         } catch {
-            print("TapLog Share: Failed to save pending entry: \(error)")
+            Log.share.error("Failed to save pending entry: \(Log.describe(error), privacy: .public)")
             // Remove the orphaned in-memory object
             context.delete(entry)
             return false

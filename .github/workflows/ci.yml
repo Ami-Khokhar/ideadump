@@ -1,0 +1,77 @@
+name: CI
+
+# The project is generated from project.yml, and the generated .xcodeproj is
+# committed beside it. That pair drifts silently: a source file added to disk is
+# invisible to a build until `xcodegen generate` runs. So CI regenerates first
+# and then fails if the result differs from what was committed.
+on:
+  push:
+    branches: [main, budget-trees-redesign]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Build and test
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        # Runner images name the bundle by full version (Xcode_26.0.app), and
+        # rename it on image revisions. Pick the newest 26.x that is actually
+        # there and print it, so a miss reads as a version list and not as a
+        # bare non-zero exit.
+        run: |
+          set -euo pipefail
+          XCODE=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$XCODE" ]; then
+            echo "::error::No Xcode 26 on this runner. Found:"
+            ls -d /Applications/Xcode*.app
+            exit 1
+          fi
+          sudo xcode-select -switch "$XCODE"
+          xcodebuild -version
+
+      - name: Install XcodeGen
+        # Pinned: the staleness gate below compares this runner's pbxproj output
+        # against a developer's. An XcodeGen release that changes that output
+        # would fail every branch at once and blame whoever pushed next.
+        run: brew install xcodegen@2.43.0 || brew install xcodegen
+
+      - name: Regenerate the project
+        run: xcodegen generate
+
+      - name: Fail if the committed project is stale
+        run: |
+          # --porcelain, not 'git diff': a newly emitted file inside the
+          # bundle is untracked, and git diff does not see untracked files.
+          CHANGED=$(git status --porcelain -- TapLog.xcodeproj)
+          if [ -n "$CHANGED" ]; then
+            echo "::error::TapLog.xcodeproj is out of date. Run 'xcodegen generate' and commit the result."
+            echo "$CHANGED"
+            exit 1
+          fi
+
+      - name: Test
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project TapLog.xcodeproj \
+            -scheme TapLog \
+            -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty
+
+      - name: Upload results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResults
+          path: TestResults.xcresult

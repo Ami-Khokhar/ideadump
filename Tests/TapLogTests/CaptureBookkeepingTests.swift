@@ -198,4 +198,49 @@ final class CaptureBookkeepingTests: XCTestCase {
 
         XCTAssertEqual(currentCategories().first?.logCount, 0)
     }
+
+    // MARK: - Undoing a log
+
+    /// What the widget's undo toast actually runs. The toast lives for five
+    /// seconds, so this is the only place the behaviour can be pinned.
+    func testUndoLogRemovesTheEntryAndItsBookkeeping() throws {
+        logOne()
+        let chai = try XCTUnwrap(categories.first)
+        XCTAssertEqual(chai.logCount, 1)
+        XCTAssertEqual(defaults.integer(forKey: "logsLogged"), 1)
+        let entry = try XCTUnwrap(context.fetch(FetchDescriptor<Entry>()).first)
+
+        let undone = CaptureBookkeeping.undoLog(
+            entry: entry,
+            modelContext: context,
+            categories: categories,
+            defaults: defaults
+        )
+
+        XCTAssertTrue(undone)
+        XCTAssertTrue(try context.fetch(FetchDescriptor<Entry>()).isEmpty, "the row goes with the counters")
+        XCTAssertEqual(chai.logCount, 0, "category learning must not keep counting a log that was taken back")
+        XCTAssertEqual(defaults.integer(forKey: "logsLogged"), 0)
+    }
+
+    /// Two logs on one day, one undone: the day is still an active day, so the
+    /// streak must survive.
+    func testUndoLogLeavesTheDayAliveWhenAnotherLogRemains() throws {
+        logOne()
+        logOne()
+        let entries = try context.fetch(FetchDescriptor<Entry>())
+        XCTAssertEqual(entries.count, 2)
+        let chai = try XCTUnwrap(categories.first)
+
+        CaptureBookkeeping.undoLog(
+            entry: entries[0],
+            modelContext: context,
+            categories: categories,
+            defaults: defaults
+        )
+
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<Entry>()), 1)
+        XCTAssertEqual(chai.logCount, 1, "only the undone log is discounted")
+        XCTAssertEqual(defaults.integer(forKey: "logsLogged"), 1)
+    }
 }
