@@ -6,13 +6,19 @@ import WidgetKit
 /// front door — home screen, capture form (deep links, pending-share
 /// confirmations), Siri & Shortcuts, and widget quick-log — so category learning,
 /// log totals, and streaks stay identical no matter where an expense entered
-/// TapLog. `revert` is its exact inverse for undo.
+/// TapLog. `revert` is its exact inverse.
+///
+/// "Counted" means a confirmed, unarchived entry — the same set every query in
+/// the app filters for. So the pair is called for more than undo: archiving
+/// takes an entry out of that set and reverts, unarchiving puts it back and
+/// applies, and deleting reverts for good.
 enum CaptureBookkeeping {
     @MainActor
     static func apply(
         modelContext: ModelContext,
         categories: [SpendCategory],
         categoryKey: String,
+        entryDate: Date = .now,
         defaults: UserDefaults = StoreLocator.sharedDefaults
     ) {
         RetentionManager.migrateLegacyStateIfNeeded(target: defaults)
@@ -30,7 +36,7 @@ enum CaptureBookkeeping {
         defaults.set(defaults.integer(forKey: "logsLogged") + 1, forKey: "logsLogged")
 
         // Streaks, weekly mask, streak-freeze awards.
-        RetentionManager(defaults: defaults).recordLogDay()
+        RetentionManager(defaults: defaults).recordLogDay(on: entryDate)
 
         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
     }

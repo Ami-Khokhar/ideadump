@@ -287,7 +287,15 @@ struct EntryListView: View {
             rollback: { entry.isPending = true },
             report: undoStack.report
         ) else { return }
-        CaptureBookkeeping.apply(modelContext: modelContext, categories: categories, categoryKey: entry.category)
+        // A share-sheet entry carries the date it was shared, which can be days
+        // before the user gets round to confirming it. Its weekly bit belongs
+        // to that day, not to today.
+        CaptureBookkeeping.apply(
+            modelContext: modelContext,
+            categories: categories,
+            categoryKey: entry.category,
+            entryDate: entry.date
+        )
         // A share-sheet item becomes a confirmed log only after this save. This
         // completes core onboarding just like a home capture, never while pending.
         OnboardingFlow.markCoreCompleteIfConfirmed(isPending: entry.isPending, isArchived: entry.isArchived)
@@ -348,14 +356,30 @@ struct EntryListView: View {
             rollback: { entry.isArchived = false },
             report: undoStack.report
         ) else { return }
-        WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
+        // An archived entry is excluded from every count in the app, so the
+        // counters it bumped when it was logged have to come back down with it.
+        // Without this, archiving 40 of 45 entries left the recap still saying
+        // "You've logged 45 expenses so far".
+        CaptureBookkeeping.revert(
+            modelContext: modelContext,
+            categories: categories,
+            categoryKey: entry.category,
+            entryDate: entry.date
+        )
         undoStack.record("Archived \(Money.format(entry.amount))") {
             entry.isArchived = false
             do {
                 try modelContext.save()
             } catch {
                 Log.capture.error("Failed to persist undo of archive: \(Log.describe(error), privacy: .public)")
+                return
             }
+            CaptureBookkeeping.apply(
+                modelContext: modelContext,
+                categories: categories,
+                categoryKey: entry.category,
+                entryDate: entry.date
+            )
         }
     }
 
@@ -369,14 +393,27 @@ struct EntryListView: View {
             rollback: { entry.isArchived = true },
             report: undoStack.report
         ) else { return }
-        WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
+        // Back in the counted set — the mirror of `archive` above.
+        CaptureBookkeeping.apply(
+            modelContext: modelContext,
+            categories: categories,
+            categoryKey: entry.category,
+            entryDate: entry.date
+        )
         undoStack.record("Restored \(Money.format(entry.amount))") {
             entry.isArchived = true
             do {
                 try modelContext.save()
             } catch {
                 Log.capture.error("Failed to persist undo of restore: \(Log.describe(error), privacy: .public)")
+                return
             }
+            CaptureBookkeeping.revert(
+                modelContext: modelContext,
+                categories: categories,
+                categoryKey: entry.category,
+                entryDate: entry.date
+            )
         }
     }
 
@@ -392,7 +429,20 @@ struct EntryListView: View {
             rollback: { modelContext.rollback() },
             report: undoStack.report
         ) else { return }
-        WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
+        // Permanent removal from the counted set — but only if it was still in
+        // it. Deleting an *archived* row is reachable from the Archived list,
+        // and that row's counters already came down when it was archived;
+        // reverting again would take them down twice. `revert` re-checks the
+        // day itself, so the weekly bit only clears when this was that day's
+        // last remaining entry.
+        if !snapshot.isArchived {
+            CaptureBookkeeping.revert(
+                modelContext: modelContext,
+                categories: categories,
+                categoryKey: snapshot.category,
+                entryDate: snapshot.date
+            )
+        }
         undoStack.record("Deleted \(Money.format(snapshot.amount))") {
             let restored = snapshot.makeEntry()
             modelContext.insert(restored)
@@ -400,8 +450,18 @@ struct EntryListView: View {
                 try modelContext.save()
             } catch {
                 Log.capture.error("Failed to persist undo of delete: \(Log.describe(error), privacy: .public)")
+                return
             }
-            WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
+            // Mirrors the guard above: a restored archived row rejoins the
+            // Archived list, not the counted set.
+            if !restored.isArchived {
+                CaptureBookkeeping.apply(
+                    modelContext: modelContext,
+                    categories: categories,
+                    categoryKey: restored.category,
+                    entryDate: restored.date
+                )
+            }
         }
     }
 

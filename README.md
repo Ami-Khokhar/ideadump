@@ -27,7 +27,7 @@ xcodebuild -project TapLog.xcodeproj -scheme TapLog \
 xcrun simctl boot "iPhone 17 Pro"
 APP=$(find ~/Library/Developer/Xcode/DerivedData -path "*TapLog*/Build/Products/Debug-iphonesimulator/TapLog.app" | head -1)
 xcrun simctl install booted "$APP"
-xcrun simctl launch booted com.example.taplog -seedSampleData   # seeds 12 demo entries
+xcrun simctl launch booted dev.amteshwar.taplog -seedSampleData   # seeds 12 demo entries
 ```
 
 Deep link to the capture form:
@@ -44,9 +44,10 @@ Button / widget-on-lock-screen checks, and capture timing — see `build-plan.md
 
 ## Test on your iPhone (10–15 min, free Apple ID works)
 
-1. **Pick a unique prefix.** In `project.yml`, replace every `com.example` with your own
-   reverse-domain, e.g. `dev.yourname.taplog` (bundle IDs must be unique to you). Do the
-   same for the App Group `group.dev.yourname.taplog`.
+1. **Pick a unique prefix.** `project.yml` ships with `dev.amteshwar.taplog` and the App
+   Group `group.dev.amteshwar.taplog`. Bundle IDs must be unique to the account that
+   signs them, so replace both with your own reverse-domain if you are not signing as
+   that team.
 2. **Free account? Remove App Groups** (they need a paid account): delete the two
    `entitlements:` blocks from `project.yml` (app + widget + share), then run
    `xcodegen generate`. The app falls back to on-device storage — the core app works;
@@ -108,10 +109,11 @@ widget/sharing, App Store submission.
 
 ## Notes
 
-- The SwiftData store lives in the App Group container `group.com.example.taplog` so the
+- The SwiftData store lives in the App Group container `group.dev.amteshwar.taplog` so the
   widget and share-extension targets (M3/M4) can read it. If the group container isn't
   available the app transparently falls back to on-device Application Support storage.
 - **Free Apple ID:** App Groups require a paid developer account. For free-account device
   testing, delete the `entitlements:` block from `project.yml`, run `xcodegen generate`,
   and the app will use the on-device fallback.
-- Change the bundle ID / App Group prefix (`com.example`) before TestFlight.
+- The bundle ID and App Group prefix are already `dev.amteshwar.taplog`; change them only
+  if you are signing under a different team.

@@ -32,6 +32,92 @@ final class CaptureBookkeepingTests: XCTestCase {
         categories = [chai]
     }
 
+    // MARK: - Archiving takes an entry out of the counted set
+
+    /// Archiving hides an entry from every count in the app, so the counters it
+    /// bumped when it was logged have to come back down — otherwise the recap
+    /// keeps quoting a total the History no longer shows.
+    func testArchivingRevertsWhatLoggingCounted() {
+        let entry = Entry(amount: 45, category: "chai")
+        context.insert(entry)
+        try? context.save()
+        CaptureBookkeeping.apply(
+            modelContext: context, categories: categories,
+            categoryKey: "chai", entryDate: entry.date, defaults: defaults
+        )
+        XCTAssertEqual(categories[0].logCount, 1)
+        XCTAssertEqual(defaults.integer(forKey: "logsLogged"), 1)
+
+        entry.isArchived = true
+        try? context.save()
+        CaptureBookkeeping.revert(
+            modelContext: context, categories: categories,
+            categoryKey: "chai", entryDate: entry.date, defaults: defaults
+        )
+
+        XCTAssertEqual(categories[0].logCount, 0)
+        XCTAssertEqual(defaults.integer(forKey: "logsLogged"), 0)
+    }
+
+    /// Unarchiving is the mirror: back in the set, counted again.
+    func testUnarchivingCountsItAgain() {
+        let entry = Entry(amount: 45, category: "chai", isArchived: true)
+        context.insert(entry)
+        try? context.save()
+
+        entry.isArchived = false
+        try? context.save()
+        CaptureBookkeeping.apply(
+            modelContext: context, categories: categories,
+            categoryKey: "chai", entryDate: entry.date, defaults: defaults
+        )
+
+        XCTAssertEqual(categories[0].logCount, 1)
+        XCTAssertEqual(defaults.integer(forKey: "logsLogged"), 1)
+    }
+
+    /// An archived row deleted from the Archived list must not pay twice: its
+    /// counters already came down when it was archived.
+    func testArchiveThenDeleteTakesTheCountDownOnlyOnce() {
+        let entry = Entry(amount: 45, category: "chai")
+        context.insert(entry)
+        try? context.save()
+        CaptureBookkeeping.apply(
+            modelContext: context, categories: categories,
+            categoryKey: "chai", entryDate: entry.date, defaults: defaults
+        )
+
+        // Archive: one revert.
+        let archivedDate = entry.date
+        entry.isArchived = true
+        try? context.save()
+        CaptureBookkeeping.revert(
+            modelContext: context, categories: categories,
+            categoryKey: "chai", entryDate: archivedDate, defaults: defaults
+        )
+
+        // Delete: EntryListView skips the second revert for an archived row.
+        context.delete(entry)
+        try? context.save()
+
+        XCTAssertEqual(categories[0].logCount, 0, "must not go negative or double-count")
+        XCTAssertEqual(defaults.integer(forKey: "logsLogged"), 0)
+    }
+
+    /// The date matters: an entry rejoining the count lights its *own* day, and
+    /// a day outside this week lights nothing at all.
+    func testReapplyingAnOldEntryDoesNotLightToday() {
+        let calendar = Calendar.current
+        let retention = RetentionManager(defaults: defaults, calendar: calendar)
+        let lastMonth = calendar.date(byAdding: .day, value: -35, to: Date())!
+
+        retention.recordLogDay(on: lastMonth)
+
+        XCTAssertEqual(retention.daysLoggedThisWeek, 0,
+                       "a log from five weeks ago must not count toward this week")
+        XCTAssertEqual(retention.totalLogs, 1, "but it is still a log that happened")
+    }
+
     override func tearDown() {
         container.deleteAllData()
         UserDefaults.standard.removePersistentDomain(forName: suiteName)

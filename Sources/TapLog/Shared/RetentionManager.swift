@@ -183,9 +183,14 @@ final class RetentionManager {
 
     /// Call once after every successful log. Updates the weekly mask and checks
     /// whether a streak should be extended or a freeze consumed.
-    func recordLogDay() {
+    /// `day` is the entry's own date, not the clock. It matters when a log
+    /// re-enters the count some time after it happened — unarchiving last
+    /// Tuesday's lunch must light Tuesday's bit, not today's. `maskIndex`
+    /// returns nil for a day outside the current week, so an older entry
+    /// correctly lights nothing.
+    func recordLogDay(on day: Date = Date()) {
         refreshWeekIfNeeded()
-        if let index = Self.maskIndex(for: Date(), weekStart: weekStartDate, calendar: calendar) {
+        if let index = Self.maskIndex(for: day, weekStart: weekStartDate, calendar: calendar) {
             var mask = weeklyMask
             mask[index] = true
             weeklyMask = mask

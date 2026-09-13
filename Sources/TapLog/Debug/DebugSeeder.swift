@@ -76,7 +76,15 @@ enum DebugSeeder {
         for (amount, categoryKey, note, date, intent) in samples {
             let entry = Entry(amount: amount, category: categoryKey, note: note, date: date, intent: intent)
             context.insert(entry)
-            CaptureBookkeeping.apply(modelContext: context, categories: categories, categoryKey: categoryKey)
+            // These samples are deliberately spread across this week and last;
+            // without the date every one of them lit today's bit, so the seeded
+            // grove and streak contradicted the history right beside them.
+            CaptureBookkeeping.apply(
+                modelContext: context,
+                categories: categories,
+                categoryKey: categoryKey,
+                entryDate: date
+            )
         }
 
         // Budgets, so the grove has something to show. The targets are chosen to

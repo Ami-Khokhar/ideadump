@@ -42,7 +42,6 @@ struct LogHomeView: View {
     let isOnboarding: Bool
     let prefill: CapturePrefill?
     let onLogged: (() -> Void)?
-    let onCancelOnboarding: (() -> Void)?
     let onPrefillConsumed: (() -> Void)?
     /// When true the logo splash is skipped — used by OpenCaptureIntent.
     let skipSplash: Bool

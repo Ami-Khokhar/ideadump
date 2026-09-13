@@ -102,10 +102,6 @@ struct ContentView: View {
                     completeCoreOnboarding()
                     OnboardingFlow.markCoreComplete()
                 },
-                onCancelOnboarding: {
-                    isOnboardingCapture = false
-                    onboardingActive = false
-                },
                 onPrefillConsumed: {
                     prefill = nil
                 },
