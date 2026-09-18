@@ -11,7 +11,9 @@ settings:
     # Set here rather than in Xcode so it survives `xcodegen generate`.
     DEVELOPMENT_TEAM: FKM4DL483M
     CURRENT_PROJECT_VERSION: 1
-    MARKETING_VERSION: 0.1.0
+    # Every Info.plist reads these two, so one edit versions the app and both
+    # extensions together. Raise the build number before each upload.
+    MARKETING_VERSION: "1.0"
 targets:
   TapLog:
     type: application
@@ -38,6 +40,11 @@ targets:
       path: Configs/Info.plist
       properties:
         CFBundleDisplayName: TapLog
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        # The app uses no encryption beyond what iOS provides, so App Store
+        # Connect need not ask about export compliance on every upload.
+        ITSAppUsesNonExemptEncryption: false
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
@@ -81,6 +88,8 @@ targets:
       path: Configs/TapLogWidget-Info.plist
       properties:
         CFBundleDisplayName: TapLog Widget
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
 
@@ -104,6 +113,8 @@ targets:
       path: Configs/TapLogShare-Info.plist
       properties:
         CFBundleDisplayName: Add to TapLog
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.share-services
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
