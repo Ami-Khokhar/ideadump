@@ -1,4 +1,7 @@
 # TapLog Master Growth, Launch & Distribution Kit
+
+> **Out of date (18 Sep 2026):** the App Store text below describes an older paywall and features the app does not have. Use `appstore/metadata.md` for App Store Connect.
+
 *Generated for Amteshwar | Product: TapLog (iOS)*
 *Role: Distro (Growth & Distribution Lead)*
 
