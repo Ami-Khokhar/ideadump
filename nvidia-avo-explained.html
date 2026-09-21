@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NVIDIA AVO — The Harness Behind the Score</title>
+  <meta name="description" content="A visual explanation of NVIDIA's Agentic Variation Operators architecture and its ARC-AGI-3 public-set result.">
+  <style>
+    :root{--navy:#0a1020;--navy2:#101a31;--ivory:#f5f0e6;--muted:#b7bdca;--line:#2d3a56;--blue:#89b8ff;--gold:#e8bd70;--green:#86d6ae;--red:#f09a9a;--shadow:0 24px 80px #0008}
+    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:radial-gradient(circle at 85% -10%,#263a66 0,#0a1020 35rem),var(--navy);color:var(--ivory);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6} a{color:var(--blue)} .wrap{max-width:1120px;margin:auto;padding:0 28px}
+    header{min-height:76vh;display:flex;align-items:center;padding:80px 0 70px;border-bottom:1px solid var(--line)} .eyebrow{color:var(--gold);font-size:.78rem;letter-spacing:.16em;text-transform:uppercase;font-weight:700} h1{font-size:clamp(3rem,8vw,7rem);line-height:.95;letter-spacing:-.075em;max-width:850px;margin:20px 0 28px} h2{font-size:clamp(2rem,4vw,3.4rem);line-height:1.05;letter-spacing:-.045em;margin:0 0 18px} h3{font-size:1.2rem;margin:0 0 8px;color:var(--ivory)} p{color:var(--muted);max-width:720px;font-size:1.05rem}.lede{font-size:clamp(1.1rem,2vw,1.4rem);max-width:680px}.pill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:7px 13px;color:var(--muted);font-size:.85rem;margin:8px 6px 0 0}.section{padding:110px 0;border-bottom:1px solid var(--line)} .kicker{color:var(--blue);font-weight:700;font-size:.85rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:13px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:34px}.card{background:linear-gradient(145deg,#15213b,#0e172b);border:1px solid var(--line);border-radius:20px;padding:25px;box-shadow:0 12px 40px #0002}.card p{font-size:.96rem;margin-bottom:0}.number{font:700 2.2rem/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--gold);margin-bottom:16px}.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;align-items:stretch;margin:40px 0}.step{position:relative;background:#111d35;border:1px solid var(--line);border-radius:15px;padding:20px 15px}.step:not(:last-child):after{content:"→";position:absolute;right:-17px;top:38%;color:var(--gold);font-size:1.4rem;z-index:2}.step b{display:block;color:var(--blue);font-size:.82rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:9px}.step span{font-weight:650}.diagram{margin:38px 0;padding:28px;border:1px solid var(--line);border-radius:22px;background:repeating-linear-gradient(0deg,#ffffff03 0,#ffffff03 1px,transparent 1px,transparent 42px),#0b1428}.diagram pre{margin:0;color:#d7e2f7;white-space:pre-wrap;font:500 .93rem/1.8 ui-monospace,SFMono-Regular,Menlo,monospace}.highlight{border-left:3px solid var(--gold);padding:3px 0 3px 20px;margin:28px 0}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:35px}.metric{padding:22px 16px;border-top:2px solid var(--blue);background:#111c32}.metric strong{display:block;font:700 2rem ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ivory)}.metric small{color:var(--muted)} .compare{width:100%;border-collapse:collapse;margin-top:30px;overflow:hidden;border-radius:14px}.compare th,.compare td{text-align:left;padding:16px;border-bottom:1px solid var(--line);vertical-align:top}.compare th{color:var(--blue);font-size:.8rem;text-transform:uppercase;letter-spacing:.08em}.compare td{color:var(--muted)} .good{color:var(--green)!important}.warn{color:var(--red)!important}.quote{font-size:1.45rem;line-height:1.35;color:var(--ivory);max-width:850px;margin:35px 0}.source{font-size:.85rem;color:var(--muted)} footer{padding:55px 0 80px;color:var(--muted);font-size:.9rem}.fine{font-size:.84rem;color:#929baa} @media(max-width:780px){header{min-height:auto;padding:75px 0}.grid,.metrics{grid-template-columns:1fr 1fr}.flow{grid-template-columns:1fr}.step:not(:last-child):after{content:"↓";right:48%;top:auto;bottom:-25px}.compare{font-size:.9rem}.compare th,.compare td{padding:11px 8px}} @media(max-width:480px){.grid,.metrics{grid-template-columns:1fr} h1{font-size:3.4rem}}
+  </style>
+</head>
+<body>
+  <header><div class="wrap">
+    <div class="eyebrow">A system-level case study · August 2026</div>
+    <h1>The harness is part of the intelligence.</h1>
+    <p class="lede">NVIDIA's Agentic Variation Operators (AVO) is a general-purpose agent architecture designed to keep a capable model working reliably across long, uncertain tasks—not merely produce one good answer.</p>
+    <div><span class="pill">Persistent memory</span><span class="pill">Supervision</span><span class="pill">Tools</span><span class="pill">Verification loops</span></div>
+  </div></header>
+
+  <main>
+    <section class="section"><div class="wrap">
+      <div class="kicker">01 / The short version</div><h2>AVO is not a new foundation model.</h2>
+      <p>It is the surrounding system that gives a model context, tools, memory, feedback, and recovery mechanisms. NVIDIA connected AVO to different environments while keeping the general agent architecture intact.</p>
+      <div class="grid">
+        <article class="card"><div class="number">01</div><h3>Model</h3><p>Generates hypotheses, plans, code, and actions. AVO's ARC-AGI-3 result used Claude Opus 5.</p></article>
+        <article class="card"><div class="number">02</div><h3>Harness</h3><p>Controls how observations are stored, how work is decomposed, when tools are used, and how progress is supervised.</p></article>
+        <article class="card"><div class="number">03</div><h3>Environment</h3><p>Provides the real feedback: a test suite, GPU benchmark, or interactive ARC-AGI-3 world.</p></article>
+      </div>
+      <div class="highlight"><p><strong>Useful mental model:</strong> the model is a reasoning component; the harness is the operating loop that turns reasoning into sustained, testable work.</p></div>
+    </div></section>
+
+    <section class="section"><div class="wrap">
+      <div class="kicker">02 / The operating loop</div><h2>From guesswork to experimental engineering.</h2>
+      <p>AVO treats an extended task as a sequence of observations, hypotheses, interventions, and measurements. The agent is not asked to solve everything in one context window.</p>
+      <div class="flow">
+        <div class="step"><b>Observe</b><span>Read the current state and available evidence.</span></div>
+        <div class="step"><b>Hypothesize</b><span>Propose a promising change or explanation.</span></div>
+        <div class="step"><b>Act</b><span>Edit code or interact with the environment.</span></div>
+        <div class="step"><b>Measure</b><span>Run tests, benchmarks, or environment actions.</span></div>
+        <div class="step"><b>Update</b><span>Keep what worked; revise or discard what did not.</span></div>
+      </div>
+      <div class="diagram"><pre>persistent memory  ──────────────────────────────┐
+                                                   │
+[observe] → [plan] → [use tools] → [evaluate] ────┼→ [next iteration]
+     ↑                                             │
+     └──────── supervisor watches trajectory ──────┘
+
+The supervisor does not replace the main agent. It monitors the wider search,
+helps detect stagnation, and can redirect the process when local progress fails.</pre></div>
+    </div></section>
+
+    <section class="section"><div class="wrap">
+      <div class="kicker">03 / Why GPU-kernel optimization matters</div><h2>A demanding test of the loop.</h2>
+      <p>GPU-kernel optimization has an unforgiving feedback signal: hardware performance. A plausible-looking implementation is not enough; it must actually run faster under measured configurations.</p>
+      <div class="grid">
+        <article class="card"><h3>Search</h3><p>AVO explored more than 500 optimization directions rather than stopping after the first plausible kernel.</p></article>
+        <article class="card"><h3>Selection</h3><p>It committed 40 kernel versions during the search, preserving a trajectory of meaningful candidates.</p></article>
+        <article class="card"><h3>Verification</h3><p>On NVIDIA DGX B200 systems, the resulting multihead-attention kernels beat the reported comparison baselines by up to 10.5% versus FlashAttention-4 in evaluated configurations.</p></article>
+      </div>
+      <p class="fine">These are benchmark-specific results, not a guarantee that AVO improves every workload. Hardware, kernels, evaluation setup, and baselines matter.</p>
+    </div></section>
+
+    <section class="section"><div class="wrap">
+      <div class="kicker">04 / ARC-AGI-3 result</div><h2>Perfect public-set completion, with an important qualifier.</h2>
+      <p>NVIDIA reports that AVO, using Claude Opus 5, completed all 183 levels across 25 environments in the ARC-AGI-3 public set.</p>
+      <div class="metrics">
+        <div class="metric"><strong>100.00</strong><small>RHAE public-set score</small></div>
+        <div class="metric"><strong>183</strong><small>levels completed</small></div>
+        <div class="metric"><strong>25</strong><small>public environments</small></div>
+        <div class="metric"><strong>6,624</strong><small>environment actions</small></div>
+      </div>
+      <p class="quote">The result demonstrates that evaluating a model is not the same as evaluating a complete agent system.</p>
+      <p>For comparison, NVIDIA cites VISTA at 7,542 environment actions for the same public set with Claude Opus 5—about 12% more actions. NVIDIA also cautions that this is not a controlled apples-to-apples comparison because the harnesses differ in memory design, observation format, and agent details.</p>
+    </div></section>
+
+    <section class="section"><div class="wrap">
+      <div class="kicker">05 / What changed</div><h2>Same model, different system behavior.</h2>
+      <table class="compare"><thead><tr><th>Dimension</th><th>Model-only attempt</th><th>Harnessed agent</th></tr></thead><tbody>
+        <tr><td>Context</td><td>Mostly the immediate prompt and observation</td><td class="good">Persistent, structured memory across iterations</td></tr>
+        <tr><td>Action choice</td><td>Next-token reasoning about what to do</td><td class="good">Tool-mediated experiments with measurable feedback</td></tr>
+        <tr><td>Failure handling</td><td class="warn">Can continue from a mistaken assumption</td><td class="good">Supervisor can detect stalls and redirect the search</td></tr>
+        <tr><td>Long-horizon work</td><td class="warn">Context and plan can drift</td><td class="good">Trajectory, checkpoints, and evaluation keep work grounded</td></tr>
+        <tr><td>Evidence</td><td>Self-reported confidence or textual plausibility</td><td class="good">Tests, benchmark measurements, and environment state</td></tr>
+      </tbody></table>
+    </div></section>
+
+    <section class="section"><div class="wrap">
+      <div class="kicker">06 / What it does not prove</div><h2>Strong result. Narrow conclusion.</h2>
+      <div class="grid">
+        <article class="card"><h3>Not general AGI</h3><p>A perfect score on a public benchmark does not establish broad human-level intelligence or reliability in open-world work.</p></article>
+        <article class="card"><h3>Not just “prompting”</h3><p>The meaningful contribution is system design: state, tools, supervision, and evaluation—not a magic instruction pasted into a model.</p></article>
+        <article class="card"><h3>Not automatic transfer</h3><p>A harness pattern can generalize, but every environment still needs a clear interface, useful observations, safe actions, and a reliable evaluator.</p></article>
+      </div>
+      <div class="highlight"><p><strong>The honest takeaway:</strong> AVO is evidence that agent architecture can unlock capability that is latent but inaccessible under a weak operating loop. It is not evidence that any model can solve any task once wrapped in enough orchestration.</p></div>
+    </div></section>
+
+    <section class="section"><div class="wrap">
+      <div class="kicker">07 / Why this matters for Flowy</div><h2>Build the loop, not only the prompt.</h2>
+      <p>The transferable lesson for a reliable personal agent is to make work inspectable and recoverable:</p>
+      <div class="grid">
+        <article class="card"><h3>Memory with purpose</h3><p>Store decisions, constraints, failed attempts, and next steps—not an unbounded transcript.</p></article>
+        <article class="card"><h3>Tools with evidence</h3><p>Prefer tools that return verifiable results: files written, tests passed, calendar events created, or sources fetched.</p></article>
+        <article class="card"><h3>Evaluation loops</h3><p>After an action, check whether the intended state changed. If not, diagnose, revise, and retry within a bounded budget.</p></article>
+      </div>
+      <p class="fine">In one sentence: AVO's architecture resembles a disciplined research engineer—observe, test a hypothesis, measure reality, preserve useful state, and recover from dead ends.</p>
+    </div></section>
+  </main>
+  <footer><div class="wrap">
+    <p><strong>Sources</strong></p>
+    <p class="source"><a href="https://developer.nvidia.com/blog/nvidia-avo-reaches-100-on-arc-agi-3-demonstrating-a-frontier-level-general-purpose-architecture-for-long-horizon-autonomous-agents/">NVIDIA Technical Blog: “NVIDIA AVO Reaches 100% on ARC-AGI-3”</a>, published 21 August 2026. Claims and figures in this page are attributed to NVIDIA unless explicitly framed as interpretation.</p>
+    <p class="fine">Designed as an explanatory artifact in Flowy's navy-and-ivory visual language.</p>
+  </div></footer>
+</body>
+</html>

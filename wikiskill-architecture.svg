@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 850" width="100%" height="100%" style="background-color: #0d1117; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <filter id="sketch-shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="2" dy="3" stdDeviation="3" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#58a6ff" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#3fb950" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#bc8cff" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#d29922" />
+    </marker>
+  </defs>
+
+  <!-- Title & Header -->
+  <text x="550" y="45" text-anchor="middle" fill="#f0f6fc" font-size="24" font-weight="700" letter-spacing="0.5">WikiSkill: Architecture &amp; Co-Evolution Loop</text>
+  <text x="550" y="72" text-anchor="middle" fill="#8b949e" font-size="13">Compiling Agent Experience into Persistent Knowledge for Reusable Skill Discovery (Google Research, 2026)</text>
+
+  <!-- ================= 3-LAYER KNOWLEDGE STORAGE (LEFT COLUMN) ================= -->
+  <g transform="translate(60, 110)">
+    <!-- Container Box -->
+    <rect x="0" y="0" width="340" height="680" rx="12" fill="#161b22" stroke="#30363d" stroke-width="2" filter="url(#sketch-shadow)"/>
+    <text x="170" y="32" text-anchor="middle" fill="#58a6ff" font-size="16" font-weight="700">Three-Layer Knowledge Store</text>
+
+    <!-- Layer 1: Raw Layer -->
+    <g transform="translate(20, 55)">
+      <rect x="0" y="0" width="300" height="170" rx="8" fill="#1f242c" stroke="#f85149" stroke-width="1.5" stroke-dasharray="4,4"/>
+      <rect x="10" y="10" width="75" height="22" rx="4" fill="#da3633" opacity="0.25"/>
+      <text x="47" y="25" text-anchor="middle" fill="#ff7b72" font-size="11" font-weight="600">raw/</text>
+      <text x="100" y="26" fill="#f0f6fc" font-size="14" font-weight="600">1. Raw Experience Layer</text>
+      <text x="15" y="60" fill="#c9d1d9" font-size="12">• Complete interaction trajectories</text>
+      <text x="15" y="82" fill="#c9d1d9" font-size="12">• Failed tool calls &amp; error stack traces</text>
+      <text x="15" y="104" fill="#c9d1d9" font-size="12">• Batch execution metrics &amp; rewards</text>
+      <text x="15" y="126" fill="#c9d1d9" font-size="12">• Environment feedback &amp; rollouts</text>
+      <text x="15" y="152" fill="#8b949e" font-size="11" font-style="italic">Ephemeral per batch • Ground-truth data</text>
+    </g>
+
+    <!-- Layer 2: Wiki Layer -->
+    <g transform="translate(20, 245)">
+      <rect x="0" y="0" width="300" height="190" rx="8" fill="#1f242c" stroke="#bc8cff" stroke-width="2"/>
+      <rect x="10" y="10" width="75" height="22" rx="4" fill="#8957e5" opacity="0.25"/>
+      <text x="47" y="25" text-anchor="middle" fill="#d2a8ff" font-size="11" font-weight="600">wiki/</text>
+      <text x="100" y="26" fill="#f0f6fc" font-size="14" font-weight="600">2. Persistent Wiki Layer</text>
+      <text x="15" y="60" fill="#c9d1d9" font-size="12">• Synthesized domain insights &amp; facts</text>
+      <text x="15" y="82" fill="#c9d1d9" font-size="12">• Catalog of recurring error archetypes</text>
+      <text x="15" y="104" fill="#c9d1d9" font-size="12">• Cross-task patterns &amp; heuristics</text>
+      <text x="15" y="126" fill="#c9d1d9" font-size="12">• Evolving knowledge index / topics</text>
+      <text x="15" y="160" fill="#bc8cff" font-size="11" font-weight="600">★ Persistent memory across all iterations</text>
+    </g>
+
+    <!-- Layer 3: Skills Layer -->
+    <g transform="translate(20, 455)">
+      <rect x="0" y="0" width="300" height="190" rx="8" fill="#1f242c" stroke="#3fb950" stroke-width="2"/>
+      <rect x="10" y="10" width="75" height="22" rx="4" fill="#238636" opacity="0.25"/>
+      <text x="47" y="25" text-anchor="middle" fill="#7ee787" font-size="11" font-weight="600">skills/</text>
+      <text x="100" y="26" fill="#f0f6fc" font-size="14" font-weight="600">3. Executable Skills Layer</text>
+      <text x="15" y="60" fill="#c9d1d9" font-size="12">• Modular markdown procedure playbooks</text>
+      <text x="15" y="82" fill="#c9d1d9" font-size="12">• Reusable tool invocation recipes</text>
+      <text x="15" y="104" fill="#c9d1d9" font-size="12">• Step-by-step problem-solving guides</text>
+      <text x="15" y="126" fill="#c9d1d9" font-size="12">• Strictly verified by gating evaluator</text>
+      <text x="15" y="160" fill="#3fb950" font-size="11" font-weight="600">★ Injected directly into Inference Agent</text>
+    </g>
+  </g>
+
+  <!-- ================= EVOLUTIONARY AGENTS & EXECUTION LOOP (RIGHT) ================= -->
+
+  <!-- Top: Task Inference Agent -->
+  <g transform="translate(480, 110)">
+    <rect x="0" y="0" width="560" height="150" rx="10" fill="#161b22" stroke="#58a6ff" stroke-width="2" filter="url(#sketch-shadow)"/>
+    <text x="25" y="32" fill="#58a6ff" font-size="16" font-weight="700">Task Inference Agent (Execution Substrate)</text>
+    <text x="25" y="60" fill="#c9d1d9" font-size="13">• Solves benchmark tasks / user environments using current active <tspan fill="#7ee787" font-weight="600">skills/</tspan></text>
+    <text x="25" y="84" fill="#c9d1d9" font-size="13">• <tspan fill="#f85149" font-weight="600">Key Design Finding:</tspan> Agent is NOT given raw wiki access at runtime (prevents context bloat &amp; distraction)</text>
+    <text x="25" y="108" fill="#c9d1d9" font-size="13">• Emits full execution traces &amp; tool logs into <tspan fill="#ff7b72" font-weight="600">raw/</tspan> repository</text>
+  </g>
+
+  <!-- Middle: Wiki Maintainer Agent -->
+  <g transform="translate(480, 310)">
+    <rect x="0" y="0" width="560" height="150" rx="10" fill="#161b22" stroke="#bc8cff" stroke-width="2" filter="url(#sketch-shadow)"/>
+    <text x="25" y="32" fill="#bc8cff" font-size="16" font-weight="700">Wiki Maintainer (Pattern Consolidation Engine)</text>
+    <text x="25" y="60" fill="#c9d1d9" font-size="13">• Analyzes raw trajectories, recurring errors, and edge-case failures across batches</text>
+    <text x="25" y="84" fill="#c9d1d9" font-size="13">• Synthesizes durable lessons into <tspan fill="#d2a8ff" font-weight="600">wiki/</tspan> articles (modular, cross-referenced markdown)</text>
+    <text x="25" y="108" fill="#c9d1d9" font-size="13">• Resolves contradictions, updates old assumptions, and prunes stale findings</text>
+  </g>
+
+  <!-- Bottom: Wiki-Informed Skill Proposer & Gating Loop -->
+  <g transform="translate(480, 510)">
+    <rect x="0" y="0" width="560" height="280" rx="10" fill="#161b22" stroke="#3fb950" stroke-width="2" filter="url(#sketch-shadow)"/>
+    <text x="25" y="32" fill="#3fb950" font-size="16" font-weight="700">Wiki-Informed Skill Proposer &amp; Gating Loop</text>
+
+    <!-- Sub-box 1: Skill Proposer -->
+    <rect x="25" y="52" width="510" height="85" rx="6" fill="#1f242c" stroke="#30363d" stroke-width="1.5"/>
+    <text x="40" y="77" fill="#7ee787" font-size="14" font-weight="600">Skill Proposer (ReAct Mode)</text>
+    <text x="40" y="100" fill="#c9d1d9" font-size="12">• Queries <tspan fill="#d2a8ff">wiki/</tspan> for domain strategies and known pitfalls</text>
+    <text x="40" y="120" fill="#c9d1d9" font-size="12">• Proposes concrete new playbooks or edits existing skills in <tspan fill="#7ee787">skills/</tspan></text>
+
+    <!-- Sub-box 2: Gating & Rollback Evaluator -->
+    <rect x="25" y="152" width="510" height="105" rx="6" fill="#1f242c" stroke="#d29922" stroke-width="1.5"/>
+    <text x="40" y="177" fill="#e3b341" font-size="14" font-weight="600">Gating Evaluator &amp; Rollback Mechanism</text>
+    <text x="40" y="200" fill="#c9d1d9" font-size="12">• Benchmarks proposed skill updates against validation split</text>
+    <text x="40" y="222" fill="#c9d1d9" font-size="12">• <tspan fill="#3fb950" font-weight="600">IF Score Increases:</tspan> Commits new skill version to <tspan fill="#7ee787">skills/</tspan></text>
+    <text x="40" y="242" fill="#c9d1d9" font-size="12">• <tspan fill="#f85149" font-weight="600">IF Regression Occurs:</tspan> Instant rollback; logs failure mode to <tspan fill="#ff7b72">raw/</tspan> &amp; <tspan fill="#d2a8ff">wiki/</tspan></text>
+  </g>
+
+  <!-- ================= CONNECTING ARROWS & DATAFLOWS ================= -->
+
+  <!-- 1. Inference Agent -> Raw Layer -->
+  <path d="M 480 185 C 430 185, 420 200, 380 200" fill="none" stroke="#f85149" stroke-width="2" marker-end="url(#arrow-orange)"/>
+  <text x="430" y="175" text-anchor="middle" fill="#ff7b72" font-size="10" font-weight="600">Logs traces</text>
+
+  <!-- 2. Raw Layer -> Wiki Maintainer -->
+  <path d="M 380 230 C 420 230, 430 360, 480 360" fill="none" stroke="#bc8cff" stroke-width="2" marker-end="url(#arrow-purple)"/>
+  <text x="430" y="300" text-anchor="middle" fill="#d2a8ff" font-size="10" font-weight="600">Distills patterns</text>
+
+  <!-- 3. Wiki Maintainer -> Wiki Layer -->
+  <path d="M 480 400 C 420 400, 420 410, 380 410" fill="none" stroke="#bc8cff" stroke-width="2" marker-end="url(#arrow-purple)"/>
+  <text x="430" y="420" text-anchor="middle" fill="#d2a8ff" font-size="10" font-weight="600">Updates wiki</text>
+
+  <!-- 4. Wiki Layer -> Skill Proposer -->
+  <path d="M 380 440 C 420 440, 420 570, 480 570" fill="none" stroke="#bc8cff" stroke-width="2" marker-end="url(#arrow-purple)"/>
+  <text x="430" y="500" text-anchor="middle" fill="#d2a8ff" font-size="10" font-weight="600">Reads synthesis</text>
+
+  <!-- 5. Gating Evaluator -> Skills Layer -->
+  <path d="M 480 710 C 420 710, 420 630, 380 630" fill="none" stroke="#3fb950" stroke-width="2" marker-end="url(#arrow-green)"/>
+  <text x="430" y="680" text-anchor="middle" fill="#7ee787" font-size="10" font-weight="600">Commits valid skills</text>
+
+  <!-- 6. Skills Layer -> Inference Agent (Loop closure) -->
+  <path d="M 210 565 C 10 565, 10 140, 480 140" fill="none" stroke="#58a6ff" stroke-width="2.5" stroke-dasharray="6,4" marker-end="url(#arrow-blue)"/>
+  <text x="20" y="350" text-anchor="start" fill="#58a6ff" font-size="11" font-weight="700" transform="rotate(-90 20 350)">Provisions executable skills</text>
+</svg>

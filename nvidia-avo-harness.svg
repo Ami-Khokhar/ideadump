@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 780" width="100%" height="100%" style="background-color: #12151e; font-family: 'Virgil', 'Segoe UI', 'Comic Sans MS', -apple-system, sans-serif;">
+  <defs>
+    <filter id="rough-paper" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise"/>
+      <feDiffuseLighting in="noise" lighting-color="#fff" surfaceScale="1" result="light">
+        <feDistantLight azimuth="45" elevation="60"/>
+      </feDiffuseLighting>
+      <feBlend mode="multiply" in="SourceGraphic" in2="light"/>
+    </filter>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#818cf8" />
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#34d399" />
+    </marker>
+    <marker id="arrow-orange" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#fb923c" />
+    </marker>
+    <marker id="arrow-rose" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#f43f5e" />
+    </marker>
+  </defs>
+
+  <!-- Title Header -->
+  <g transform="translate(50, 40)">
+    <text x="0" y="0" font-size="28" font-weight="bold" fill="#f8fafc" letter-spacing="0.5">NVIDIA AVO Harness Architecture (ARC-AGI-3)</text>
+    <text x="0" y="28" font-size="14" fill="#94a3b8">Active Hypothesis Falsification &amp; Grounded Environment Exploration</text>
+  </g>
+
+  <!-- Node 1: ARC-AGI-3 Environment (Top Center) -->
+  <g transform="translate(360, 110)">
+    <rect x="0" y="0" width="380" height="90" rx="14" fill="#1e293b" stroke="#f43f5e" stroke-width="2.5" stroke-dasharray="6,4" />
+    <rect x="-3" y="-3" width="386" height="96" rx="16" fill="none" stroke="#f43f5e" stroke-width="1" opacity="0.4" />
+    <text x="190" y="32" font-size="16" font-weight="bold" fill="#fda4af" text-anchor="middle">ARC-AGI-3 Game Environment</text>
+    <text x="190" y="54" font-size="12" fill="#cbd5e1" text-anchor="middle">Turn-based • Zero instructions • Dynamic mechanics</text>
+    <text x="190" y="72" font-size="11" fill="#94a3b8" text-anchor="middle">Emits raw visual/state grids | Consumes discrete actions</text>
+  </g>
+
+  <!-- Arrow: Env -> Perception -->
+  <path d="M 430 200 Q 300 240 230 275" fill="none" stroke="#f43f5e" stroke-width="2" marker-end="url(#arrow-rose)" />
+  <text x="290" y="235" font-size="11" fill="#fda4af">raw grid / state diff</text>
+
+  <!-- Node 2: Perception & State Tracking (Left) -->
+  <g transform="translate(60, 280)">
+    <rect x="0" y="0" width="300" height="150" rx="12" fill="#1e1e2e" stroke="#60a5fa" stroke-width="2.2" />
+    <rect x="2" y="2" width="296" height="146" rx="12" fill="none" stroke="#60a5fa" stroke-width="1" opacity="0.5" />
+    <text x="20" y="32" font-size="16" font-weight="bold" fill="#93c5fd">1. Perception &amp; State Tracker</text>
+    <text x="20" y="60" font-size="12" fill="#cbd5e1">• Objectness segmentation (priors)</text>
+    <text x="20" y="82" font-size="12" fill="#cbd5e1">• Coordinate &amp; transformation diffs</text>
+    <text x="20" y="104" font-size="12" fill="#cbd5e1">• Invariant detection across ticks</text>
+    <text x="20" y="128" font-size="11" fill="#64748b">Output: Semantic state diff &amp; entities</text>
+  </g>
+
+  <!-- Arrow: Perception -> Hypothesis -->
+  <path d="M 360 355 L 415 355" fill="none" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrowhead)" />
+
+  <!-- Node 3: World Model & Hypothesis Engine (Center) -->
+  <g transform="translate(420, 260)">
+    <rect x="0" y="0" width="310" height="190" rx="12" fill="#13231e" stroke="#34d399" stroke-width="2.2" />
+    <rect x="-2" y="-2" width="314" height="194" rx="14" fill="none" stroke="#34d399" stroke-width="1" opacity="0.4" />
+    <text x="20" y="32" font-size="16" font-weight="bold" fill="#6ee7b7">2. World Model &amp; Hypotheses</text>
+    <text x="20" y="60" font-size="12" fill="#cbd5e1">• Maintain 3–5 candidate rule models</text>
+    <text x="20" y="82" font-size="12" fill="#cbd5e1">• Score models by Bayesian likelihood</text>
+    <text x="20" y="104" font-size="12" fill="#cbd5e1">• Infer win condition / hidden goals</text>
+    <text x="20" y="126" font-size="12" fill="#cbd5e1">• Rank candidate rules by falsifiability</text>
+    <text x="20" y="158" font-size="11" fill="#059669">Crux: Disproves false rules instead of guessing</text>
+  </g>
+
+  <!-- Arrow: Hypothesis -> Planner -->
+  <path d="M 730 355 L 785 355" fill="none" stroke="#34d399" stroke-width="2" marker-end="url(#arrow-green)" />
+
+  <!-- Node 4: Active Falsification Planner (Right) -->
+  <g transform="translate(790, 280)">
+    <rect x="0" y="0" width="260" height="150" rx="12" fill="#2d1c14" stroke="#fb923c" stroke-width="2.2" />
+    <rect x="2" y="2" width="256" height="146" rx="12" fill="none" stroke="#fb923c" stroke-width="1" opacity="0.5" />
+    <text x="20" y="32" font-size="16" font-weight="bold" fill="#fdba74">3. Falsification Planner</text>
+    <text x="20" y="60" font-size="12" fill="#cbd5e1">• Formulate probe actions</text>
+    <text x="20" y="82" font-size="12" fill="#cbd5e1">• Target maximum information gain</text>
+    <text x="20" y="104" font-size="12" fill="#cbd5e1">• Prune tree branches on surprise</text>
+    <text x="20" y="128" font-size="11" fill="#ea580c">Decision: Probe vs Exploitation Plan</text>
+  </g>
+
+  <!-- Arrow: Planner -> Environment (Action Execution) -->
+  <path d="M 900 280 Q 860 210 745 170" fill="none" stroke="#fb923c" stroke-width="2" marker-end="url(#arrow-orange)" />
+  <text x="830" y="215" font-size="11" fill="#fdba74">discrete action</text>
+
+  <!-- Bottom Substrate: Episodic Memory & Checkpointing -->
+  <g transform="translate(120, 500)">
+    <rect x="0" y="0" width="860" height="130" rx="14" fill="#171728" stroke="#a78bfa" stroke-width="2" stroke-dasharray="4,4" />
+    <text x="30" y="34" font-size="16" font-weight="bold" fill="#c4b5fd">4. Harness Orchestration &amp; Verification Substrate</text>
+    
+    <!-- Sub-block 1 -->
+    <g transform="translate(30, 50)">
+      <rect x="0" y="0" width="240" height="60" rx="8" fill="#201f3d" stroke="#818cf8" stroke-width="1.2" />
+      <text x="15" y="24" font-size="12" font-weight="bold" fill="#e0e7ff">Episodic Graph &amp; Rollback</text>
+      <text x="15" y="44" font-size="10" fill="#94a3b8">Instant state revert on rule failure</text>
+    </g>
+
+    <!-- Sub-block 2 -->
+    <g transform="translate(300, 50)">
+      <rect x="0" y="0" width="250" height="60" rx="8" fill="#201f3d" stroke="#818cf8" stroke-width="1.2" />
+      <text x="15" y="24" font-size="12" font-weight="bold" fill="#e0e7ff">Decoupled Planning/Execution</text>
+      <text x="15" y="44" font-size="10" fill="#94a3b8">Prevents context bloat &amp; drift</text>
+    </g>
+
+    <!-- Sub-block 3 -->
+    <g transform="translate(580, 50)">
+      <rect x="0" y="0" width="250" height="60" rx="8" fill="#201f3d" stroke="#818cf8" stroke-width="1.2" />
+      <text x="15" y="24" font-size="12" font-weight="bold" fill="#e0e7ff">GPU-Accelerated Rollouts</text>
+      <text x="15" y="44" font-size="10" fill="#94a3b8">Fast in-memory simulation stepping</text>
+    </g>
+  </g>
+
+  <!-- Connectors from components down to Substrate -->
+  <path d="M 210 430 L 210 500" fill="none" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="3,3" />
+  <path d="M 575 450 L 575 500" fill="none" stroke="#34d399" stroke-width="1.5" stroke-dasharray="3,3" />
+  <path d="M 920 430 L 920 500" fill="none" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="3,3" />
+
+  <!-- Footer Tag -->
+  <text x="550" y="690" font-size="13" fill="#64748b" text-anchor="middle">100.00% ARC-AGI-3 Public Score • 183/183 Levels Solved • 12% Fewer Steps via Active Falsification</text>
+</svg>
