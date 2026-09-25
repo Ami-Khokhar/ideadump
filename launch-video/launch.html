@@ -1,0 +1,376 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>TapLog Launch</title>
+<link rel="stylesheet" href="fonts-local.css">
+<style>
+  :root {
+    --bg: #ECE7DB; --paper: #F7F5F2; --surface: #EFECE7; --surface2: #E7E3DC;
+    --ink: #1C1B1A; --muted: #6E6A64; --faint: #A39E96;
+    --moss: #2E4634; --accent: #6B8F71; --clay: #B5836A; --lichen: #DDE7D7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--bg); }
+  body { font-family: Inter, sans-serif; color: var(--ink); position: relative; }
+  .scene { position: absolute; inset: 0; opacity: 0; }
+  .serif { font-family: Newsreader, serif; font-weight: 600; color: var(--moss); letter-spacing: -0.02em; }
+  .center { position: absolute; left: 0; right: 0; text-align: center; }
+  .h1 { font-size: 118px; line-height: 1.05; }
+  .h2 { font-size: 92px; line-height: 1.08; }
+  .sub { font-size: 44px; color: var(--muted); line-height: 1.35; }
+
+  /* leaves drifting in the background */
+  .vine { position: absolute; width: 170px; opacity: .4; }
+
+  /* S2 strike list */
+  .strike { position: relative; display: inline-block; }
+  .strike::after { content: ""; position: absolute; left: -8px; right: -8px; top: 54%;
+    height: 8px; border-radius: 4px; background: var(--clay); transform-origin: left center;
+    transform: scaleX(var(--s, 0)); }
+
+  /* logo */
+  .logo { width: 220px; height: 220px; border-radius: 56px; background: var(--accent);
+    display: grid; place-items: center; box-shadow: 0 30px 60px rgba(46,70,52,.25); }
+
+  /* phone */
+  .phone { position: absolute; left: 190px; width: 700px; height: 1400px; border-radius: 96px;
+    background: var(--paper); box-shadow: 0 50px 100px rgba(60,55,40,.22), 0 0 0 14px #fbfaf7;
+    overflow: hidden; }
+  .status { position: absolute; top: 34px; left: 70px; right: 60px; display: flex;
+    justify-content: space-between; font-weight: 600; font-size: 30px; }
+  .amount { position: absolute; top: 200px; left: 0; right: 0; text-align: center;
+    font-family: Newsreader, serif; font-weight: 500; font-size: 180px; letter-spacing: -0.03em; }
+  .amount .cur { font-size: 70px; color: var(--faint); vertical-align: 12px; margin-right: 8px; }
+  .picked { position: absolute; top: 470px; left: 0; right: 0; text-align: center;
+    font-size: 30px; color: var(--accent); font-weight: 500; }
+  .chips { position: absolute; top: 540px; left: 36px; right: 36px; display: flex; gap: 14px; }
+  .chip { flex: 1; height: 140px; border-radius: 26px; background: var(--surface);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+    font-size: 24px; color: var(--muted); font-weight: 500; position: relative; }
+  .chip .e { font-size: 42px; }
+  .chip.on { background: var(--lichen); color: var(--accent); }
+  .keys { position: absolute; top: 760px; left: 36px; right: 36px; display: grid;
+    grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .key { height: 96px; border-radius: 24px; background: var(--surface); display: grid;
+    place-items: center; font-size: 46px; }
+  .logbtn { position: absolute; left: 44px; right: 44px; bottom: 60px; height: 104px;
+    border-radius: 52px; background: var(--accent); color: #fff; font-size: 36px; font-weight: 600;
+    display: grid; place-items: center; }
+  .toast { position: absolute; left: 50px; right: 50px; top: 76px; height: 100px; border-radius: 30px;
+    background: rgba(28,27,26,.94); color: #F5F3F0; display: flex; align-items: center;
+    padding: 0 36px; gap: 18px; font-size: 32px; font-weight: 500; }
+  .toast .undo { margin-left: auto; color: #7FA085; font-weight: 600; }
+  .tap { position: absolute; width: 110px; height: 110px; margin: -55px 0 0 -55px; border-radius: 50%;
+    background: rgba(46,70,52,.28); border: 4px solid rgba(46,70,52,.5); pointer-events: none; opacity: 0; }
+
+  /* S5 cards */
+  .grid { position: absolute; top: 560px; left: 80px; right: 80px; display: grid;
+    grid-template-columns: 1fr 1fr; gap: 28px; }
+  .card { background: var(--paper); border-radius: 40px; padding: 44px 40px; height: 300px;
+    box-shadow: 0 16px 40px rgba(60,55,40,.10); display: flex; flex-direction: column; gap: 18px; }
+  .card .ic { width: 84px; height: 84px; border-radius: 24px; background: var(--lichen);
+    display: grid; place-items: center; font-size: 44px; }
+  .card .t { font-size: 40px; font-weight: 600; }
+  .card .d { font-size: 28px; color: var(--muted); line-height: 1.3; }
+
+  /* screenshots */
+  .shot { position: absolute; left: 210px; top: 330px; width: 660px; height: 1428px; overflow: hidden; }
+  .shot img { position: absolute; width: 792px; left: -66px; top: -270px; }
+
+  /* S8 */
+  .nolist { position: absolute; top: 620px; left: 0; right: 0; text-align: center; }
+  .nolist div { font-family: Newsreader, serif; font-weight: 600; font-size: 104px; color: var(--moss);
+    line-height: 1.2; }
+  .nolist div span { color: var(--clay); }
+
+  .pill { display: inline-block; padding: 26px 50px; border-radius: 60px; background: var(--moss);
+    color: #F5F3F0; font-size: 40px; font-weight: 600; }
+  .price { display: inline-flex; flex-direction: column; gap: 14px; background: var(--paper);
+    border-radius: 44px; padding: 56px 64px; width: 820px; text-align: left;
+    box-shadow: 0 16px 40px rgba(60,55,40,.10); }
+  .price .row { display: flex; align-items: baseline; gap: 20px; font-size: 38px; }
+  .price .tag { font-weight: 600; font-size: 30px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+  .price p { font-size: 34px; color: var(--muted); line-height: 1.4; }
+</style>
+</head>
+<body>
+
+<!-- vines used on several scenes -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <g id="vine">
+      <path d="M85 0 C 60 120, 110 220, 80 340 S 60 560, 90 700" stroke="#6B8F71" stroke-width="5" fill="none"/>
+      <g fill="#6B8F71">
+        <ellipse cx="60" cy="70" rx="30" ry="13" transform="rotate(-30 60 70)"/>
+        <ellipse cx="112" cy="140" rx="32" ry="14" transform="rotate(25 112 140)"/>
+        <ellipse cx="62" cy="230" rx="34" ry="14" transform="rotate(-25 62 230)" opacity=".8"/>
+        <ellipse cx="108" cy="320" rx="30" ry="13" transform="rotate(30 108 320)"/>
+        <ellipse cx="56" cy="420" rx="34" ry="15" transform="rotate(-35 56 420)" opacity=".7"/>
+        <ellipse cx="110" cy="500" rx="30" ry="13" transform="rotate(20 110 500)"/>
+        <ellipse cx="62" cy="600" rx="32" ry="14" transform="rotate(-30 62 600)" opacity=".8"/>
+      </g>
+    </g>
+  </defs>
+</svg>
+<svg class="vine" id="vineL" viewBox="0 0 170 700" style="left:-20px;top:1150px;height:700px"><use href="#vine"/></svg>
+<svg class="vine" id="vineR" viewBox="0 0 170 700" style="right:-20px;top:80px;height:700px;transform:scaleX(-1)"><use href="#vine"/></svg>
+
+<!-- S1: hook -->
+<section class="scene" id="s1">
+  <div class="center serif h1" style="top:720px" id="s1a">You just<br>spent money.</div>
+  <div class="center sub" style="top:1030px;font-size:54px" id="s1b">Did you write it down?</div>
+</section>
+
+<!-- S2: the problem -->
+<section class="scene" id="s2">
+  <div class="center sub" style="top:560px;font-size:54px">Most money apps want</div>
+  <div class="center serif h2" style="top:700px"><span class="strike" id="k1">a bank login.</span></div>
+  <div class="center serif h2" style="top:850px"><span class="strike" id="k2">an account.</span></div>
+  <div class="center serif h2" style="top:1000px"><span class="strike" id="k3">$10 a month.</span></div>
+  <div class="center sub" style="top:1230px;font-size:54px;color:var(--moss);font-weight:600" id="s2b">You just want to write it down.</div>
+</section>
+
+<!-- S3: logo -->
+<section class="scene" id="s3">
+  <div style="position:absolute;left:430px;top:620px" id="logo1">
+    <div class="logo">
+      <svg width="130" height="130" viewBox="0 0 24 24" fill="none" stroke="#F7F5F2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14z"/><path d="M5 19 13 11"/>
+      </svg>
+    </div>
+  </div>
+  <div class="center serif" style="top:900px;font-size:150px" id="s3a">TapLog</div>
+  <div class="center sub" style="top:1100px;font-size:52px" id="s3b">Fast, private spending log.</div>
+</section>
+
+<!-- S4: live capture -->
+<section class="scene" id="s4">
+  <div class="center serif h2" style="top:130px" id="s4h">Log it in two taps.</div>
+  <div class="center sub" style="top:250px;font-size:40px" id="s4s">Type the amount, pick a category, done.</div>
+  <div class="phone" id="phone" style="top:390px">
+    <div class="status"><span>9:41</span><svg width="120" height="30" viewBox="0 0 120 30"><g fill="#1C1B1A"><rect x="0" y="18" width="6" height="10" rx="2"/><rect x="9" y="13" width="6" height="15" rx="2"/><rect x="18" y="8" width="6" height="20" rx="2"/><rect x="27" y="3" width="6" height="25" rx="2"/><rect x="72" y="6" width="40" height="20" rx="6" fill="none" stroke="#1C1B1A" stroke-width="2.5" opacity=".5"/><rect x="76" y="10" width="28" height="12" rx="3"/><rect x="114" y="12" width="3" height="8" rx="1.5" opacity=".5"/></g></svg></div>
+    <div class="toast" id="toast"><span style="font-size:38px">🌿</span> Logged $4.50 · Chai <span class="undo">Undo</span></div>
+    <div class="amount" id="amt"><span class="cur">$</span><span id="amtv">0</span></div>
+    <div class="picked" id="picked">&nbsp;</div>
+    <div class="chips">
+      <div class="chip" id="chipChai"><span class="e">☕️</span>Chai</div>
+      <div class="chip"><span class="e">🍽️</span>Food</div>
+      <div class="chip"><span class="e">🛍️</span>Shopping</div>
+      <div class="chip"><span class="e">🚌</span>Transport</div>
+    </div>
+    <div class="keys">
+      <div class="key">1</div><div class="key">2</div><div class="key">3</div>
+      <div class="key" id="k4">4</div><div class="key" id="k5">5</div><div class="key">6</div>
+      <div class="key">7</div><div class="key">8</div><div class="key">9</div>
+      <div class="key" id="kdot">.</div><div class="key" id="k0">0</div><div class="key">⌫</div>
+    </div>
+    <div class="logbtn" id="logbtn">Log</div>
+  </div>
+  <div class="tap" id="tap"></div>
+</section>
+
+<!-- S5: front doors -->
+<section class="scene" id="s5">
+  <div class="center serif h2" style="top:230px" id="s5h">Or don't even<br>open the app.</div>
+  <div class="grid">
+    <div class="card"><div class="ic">🎙️</div><div class="t">Siri</div><div class="d">“Log chai in TapLog.” Siri asks how much.</div></div>
+    <div class="card"><div class="ic">🔘</div><div class="t">Action Button</div><div class="d">One press opens the keypad.</div></div>
+    <div class="card"><div class="ic">🧩</div><div class="t">Widgets</div><div class="d">Log your usual spends from the Home Screen.</div></div>
+    <div class="card"><div class="ic">🔒</div><div class="t">Lock Screen</div><div class="d">And Control Center on iOS 18.</div></div>
+    <div class="card"><div class="ic">📤</div><div class="t">Share sheet</div><div class="d">Send text from any app, confirm later.</div></div>
+    <div class="card"><div class="ic">↩️</div><div class="t">Undo</div><div class="d">Logged the wrong thing? One tap.</div></div>
+  </div>
+</section>
+
+<!-- S6: budgets -->
+<section class="scene" id="s6">
+  <div class="center serif h2" style="top:120px">Budgets grow trees.</div>
+  <div class="center sub" style="top:236px;font-size:42px">Go over and a tree thins. It never dies.</div>
+  <div class="shot" id="shot6"><img src="../appstore/screenshots/2-budgets.png"></div>
+</section>
+
+<!-- S7: recap -->
+<section class="scene" id="s7">
+  <div class="center serif h2" style="top:120px">Your week, at a glance.</div>
+  <div class="center sub" style="top:236px;font-size:42px">A short recap every week. Free, always.</div>
+  <div class="shot" id="shot7"><img src="../appstore/screenshots/3-recap.png"></div>
+</section>
+
+<!-- S8: privacy -->
+<section class="scene" id="s8">
+  <div class="center sub" style="top:430px;font-size:54px" id="s8h">Private by design.</div>
+  <div class="nolist">
+    <div id="n1"><span>No</span> account.</div>
+    <div id="n2"><span>No</span> bank login.</div>
+    <div id="n3"><span>No</span> ads.</div>
+    <div id="n4"><span>No</span> tracking.</div>
+  </div>
+  <div class="center sub" style="top:1260px;font-size:46px;color:var(--moss);font-weight:600" id="s8b">Everything stays on your iPhone.</div>
+</section>
+
+<!-- S9: pricing -->
+<section class="scene" id="s9">
+  <div class="center serif h2" style="top:380px">Free to use.<br>No subscription.</div>
+  <div class="center" style="top:720px" id="s9c">
+    <div class="price">
+      <div class="tag">Free</div>
+      <p>Unlimited logging · 3 budget trees · weekly recap · CSV export</p>
+      <div style="height:2px;background:rgba(28,27,26,.08);margin:18px 0"></div>
+      <div class="tag">TapLog Pro · one payment</div>
+      <p>A tree for every category · the monthly recap</p>
+    </div>
+  </div>
+</section>
+
+<!-- S10: end card -->
+<section class="scene" id="s10">
+  <div style="position:absolute;left:470px;top:560px">
+    <div class="logo" style="width:140px;height:140px;border-radius:36px">
+      <svg width="84" height="84" viewBox="0 0 24 24" fill="none" stroke="#F7F5F2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14z"/><path d="M5 19 13 11"/>
+      </svg>
+    </div>
+  </div>
+  <div class="center serif" style="top:740px;font-size:130px">TapLog</div>
+  <div class="center serif h2" style="top:940px;font-size:80px;color:var(--ink);font-weight:500" id="s10a">Log it before you forget.</div>
+  <div class="center" style="top:1160px" id="s10b"><span class="pill" id="cta">Coming soon on iPhone</span></div>
+</section>
+
+<script>
+const $ = id => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const easeOut = x => 1 - Math.pow(1 - x, 3);
+const easeInOut = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const spring = x => x >= 1 ? 1 : 1 - Math.exp(-6 * x) * Math.cos(9 * x); // gentle overshoot
+// progress of t through [start, start+dur], eased
+const p = (t, s, d, e = easeOut) => e(clamp((t - s) / d));
+
+// scene windows [start, end] in seconds; 0.4s cross-fade
+const SCENES = { s1: [0, 3.4], s2: [3.4, 7.4], s3: [7.4, 10.2], s4: [10.2, 17.0], s5: [17.0, 21.4],
+                 s6: [21.4, 25.4], s7: [25.4, 29.4], s8: [29.4, 33.0], s9: [33.0, 36.4], s10: [36.4, 40.0] };
+window.DURATION = 40.0;
+const FADE = 0.4;
+
+function rise(el, t, s, d = .7, dist = 60) {
+  const k = p(t, s, d);
+  el.style.opacity = k;
+  el.style.transform = `translateY(${(1 - k) * dist}px)`;
+}
+
+let tapTargets = null;
+function tapPos(id) {
+  const r = $(id).getBoundingClientRect();
+  return [r.left + r.width / 2, r.top + r.height / 2];
+}
+
+window.render = function (t) {
+  for (const [id, [a, b]] of Object.entries(SCENES)) {
+    const inK = a === 0 ? 1 : p(t, a, FADE, x => x);
+    const outK = b >= window.DURATION ? 1 : 1 - p(t, b - FADE, FADE, x => x);
+    const o = Math.min(inK, outK);
+    $(id).style.opacity = o;
+    $(id).style.display = o <= 0 ? 'none' : 'block';
+  }
+  // background vines sway
+  $('vineL').style.transform = `rotate(${Math.sin(t * 0.9) * 2}deg) translateY(${Math.sin(t * .6) * 10}px)`;
+  $('vineR').style.transform = `scaleX(-1) rotate(${Math.sin(t * 0.8 + 1) * 2}deg) translateY(${Math.cos(t * .5) * 10}px)`;
+
+  // S1
+  rise($('s1a'), t, 0.1, .8); rise($('s1b'), t, 1.3, .7);
+
+  // S2
+  const s2 = SCENES.s2[0];
+  ['k1', 'k2', 'k3'].forEach((id, i) => {
+    rise($(id).parentElement, t, s2 + .3 + i * .35, .6);
+    $(id).style.setProperty('--s', p(t, s2 + 1.6 + i * .3, .35));
+    $(id).style.color = p(t, s2 + 1.6 + i * .3, .35) > .5 ? 'var(--faint)' : '';
+  });
+  rise($('s2b'), t, s2 + 2.7, .6);
+
+  // S3
+  const s3 = SCENES.s3[0];
+  const lk = spring(clamp((t - s3 - .2) / .9));
+  $('logo1').style.transform = `scale(${.4 + .6 * lk}) rotate(${(1 - lk) * -12}deg)`;
+  $('logo1').style.opacity = p(t, s3 + .2, .3);
+  rise($('s3a'), t, s3 + .7, .7); rise($('s3b'), t, s3 + 1.1, .7);
+
+  // S4 live capture
+  const s4 = SCENES.s4[0];
+  rise($('s4h'), t, s4 + .1, .6); rise($('s4s'), t, s4 + .3, .6);
+  const ph = p(t, s4 + .2, .9);
+  $('phone').style.transform = `translateY(${(1 - ph) * 500}px)`;
+  const taps = [ ['k4', s4 + 1.4], ['kdot', s4 + 1.85], ['k5', s4 + 2.25], ['k0', s4 + 2.65],
+                 ['chipChai', s4 + 3.3], ['logbtn', s4 + 4.1] ];
+  const typed = ['4', '4.', '4.5', '4.50'];
+  let n = 0; taps.slice(0, 4).forEach(([, ts]) => { if (t >= ts) n++; });
+  $('amtv').textContent = n ? typed[n - 1] : '0';
+  $('amt').style.color = n ? 'var(--ink)' : 'var(--faint)';
+  const chaiOn = t >= taps[4][1] && t < taps[5][1] + .35;
+  $('chipChai').classList.toggle('on', chaiOn);
+  $('picked').innerHTML = chaiOn ? '☕️ Chai' : '&nbsp;';
+  // reset after logging
+  if (t >= taps[5][1] + .35) { $('amtv').textContent = '0'; $('amt').style.color = 'var(--faint)'; }
+  // key press feedback + tap ring
+  document.querySelectorAll('#s4 .key, #s4 .chip, #logbtn').forEach(el => el.style.transform = '');
+  const tapEl = $('tap'); tapEl.style.opacity = 0;
+  for (const [id, ts] of taps) {
+    const k = (t - ts) / .45;
+    if (k >= -0.15 && k <= 1) {
+      const press = k < 0 ? 1 + k / .15 * 0 : Math.sin(clamp(k * 2) * Math.PI);
+      $(id).style.transform = `scale(${1 - .06 * Math.max(0, press)})`;
+      const [x, y] = tapPos(id);
+      tapEl.style.left = x + 'px'; tapEl.style.top = y + 'px';
+      tapEl.style.opacity = k < 0 ? 0 : (1 - k) * .9;
+      tapEl.style.transform = `scale(${.5 + .7 * clamp(k)})`;
+    }
+  }
+  const tk = p(t, taps[5][1] + .3, .5, spring) * (1 - p(t, s4 + 6.2, .3));
+  $('toast').style.opacity = clamp(tk * 1.5);
+  $('toast').style.transform = `translateY(${(1 - tk) * -160}px)`;
+
+  // S5 cards
+  const s5 = SCENES.s5[0];
+  rise($('s5h'), t, s5 + .1, .6);
+  document.querySelectorAll('#s5 .card').forEach((c, i) => {
+    const k = p(t, s5 + .5 + i * .22, .6, spring);
+    c.style.opacity = clamp(k * 1.4);
+    c.style.transform = `translateY(${(1 - k) * 90}px) scale(${.92 + .08 * k})`;
+  });
+
+  // S6 / S7 screenshots: rise then slow push-in
+  for (const [sid, shot] of [['s6', 'shot6'], ['s7', 'shot7']]) {
+    const a = SCENES[sid][0];
+    const k = p(t, a + .1, 1.0);
+    const zoom = 1 + .05 * p(t, a + .8, 3.2, x => x);
+    $(shot).style.opacity = k;
+    $(shot).style.transform = `translateY(${(1 - k) * 260}px) scale(${zoom})`;
+    $(shot).style.transformOrigin = '50% 30%';
+  }
+
+  // S8
+  const s8 = SCENES.s8[0];
+  rise($('s8h'), t, s8 + .1, .6);
+  ['n1', 'n2', 'n3', 'n4'].forEach((id, i) => rise($(id), t, s8 + .4 + i * .3, .55, 50));
+  rise($('s8b'), t, s8 + 1.9, .6);
+
+  // S9
+  const s9 = SCENES.s9[0];
+  rise($('s9c'), t, s9 + .5, .8, 80);
+
+  // S10
+  const s10 = SCENES.s10[0];
+  rise($('s10a'), t, s10 + .5, .7); rise($('s10b'), t, s10 + 1.0, .7);
+  const pulse = t > s10 + 1.8 ? 1 + .03 * Math.sin((t - s10 - 1.8) * 4) : 1;
+  $('cta').style.transform = `scale(${pulse})`;
+};
+
+// preview mode: open the file in a browser and it plays in real time
+if (!location.search.includes('render')) {
+  const t0 = performance.now();
+  const loop = () => { render(((performance.now() - t0) / 1000) % window.DURATION); requestAnimationFrame(loop); };
+  document.fonts.ready.then(loop);
+}
+</script>
+</body>
+</html>
