@@ -1,0 +1,20 @@
+{
+  "name": "taplog-local",
+  "interface": {
+    "displayName": "TapLog (local)"
+  },
+  "plugins": [
+    {
+      "name": "taplog",
+      "source": {
+        "source": "local",
+        "path": "./plugins/taplog"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Finance"
+    }
+  ]
+}

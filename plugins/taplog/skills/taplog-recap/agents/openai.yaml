@@ -1,0 +1,7 @@
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "taplog"
+      description: "Read a TapLog export once and return a weekly recap. Stores nothing."
+      transport: "streamable_http"
+      url: "https://taplog-mcp.example.com/mcp"

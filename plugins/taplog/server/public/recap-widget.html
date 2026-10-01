@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TapLog recap</title>
+    <style>
+      /* TapLog's own palette (Theme.swift): paper, ink, moss, clay. */
+      :root {
+        --paper: #f8f5ee;
+        --surface: #efece7;
+        --ink: #20231f;
+        --ink-2: #6e6a64;
+        --ink-3: #a39e96;
+        --moss: #2f5d43;
+        --fern: #5f7d62;
+        --lichen: #dde7d7;
+        --clay: #b5836a;
+        --marigold: #d9a441;
+        --hairline: rgba(28, 27, 26, 0.08);
+        color-scheme: light;
+      }
+      :root[data-theme="dark"] {
+        --paper: #121110;
+        --surface: #1c1b1a;
+        --ink: #f0eeeb;
+        --ink-2: #8a857e;
+        --ink-3: #5c5852;
+        --moss: #5e8f6e;
+        --fern: #7e9a80;
+        --lichen: #24302a;
+        --clay: #c08e70;
+        --marigold: #e0b45e;
+        --hairline: rgba(240, 238, 235, 0.08);
+        color-scheme: dark;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; }
+      body {
+        background: var(--paper);
+        color: var(--ink);
+        font: 14px/1.4 ui-rounded, "SF Pro Rounded", system-ui, -apple-system, sans-serif;
+        padding: 16px;
+      }
+      main { max-width: 560px; margin: 0 auto; }
+      .eyebrow { color: var(--ink-2); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+      .hero { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 4px 0 2px; }
+      .hero .total { font-size: 38px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+      .delta { font-size: 13px; padding: 2px 8px; border-radius: 999px; background: var(--surface); color: var(--ink-2); }
+      .sub { color: var(--ink-2); font-size: 13px; }
+      section { margin-top: 18px; }
+      h3 { margin: 0 0 8px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+      .bars { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; align-items: end; height: 96px; }
+      .bar { display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+      .bar i { display: block; width: 100%; max-width: 28px; border-radius: 8px 8px 3px 3px; background: var(--fern); opacity: 0.55; min-height: 3px; }
+      .bar.today i { background: var(--moss); opacity: 1; }
+      .bar span { font-size: 11px; color: var(--ink-3); }
+      .bar.today span { color: var(--ink); font-weight: 600; }
+      .cats { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+      .cat { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; }
+      .cat .name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .cat .amt { font-variant-numeric: tabular-nums; }
+      .track { grid-column: 1 / -1; height: 6px; border-radius: 999px; background: var(--surface); overflow: hidden; }
+      .track b { display: block; height: 100%; background: var(--moss); border-radius: 999px; }
+      .cat .was { grid-column: 1 / -1; font-size: 12px; color: var(--ink-3); }
+      .intent { background: var(--lichen); border-radius: 14px; padding: 12px 14px; }
+      .split { display: flex; height: 10px; border-radius: 999px; overflow: hidden; margin: 8px 0 6px; background: var(--surface); }
+      .split .imp { background: var(--marigold); }
+      .split .pla { background: var(--moss); }
+      .split .unm { background: transparent; }
+      .legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); }
+      .legend b { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: 0; }
+      .foot { margin-top: 16px; padding-top: 10px; border-top: 1px solid var(--hairline); font-size: 12px; color: var(--ink-3); }
+      .links { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; gap: 8px; }
+      .links button {
+        width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 10px;
+        border: 0; border-radius: 14px; padding: 12px 14px; background: var(--surface); color: var(--ink);
+        font: inherit; text-align: left; cursor: pointer;
+      }
+      .links button:hover { background: var(--lichen); }
+      .links .amt { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+      .links .go { color: var(--moss); font-weight: 600; white-space: nowrap; }
+      .error { color: var(--clay); font-size: 13px; }
+      .empty { color: var(--ink-2); padding: 24px 0; text-align: center; }
+      @media (prefers-reduced-motion: no-preference) {
+        .bar i, .track b { transition: height 0.38s cubic-bezier(0.25, 0.55, 0.3, 1), width 0.38s cubic-bezier(0.25, 0.55, 0.3, 1); }
+      }
+    </style>
+  </head>
+  <body>
+    <main id="root"><p class="empty">Waiting for TapLog…</p></main>
+
+    <script type="module">
+      const root = document.getElementById("root");
+
+      // ---- tiny DOM helper: every piece of user text goes through textContent ----
+      const el = (tag, attrs = {}, ...children) => {
+        const node = document.createElement(tag);
+        for (const [k, v] of Object.entries(attrs)) {
+          if (k === "class") node.className = v;
+          else if (k === "style") node.style.cssText = v;
+          else if (k.startsWith("on")) node.addEventListener(k.slice(2), v);
+          else node.setAttribute(k, v);
+        }
+        for (const child of children.flat()) {
+          if (child == null || child === false) continue;
+          node.append(child instanceof Node ? child : document.createTextNode(String(child)));
+        }
+        return node;
+      };
+
+      const money = (cents, currency) => {
+        const value = cents / 100;
+        if (currency) {
+          try { return new Intl.NumberFormat("en-IN", { style: "currency", currency }).format(value); } catch {}
+        }
+        return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 }).format(value);
+      };
+      const pct = (r) => `${Math.round(r * 100)}%`;
+      const shortDate = (iso) =>
+        new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "UTC" });
+
+      // ---- views ----
+      function renderRecap({ recap, currency, skippedCount }) {
+        const m = (c) => money(c, currency);
+        if (recap.empty) {
+          return el("p", { class: "empty" },
+            recap.archivedCount ? `Only archived entries in this export (${recap.archivedCount}).` : "No entries in this export yet.");
+        }
+        const { thisWeek: tw, lastWeek: lw, change } = recap;
+        const max = Math.max(...tw.daily.map((d) => d.cents), 1);
+
+        let delta = null;
+        if (lw.entryCount > 0 && change.cents !== 0) {
+          const up = change.cents > 0;
+          // Neutral on purpose: less is not "good" and more is not "bad".
+          delta = el("span", { class: "delta" },
+            `${up ? "▲" : "▼"} ${m(Math.abs(change.cents))}${change.ratio !== null ? ` · ${pct(Math.abs(change.ratio))}` : ""} vs last week`);
+        } else if (lw.entryCount > 0) {
+          delta = el("span", { class: "delta" }, "Same as last week");
+        }
+
+        const intent = tw.intent;
+        const intentTotal = intent.impulseCents + intent.plannedCents + intent.unmarkedCents;
+        const intentBlock = intent.impulseShare === null
+          ? el("div", { class: "intent" },
+              el("h3", {}, "Impulse or planned"),
+              el("div", { class: "sub" }, "Nothing this week is marked yet. Tap “Impulse?” beside the category as you log, and this shows how much was on purpose."))
+          : el("div", { class: "intent" },
+              el("h3", {}, "Impulse or planned"),
+              el("div", {}, el("strong", {}, `${pct(intent.impulseShare)} impulse`), " of the spend you marked"),
+              el("div", { class: "split", role: "img", "aria-label": "Impulse, planned and unmarked spend" },
+                el("i", { class: "imp", style: `width:${(intent.impulseCents / intentTotal) * 100}%` }),
+                el("i", { class: "pla", style: `width:${(intent.plannedCents / intentTotal) * 100}%` }),
+                el("i", { class: "unm", style: `width:${(intent.unmarkedCents / intentTotal) * 100}%` })),
+              el("div", { class: "legend" },
+                el("span", {}, el("b", { style: "background:var(--marigold)" }), `Impulse ${m(intent.impulseCents)}`),
+                el("span", {}, el("b", { style: "background:var(--moss)" }), `Planned ${m(intent.plannedCents)}`),
+                el("span", {}, el("b", { style: "background:var(--ink-3)" }), `Unmarked ${m(intent.unmarkedCents)}`)),
+              change.impulseSharePoints ? el("div", { class: "sub", style: "margin-top:6px" },
+                `${Math.abs(change.impulseSharePoints)} points ${change.impulseSharePoints > 0 ? "higher" : "lower"} than last week`) : null);
+
+        const foot = [
+          `${recap.timeZone} · weeks start ${recap.weekStartsOn}`,
+          recap.export.archivedCount ? `${recap.export.archivedCount} archived left out` : null,
+          skippedCount ? `${skippedCount} unreadable rows left out` : null,
+          "Read once, stored nowhere",
+        ].filter(Boolean).join(" · ");
+
+        return el("div", {},
+          el("div", { class: "eyebrow" }, `This week · ${shortDate(tw.start)} – ${shortDate(tw.end)}`),
+          el("div", { class: "hero" }, el("span", { class: "total" }, m(tw.totalCents)), delta),
+          el("div", { class: "sub" }, `${tw.entryCount} ${tw.entryCount === 1 ? "entry" : "entries"}`),
+          el("section", {},
+            el("div", { class: "bars", role: "img", "aria-label": "Spend per day this week" },
+              tw.daily.map((d) =>
+                el("div", { class: `bar${d.isReferenceDay ? " today" : ""}`, title: `${d.date}: ${m(d.cents)}` },
+                  el("i", { style: `height:${d.cents ? Math.max(4, (d.cents / max) * 80) : 3}px` }),
+                  el("span", {}, d.weekday))))),
+          tw.categories.length ? el("section", {},
+            el("h3", {}, "Where it went"),
+            el("ul", { class: "cats" },
+              tw.categories.slice(0, 8).map((c) =>
+                el("li", { class: "cat" },
+                  el("span", { class: "name" }, c.category),
+                  el("span", { class: "amt" }, m(c.cents)),
+                  el("span", { class: "track" }, el("b", { style: `width:${Math.max(2, c.share * 100)}%` })),
+                  c.lastWeekCents ? el("span", { class: "was" }, `${m(c.lastWeekCents)} last week`) : null)))) : null,
+          el("section", {}, intentBlock),
+          el("div", { class: "foot" }, foot));
+      }
+
+      function renderLinks({ links, errors }) {
+        return el("div", {},
+          el("div", { class: "eyebrow" }, "Ready to log in TapLog"),
+          el("div", { class: "sub" }, "Tap one on your iPhone. TapLog opens with it filled in; nothing is saved until you tap Log."),
+          el("ul", { class: "links" },
+            links.map((l) =>
+              el("li", {},
+                el("button", { type: "button", onclick: () => openLink(l.url) },
+                  el("span", {},
+                    el("div", { class: "amt" }, l.amount),
+                    el("div", { class: "sub" }, [l.category, l.note].filter(Boolean).join(" · ") || "No category")),
+                  el("span", { class: "go" }, "Open in TapLog →"))))),
+          (errors ?? []).map((e) => el("p", { class: "error" }, e)));
+      }
+
+      function render(result) {
+        const data = result?.structuredContent;
+        if (!data) return;
+        root.replaceChildren(data.kind === "links" ? renderLinks(data) : renderRecap(data));
+        notifySize();
+      }
+
+      // ---- MCP Apps bridge: JSON-RPC over postMessage ----
+      let rpcId = 0;
+      const pending = new Map();
+      const notify = (method, params) => window.parent.postMessage({ jsonrpc: "2.0", method, params }, "*");
+      const request = (method, params) => new Promise((resolve, reject) => {
+        const id = ++rpcId;
+        pending.set(id, { resolve, reject });
+        window.parent.postMessage({ jsonrpc: "2.0", id, method, params }, "*");
+      });
+
+      function applyTheme(ctx) {
+        const theme = ctx?.theme;
+        if (theme === "dark" || theme === "light") document.documentElement.dataset.theme = theme;
+        else if (matchMedia("(prefers-color-scheme: dark)").matches) document.documentElement.dataset.theme = "dark";
+      }
+
+      function notifySize() {
+        // Measure the content, not the document: the document is never shorter than the frame.
+        const height = Math.ceil(root.getBoundingClientRect().bottom + 16);
+        notify("ui/notifications/size-changed", { height });
+      }
+
+      async function openLink(url) {
+        try {
+          await request("ui/open-link", { url });
+        } catch {
+          // Some hosts refuse custom schemes from a widget; the chat reply carries the same links.
+          window.open(url, "_blank");
+        }
+      }
+
+      window.addEventListener("message", (event) => {
+        if (event.source !== window.parent) return;
+        const msg = event.data;
+        if (!msg || msg.jsonrpc !== "2.0") return;
+        if (typeof msg.id === "number" && pending.has(msg.id)) {
+          const { resolve, reject } = pending.get(msg.id);
+          pending.delete(msg.id);
+          msg.error ? reject(msg.error) : resolve(msg.result);
+          return;
+        }
+        if (msg.method === "ui/notifications/tool-result") render(msg.params);
+        if (msg.method === "ui/notifications/host-context-changed") applyTheme(msg.params);
+      }, { passive: true });
+
+      applyTheme();
+      // ChatGPT's compatibility layer may already hold the result.
+      if (window.openai?.toolOutput) render({ structuredContent: window.openai.toolOutput });
+      try {
+        const init = await request("ui/initialize", {
+          appInfo: { name: "taplog-recap", version: "0.1.0" },
+          appCapabilities: {},
+          protocolVersion: "2026-01-26",
+        });
+        applyTheme(init?.hostContext);
+        notify("ui/notifications/initialized", {});
+      } catch {
+        // The host refused the handshake; the tool-result notification may still arrive.
+      }
+    </script>
+  </body>
+</html>

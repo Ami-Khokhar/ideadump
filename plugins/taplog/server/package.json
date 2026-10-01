@@ -1,0 +1,17 @@
+{
+  "name": "taplog-mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Stateless MCP server behind the TapLog plugin for ChatGPT and Codex.",
+  "type": "module",
+  "main": "src/server.js",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.31.0",
+    "zod": "^4.6.5"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "taplog",
+  "version": "0.1.0",
+  "description": "Weekly spending recaps from your TapLog export, and capture links that log on your iPhone. Stores nothing.",
+  "author": {
+    "name": "Amteshwar Singh"
+  },
+  "repository": "https://github.com/Ami-Khokhar/ideadump",
+  "license": "UNLICENSED",
+  "keywords": ["expenses", "spending", "budget", "privacy", "india"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "TapLog",
+        "shortDescription": "Your TapLog week, explained. Nothing stored.",
+        "longDescription": "TapLog keeps your spending on your iPhone. Share your TapLog export to see this week against last, where the money went, and how much of it you marked impulse — read once and stored nowhere. Tell ChatGPT what you spent and get links that open TapLog pre-filled, so the entry is saved on your phone, not in the cloud.",
+        "developerName": "Amteshwar Singh",
+        "category": "Finance",
+        "capabilities": ["Read"],
+        "defaultPrompt": [
+          "Here's my TapLog export — how did this week go?",
+          "Log 40 for chai and 250 for lunch in TapLog."
+        ],
+        "brandColor": "#2F5D43"
+      }
+    }
+  }
+}
