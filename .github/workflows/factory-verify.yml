@@ -1,0 +1,19 @@
+# The software factory pushes each worker patch to a factory-verify/* branch and reads this run's
+# result: the Linux worker cannot run Xcode, so the verify runs here (software-factory ADR-0045).
+name: factory-verify
+on:
+  push:
+    branches: ['factory-verify/**']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: |
+          command -v xcodegen >/dev/null || brew install xcodegen
+          bash -c "$(jq -r .verify .github/pr-gatekeeper.json)"
