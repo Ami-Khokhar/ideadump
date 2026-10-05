@@ -483,6 +483,11 @@ struct EntryListView: View {
         CaptureBookkeeping.resetCategoryUsage(modelContext: modelContext)
         StoreLocator.sharedDefaults.removeObject(forKey: "logsLogged")
         retention.resetAll()
+        // Same post-wipe sequence as SettingsView.clearAllEntries: retire the
+        // migration copy so it cannot resurrect the history, and drop the recap
+        // that still counts it.
+        StoreLocator.retireFallbackHistory()
+        RecapNotifier.shared.cancelWeeklyRecap()
         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
     }
 }

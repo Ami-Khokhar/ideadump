@@ -339,14 +339,79 @@ enum StoreLocator {
         }
     }
 
+    // MARK: - Retiring a migrated fallback's history
+
+    /// Deletes every entry from a store and resets its categories' usage, and
+    /// saves. Categories themselves stay: a budget target, an emoji and a sort
+    /// order are configuration, not history, and the fallback must keep them
+    /// for the same reason the active store does. Returns the number of entries
+    /// removed. If the save throws, the deletes stay staged in the context that
+    /// is about to be discarded — the store's file keeps every record.
+    @discardableResult
+    static func clearStore(_ container: ModelContainer) throws -> Int {
+        let context = ModelContext(container)
+        let entries = try context.fetch(FetchDescriptor<Entry>())
+        for entry in entries { context.delete(entry) }
+        for category in try context.fetch(FetchDescriptor<SpendCategory>()) where category.logCount != 0 {
+            category.logCount = 0
+        }
+        try context.save()
+        return entries.count
+    }
+
+    /// The narrow lifecycle for the fallback records a migration preserved: a
+    /// completed delete-all retires them, so they cannot resurrect the deleted
+    /// history the next time the active store fails to open and the ordering
+    /// rule hands control back to the fallback.
+    ///
+    /// Runs only when the app is not itself running on the fallback. A failure
+    /// — an unopenable store, a failed save — preserves every record and
+    /// reports false: keeping data the user meant to delete is survivable,
+    /// losing data they meant to keep is not.
+    @discardableResult
+    static func retireFallbackHistory(
+        activeStore: URL,
+        fallback: URL,
+        clear: (ModelContainer) throws -> Int = clearStore(_:)
+    ) -> Bool {
+        guard activeStore != fallback else { return true }
+        let container: ModelContainer
+        do {
+            container = try openContainer(at: fallback)
+        } catch {
+            Log.store.warning("could not open the fallback store to retire its history: \(Log.describe(error), privacy: .public) — keeping the records")
+            return false
+        }
+        do {
+            let entries = try clear(container)
+            // With the rows gone the marker is a lie about history that no
+            // longer exists, and it is what would promote this store in the
+            // next ordering decision.
+            try? FileManager.default.removeItem(at: dataMarkerURL(for: fallback))
+            Log.store.notice("retired \(entries, privacy: .public) entries left in the Application Support fallback after a delete-all")
+            return true
+        } catch {
+            Log.store.error("could not retire the fallback store's history: \(Log.describe(error), privacy: .public) — keeping the records")
+            return false
+        }
+    }
+
+    /// Retires the Application Support fallback's history after a successful
+    /// delete-all. `storeURL` is fixed for the life of the process, so this is
+    /// safe to call from wherever the wipe committed.
+    static func retireFallbackHistory() {
+        retireFallbackHistory(activeStore: storeURL, fallback: applicationSupportStoreURL)
+    }
+
     // MARK: - History marker
 
     /// Sits beside a store that has held at least one entry.
     ///
     /// It exists because "the file is there" and "the file has the user's data"
     /// are different questions, and only the second one should decide which
-    /// store to open. Once written it is never removed: a store the user emptied
-    /// is still their store.
+    /// store to open. Once written it stays: a store the user emptied is still
+    /// their store. The one exception is `retireFallbackHistory`, which clears
+    /// the claim when a delete-all retires the fallback's history for good.
     private static let dataMarkerName = ".taplog-has-data"
 
     private static func dataMarkerURL(for store: URL) -> URL {
