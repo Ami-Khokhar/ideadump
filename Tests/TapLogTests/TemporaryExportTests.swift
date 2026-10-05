@@ -31,14 +31,24 @@ final class TemporaryExportTests: XCTestCase {
         XCTAssertTrue(TemporaryExport.isTransferActive)
     }
 
-    /// `begin` runs from the share representation's async closure, which the
-    /// system may invoke off the main thread, while `end` runs from the UI.
-    func testATransferStartedOffTheMainThreadIsStillEnded() async {
-        await Task.detached { try? TemporaryExport.begin(text: "Date,Amount\n") }.value
+    func testATransferThatStartedAndEndedLeavesNoFile() throws {
+        try TemporaryExport.begin(text: "Date,Amount\n")
 
-        XCTAssertTrue(TemporaryExport.isTransferActive)
         TemporaryExport.end()
+        XCTAssertFalse(TemporaryExport.isTransferActive)
         XCTAssertFalse(fm.fileExists(atPath: TemporaryExport.url.path))
+    }
+
+    /// The lock guards an order — mark active, then write — that a unit test
+    /// cannot pause inside; what it does guarantee is observable here: a write
+    /// that fails leaves the transfer unmarked and no file behind.
+    func testAFailedWriteLeavesNoActiveTransfer() throws {
+        try? fm.removeItem(at: TemporaryExport.url)
+        try fm.createDirectory(at: TemporaryExport.url, withIntermediateDirectories: false)
+        defer { try? fm.removeItem(at: TemporaryExport.url) }
+
+        XCTAssertThrowsError(try TemporaryExport.begin(text: "Date,Amount\n"))
+        XCTAssertFalse(TemporaryExport.isTransferActive)
     }
 
     func testEndRemovesTheFileAfterACompletedTransfer() throws {

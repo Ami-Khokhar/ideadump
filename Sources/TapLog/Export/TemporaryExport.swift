@@ -29,12 +29,19 @@ enum TemporaryExport {
     }
 
     /// Writes the payload for a transfer about to hand it out and marks the
-    /// transfer active. Called from the `Transferable` representation.
+    /// transfer active. Called from the `Transferable` representation. The lock
+    /// covers the write too: marking the transfer active first is what keeps a
+    /// concurrent `sweep` from deleting the file between the write and the mark.
     static func begin(text: String) throws {
-        try Data(text.utf8).write(to: url, options: .atomic)
         lock.lock()
         defer { lock.unlock() }
         transferActive = true
+        do {
+            try Data(text.utf8).write(to: url, options: .atomic)
+        } catch {
+            transferActive = false
+            throw error
+        }
     }
 
     /// Ends a transfer — completed or cancelled — and removes the file. A
