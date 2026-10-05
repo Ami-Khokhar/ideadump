@@ -28,6 +28,17 @@ final class TemporaryExportTests: XCTestCase {
         try TemporaryExport.begin(text: "Date,Amount\n2026-01-01,120\n")
 
         XCTAssertEqual(try String(contentsOf: TemporaryExport.url, encoding: .utf8), "Date,Amount\n2026-01-01,120\n")
+        XCTAssertTrue(TemporaryExport.isTransferActive)
+    }
+
+    /// `begin` runs from the share representation's async closure, which the
+    /// system may invoke off the main thread, while `end` runs from the UI.
+    func testATransferStartedOffTheMainThreadIsStillEnded() async {
+        await Task.detached { try? TemporaryExport.begin(text: "Date,Amount\n") }.value
+
+        XCTAssertTrue(TemporaryExport.isTransferActive)
+        TemporaryExport.end()
+        XCTAssertFalse(fm.fileExists(atPath: TemporaryExport.url.path))
     }
 
     func testEndRemovesTheFileAfterACompletedTransfer() throws {

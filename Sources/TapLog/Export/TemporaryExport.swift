@@ -15,24 +15,37 @@ enum TemporaryExport {
         FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
     }
 
-    /// Set while a transfer holds the file. Main-thread only: the share sheet
-    /// and the delete-all confirmation both run there.
-    private(set) static var isTransferActive = false
+    /// Set while a transfer holds the file. `begin` runs from the share
+    /// representation's async closure, which the system may invoke off the main
+    /// thread, while `end` and `sweep` run from the UI; the lock keeps the flag
+    /// from being read mid-write.
+    private static let lock = NSLock()
+    private static var transferActive = false
+
+    static var isTransferActive: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return transferActive
+    }
 
     /// Writes the payload for a transfer about to hand it out and marks the
     /// transfer active. Called from the `Transferable` representation.
     static func begin(text: String) throws {
         try Data(text.utf8).write(to: url, options: .atomic)
-        isTransferActive = true
+        lock.lock()
+        defer { lock.unlock() }
+        transferActive = true
     }
 
     /// Ends a transfer — completed or cancelled — and removes the file. A
     /// no-op when nothing is active, so a screen closing without a share
     /// cannot delete a file it does not own.
     static func end() {
-        guard isTransferActive else { return }
-        isTransferActive = false
-        try? FileManager.default.removeItem(at: url)
+        lock.lock()
+        defer { lock.unlock() }
+        guard transferActive else { return }
+        transferActive = false
+        removeFile()
     }
 
     /// Part of the delete-all cleanup: the export is a copy of the history the
@@ -40,7 +53,21 @@ enum TemporaryExport {
     /// file under an in-flight share would break the transfer, and that
     /// transfer's own `end()` removes the file when it finishes.
     static func sweep() {
-        guard !isTransferActive else { return }
-        try? FileManager.default.removeItem(at: url)
+        lock.lock()
+        defer { lock.unlock() }
+        guard !transferActive else { return }
+        removeFile()
+    }
+
+    /// Removes the export if it is there. A failure is logged, not thrown:
+    /// the share and delete-all flows are unaffected, but the residual copy is
+    /// the one thing this type exists to prevent, so it must leave evidence.
+    private static func removeFile() {
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+        do {
+            try FileManager.default.removeItem(at: url)
+        } catch {
+            Log.store.error("could not remove the temporary export: \(Log.describe(error), privacy: .public)")
+        }
     }
 }
