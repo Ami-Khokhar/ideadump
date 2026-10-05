@@ -341,17 +341,19 @@ enum StoreLocator {
 
     // MARK: - Retiring a migrated fallback's history
 
-    /// Deletes every entry and category from a store and saves. Returns the
-    /// number of entries removed. If the save throws, the deletes stay staged
-    /// in the context that is about to be discarded — the store's file keeps
-    /// every record.
+    /// Deletes every entry from a store and resets its categories' usage, and
+    /// saves. Categories themselves stay: a budget target, an emoji and a sort
+    /// order are configuration, not history, and the fallback must keep them
+    /// for the same reason the active store does. Returns the number of entries
+    /// removed. If the save throws, the deletes stay staged in the context that
+    /// is about to be discarded — the store's file keeps every record.
     @discardableResult
     static func clearStore(_ container: ModelContainer) throws -> Int {
         let context = ModelContext(container)
         let entries = try context.fetch(FetchDescriptor<Entry>())
         for entry in entries { context.delete(entry) }
-        for category in try context.fetch(FetchDescriptor<SpendCategory>()) {
-            context.delete(category)
+        for category in try context.fetch(FetchDescriptor<SpendCategory>()) where category.logCount != 0 {
+            category.logCount = 0
         }
         try context.save()
         return entries.count
@@ -407,8 +409,9 @@ enum StoreLocator {
     ///
     /// It exists because "the file is there" and "the file has the user's data"
     /// are different questions, and only the second one should decide which
-    /// store to open. Once written it is never removed: a store the user emptied
-    /// is still their store.
+    /// store to open. Once written it stays: a store the user emptied is still
+    /// their store. The one exception is `retireFallbackHistory`, which clears
+    /// the claim when a delete-all retires the fallback's history for good.
     private static let dataMarkerName = ".taplog-has-data"
 
     private static func dataMarkerURL(for store: URL) -> URL {
