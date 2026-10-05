@@ -33,3 +33,21 @@
   an unfinished migration could drop the fallback's copy — which is why the
   call happens only after the active store's delete committed, and why a
   failed retirement keeps the source intact rather than deleting partially.
+
+## A delete-all clears the app-controlled copies of the history
+
+- Context: issue #4. Deleting every entry clears the store, but the app holds
+  other copies of the same history: a widget receipt still pending in the
+  shared defaults, undo actions whose inverse operations would reinsert
+  deleted rows, and the temporary `taplog-export.csv` a share hands to the
+  system. Any of them can surface erased data after a successful delete-all.
+- Decision: immediately after a delete-all commits successfully, both
+  delete-all paths clear the widget receipt, empty the undo stack, and sweep
+  the temporary export file. The export sweep is skipped while a transfer is
+  active: `CSVFile` writes the file when a share starts and marks the transfer
+  active, and the recap screen removes the file when it disappears — after a
+  completed or a cancelled share — so an in-flight transfer is never deleted
+  underneath.
+- Consequence: a failed delete-all leaves every copy intact and recoverable,
+  because the cleanup only runs after the store's save succeeds. External
+  recipients of a shared export and user backups are outside deletion scope.

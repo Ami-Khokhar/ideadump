@@ -26,10 +26,8 @@ struct CSVFile: FileDocument {
 extension CSVFile: Transferable {
     static var transferRepresentation: some TransferRepresentation {
         FileRepresentation(exportedContentType: .commaSeparatedText) { file in
-            let url = FileManager.default.temporaryDirectory
-                .appendingPathComponent("taplog-export.csv")
-            try Data(file.text.utf8).write(to: url, options: .atomic)
-            return SentTransferredFile(url)
+            try TemporaryExport.begin(text: file.text)
+            return SentTransferredFile(TemporaryExport.url)
         }
     }
 }

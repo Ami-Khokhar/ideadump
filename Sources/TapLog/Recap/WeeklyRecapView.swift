@@ -353,6 +353,11 @@ struct WeeklyRecapView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .scrollContentBackground(.hidden)
+        // The recap sheet closes whether the share completed or was cancelled;
+        // either way the transfer is over and its temporary file goes with it.
+        .onDisappear {
+            TemporaryExport.end()
+        }
     }
 
     private var recapTeaseBanner: some View {

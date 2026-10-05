@@ -211,6 +211,13 @@ struct SettingsView: View {
         // the active store ever fails to open again, the ordering rule would
         // hand the app back to the fallback and every entry would return.
         StoreLocator.retireFallbackHistory()
+        // Residual copies of the history just erased: a widget receipt still
+        // pending would announce an entry that no longer exists, the undo
+        // stack would offer to restore entries the user deleted, and the
+        // export file is a plain-text copy of the same history.
+        WidgetLogReceipt.clear()
+        undoStack.clearAll()
+        TemporaryExport.sweep()
         // Someone who has just deleted every expense should not be told on
         // Sunday morning that their week is ready.
         RecapNotifier.shared.cancelWeeklyRecap()

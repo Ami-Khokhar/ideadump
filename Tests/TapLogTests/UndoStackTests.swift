@@ -42,6 +42,29 @@ final class UndoStackTests: XCTestCase {
         XCTAssertEqual(order, ["undo-second", "undo-first"])
     }
 
+    func testClearAllDropsHistoryAndToast() {
+        undoStack.record("First") {}
+        undoStack.record("Second") {}
+
+        undoStack.clearAll()
+
+        XCTAssertNil(undoStack.current)
+
+        // The history is gone, not merely hidden: undo has nothing left to pop.
+        undoStack.undo()
+        XCTAssertNil(undoStack.current)
+    }
+
+    func testClearAllPreventsUndoFromRestoringErasedHistory() {
+        var undone = false
+        undoStack.record("Logged ₹10") { undone = true }
+
+        undoStack.clearAll()
+        undoStack.undo()
+
+        XCTAssertFalse(undone, "a stale undo must not restore entries a delete-all erased")
+    }
+
     func testUndoWithEmptyStackIsANoOp() {
         undoStack.undo()
         XCTAssertNil(undoStack.current)

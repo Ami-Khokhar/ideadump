@@ -487,6 +487,12 @@ struct EntryListView: View {
         // migration copy so it cannot resurrect the history, and drop the recap
         // that still counts it.
         StoreLocator.retireFallbackHistory()
+        // Same residual copies SettingsView.clearAllEntries clears: a pending
+        // widget receipt, undo actions that would restore erased entries, and
+        // the temporary export file.
+        WidgetLogReceipt.clear()
+        undoStack.clearAll()
+        TemporaryExport.sweep()
         RecapNotifier.shared.cancelWeeklyRecap()
         WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
     }
