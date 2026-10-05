@@ -8,7 +8,31 @@ struct ShareParse {
 /// Extracts a plausible amount and merchant from a bank payment notification
 /// like "CHASE: You spent $12.50 at Starbucks" or "Rs 1,200 debited HDFC".
 enum ShareParser {
+    /// Limits on text that arrives from another app. A share sheet is untrusted
+    /// input: the other app chooses how much it hands over, and both the parser
+    /// and the label it fills run inside the share extension's memory budget.
+    static let maxAttachments = 8
+    static let maxFieldLength = 2_000
+    static let maxTextLength = 4_000
+
+    /// Joins the pieces a share offered into the bounded text the parser sees.
+    /// Keeps the first `maxAttachments` pieces, slices each to `maxFieldLength`
+    /// and the whole to `maxTextLength`, so nothing downstream is unbounded.
+    static func boundedText(_ pieces: [String]) -> String {
+        var kept: [String] = []
+        var total = 0
+        for piece in pieces.prefix(maxAttachments) {
+            let separator = kept.isEmpty ? 0 : 1
+            guard total + separator < maxTextLength else { break }
+            let slice = String(piece.prefix(min(maxFieldLength, maxTextLength - total - separator)))
+            kept.append(slice)
+            total += slice.count + separator
+        }
+        return kept.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     static func parse(_ text: String) -> ShareParse {
+        let text = String(text.prefix(maxTextLength))
         guard !text.isEmpty else { return ShareParse(amount: nil, note: nil) }
         let extracted = extractAmount(from: text)
         let note = extractNote(from: text, amountString: extracted.raw)
@@ -32,20 +56,36 @@ enum ShareParser {
         return regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) != nil
     }
 
+    /// Whether the text is, or also is, a one-time code message. A bare number
+    /// beside an OTP cannot be told from the code, so the loose fallback
+    /// declines it even when the same text mentions a payment: refusing to log
+    /// is recoverable, silently confirming the code as an expense is not.
+    static func mentionsOneTimeCode(_ text: String) -> Bool {
+        let pattern = #"(?i)\b(otp|one[\s-]?time\s+password|verification\s+code|security\s+code|auth(?:entication)?\s+code|\bpin\b)\b"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return false }
+        return regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) != nil
+    }
+
     private static func extractAmount(from text: String) -> (value: Decimal?, raw: String) {
-        // Group 1 captures just the number; the full match (e.g. "$12.50", "Rs 1,200")
-        // is removed from the note text.
-        var patterns = [
+        // An amount named with a currency symbol or word is the amount, even
+        // beside a balance, a card number or an OTP, so those patterns come
+        // first and the first match wins.
+        let anchored = [
             #"[₹$€£]\s?([0-9][0-9,]*(?:\.[0-9]{1,2})?)"#,
             #"(?i)\brs\.?\s?([0-9][0-9,]*(?:\.[0-9]{1,2})?)"#,
             #"(?i)\binr\.?\s?([0-9][0-9,]*(?:\.[0-9]{1,2})?)"#,
         ]
-        // The loose fallback only runs once the text has said money moved. It
-        // still covers the symbol-less forms the patterns above miss — "You spent
-        // 12.50 at Starbucks", "Amount in Rs: 1,200".
-        if mentionsSpending(text) {
-            patterns.append(#"([0-9][0-9,]*(?:\.[0-9]{1,2})?)"#)
-        }
+        if let anchored = firstAmount(patterns: anchored, in: text) { return anchored }
+
+        // The loose fallback runs only once the text has both said money moved
+        // and not looked like a one-time code.
+        guard mentionsSpending(text), !mentionsOneTimeCode(text) else { return (nil, "") }
+        return firstAmount(patterns: [#"([0-9][0-9,]*(?:\.[0-9]{1,2})?)"#], in: text) ?? (nil, "")
+    }
+
+    private static func firstAmount(
+        patterns: [String], in text: String
+    ) -> (value: Decimal?, raw: String)? {
         for pattern in patterns {
             guard let regex = try? NSRegularExpression(pattern: pattern),
                   let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
@@ -61,7 +101,7 @@ enum ShareParser {
             }
             return (value, raw)
         }
-        return (nil, "")
+        return nil
     }
 
     private static func extractNote(from text: String, amountString: String) -> String? {

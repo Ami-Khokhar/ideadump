@@ -105,15 +105,22 @@ final class ShareViewController: UIViewController {
         let accumulationQueue = DispatchQueue(label: "dev.amteshwar.taplog.share-text-accumulation")
         let group = DispatchGroup()
 
-        for item in items {
+        var providers = 0
+        // Another app chooses how many attachments to offer; stop at the cap
+        // instead of loading everything it names.
+        outer: for item in items {
             guard let attachments = item.attachments else { continue }
             for provider in attachments {
+                if providers >= ShareParser.maxAttachments { break outer }
                 guard provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) else { continue }
+                providers += 1
                 group.enter()
                 provider.loadItem(forTypeIdentifier: UTType.plainText.identifier, options: nil) { result, _ in
                     if let string = result as? String {
+                        // Cap at the source: the shared string itself can be huge.
+                        let piece = String(string.prefix(ShareParser.maxFieldLength))
                         accumulationQueue.sync {
-                            textParts.append(string)
+                            textParts.append(piece)
                         }
                     }
                     group.leave()
@@ -122,9 +129,9 @@ final class ShareViewController: UIViewController {
         }
 
         group.notify(queue: accumulationQueue) {
-            let allText = textParts.joined(separator: " ")
+            let allText = ShareParser.boundedText(textParts)
             DispatchQueue.main.async {
-                completion(allText.trimmingCharacters(in: .whitespacesAndNewlines))
+                completion(allText)
             }
         }
     }
