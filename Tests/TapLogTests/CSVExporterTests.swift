@@ -98,6 +98,87 @@ final class CSVExporterTests: XCTestCase {
         XCTAssertEqual(CSVExporter.makeCSV(entries: [pending], lookup: lookup), "Date,Amount,Category,Note,Archived,Intent\n")
     }
 
+    // MARK: - Spreadsheet formula injection
+
+    /// Cells whose text starts with `=`, `+`, `-` or `@` are evaluated as
+    /// formulas by Excel/Numbers/LibreOffice even inside quoted CSV fields.
+    /// A leading apostrophe forces them to be read as text.
+    func testFormulaLeadingNoteIsNeutralized() {
+        for (payload, expected) in [
+            ("=SUM(A1:A2)", "'=SUM(A1:A2)"),
+            ("+1+1", "'+1+1"),
+            ("-2 - discount", "'-2 - discount"),
+            ("@everyone", "'@everyone"),
+        ] {
+            XCTAssertEqual(row(Entry(amount: 1, category: "chai", note: payload))[3], expected)
+        }
+    }
+
+    func testWhitespaceAndControlPrefixDoNotHideFormulas() {
+        for payload in [" =cmd", "\t+v", "\u{01}=x", "\u{7f}@y"] {
+            let fields = row(Entry(amount: 1, category: "chai", note: payload))
+            XCTAssertTrue(fields[3].hasPrefix("'"), "expected neutralized note for \(payload.debugDescription)")
+        }
+    }
+
+    func testFormulaLeadingCategoryNameIsNeutralized() {
+        let lookup = CategoryLookup([SpendCategory(key: "eq", name: "=DANGER", emoji: "⚠️")])
+        let entry = Entry(amount: 2, category: "eq")
+        let csv = CSVExporter.makeCSV(entries: [entry], lookup: lookup)
+        let dataLine = csv.split(separator: "\n", omittingEmptySubsequences: false)[1]
+        XCTAssertTrue(dataLine.contains("\"'=DANGER\""), "got \(dataLine)")
+    }
+
+    /// The category column goes through the same guard as the note column.
+    func testWhitespaceAndControlPrefixOnCategoryIsNeutralized() {
+        for name in [" =DANGER", "\t=DANGER", "\u{01}=DANGER"] {
+            let lookup = CategoryLookup([SpendCategory(key: "eq", name: name, emoji: "⚠️")])
+            let csv = CSVExporter.makeCSV(
+                entries: [Entry(amount: 2, category: "eq")], lookup: lookup
+            )
+            XCTAssertTrue(
+                csv.contains("'" + name),
+                "expected neutralized category for \(name.debugDescription)"
+            )
+        }
+    }
+
+    /// A spreadsheet reads the first scalar, so `=` plus a combining mark must
+    /// still be neutralized even though it is one grapheme cluster.
+    func testCombiningMarkAfterStarterIsNeutralized() {
+        let fields = row(Entry(amount: 1, category: "chai", note: "=\u{0301}cmd"))
+        XCTAssertEqual(fields[3], "'=\u{0301}cmd")
+    }
+
+    func testOrdinaryTextIsNotPrefixedAndAmountsAreUntouched() {
+        XCTAssertEqual(row(Entry(amount: -2.5, category: "chai", note: "tea time"))[1], "-2.5")
+        XCTAssertEqual(row(Entry(amount: -2.5, category: "chai", note: "tea time"))[3], "tea time")
+        XCTAssertEqual(row(Entry(amount: 7, category: "chai", note: "ok =later"))[3], "ok =later")
+    }
+
+    /// A spreadsheet only honors the quotes when the field opens with them, so
+    /// the neutralizing apostrophe has to sit inside: a formula-leading note
+    /// that also holds a comma, a quote or a newline must stay one field.
+    func testFormulaLeadingNoteStaysOneWellFormedField() {
+        let entry = Entry(amount: 8, category: "chai", note: "=SUM(A1,B1)")
+        let csv = CSVExporter.makeCSV(entries: [entry], lookup: lookup)
+        XCTAssertTrue(
+            csv.hasSuffix(",\"'=SUM(A1,B1)\",no,unmarked\n"),
+            "column-shifting CSV: \(csv)"
+        )
+
+        let messy = Entry(amount: 8, category: "chai", note: "=A1\"B\"\nC,D")
+        let messyCSV = CSVExporter.makeCSV(entries: [messy], lookup: lookup)
+        XCTAssertTrue(
+            messyCSV.hasSuffix(",\"'=A1\"\"B\"\"\nC,D\",no,unmarked\n"),
+            "not one quoted field: \(messyCSV)"
+        )
+    }
+
+    func testUnicodeNoteSurvivesExport() {
+        XCTAssertEqual(row(Entry(amount: 4, category: "chai", note: "café ☕️ – naïve"))[3], "café ☕️ – naïve")
+    }
+
     // MARK: - Intent column
 
     /// The whole point of the column: an entry the user never answered for must
