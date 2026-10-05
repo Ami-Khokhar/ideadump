@@ -207,6 +207,10 @@ struct SettingsView: View {
         CaptureBookkeeping.resetCategoryUsage(modelContext: modelContext)
         StoreLocator.sharedDefaults.removeObject(forKey: "logsLogged")
         retention.resetAll()
+        // The migration copy is a second copy of the history just deleted. If
+        // the active store ever fails to open again, the ordering rule would
+        // hand the app back to the fallback and every entry would return.
+        StoreLocator.retireFallbackHistory()
         // Someone who has just deleted every expense should not be told on
         // Sunday morning that their week is ready.
         RecapNotifier.shared.cancelWeeklyRecap()

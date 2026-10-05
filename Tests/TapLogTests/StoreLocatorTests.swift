@@ -382,4 +382,98 @@ final class StoreLocatorTests: XCTestCase {
         let source = try makeStore(), destination = try makeStore()
         XCTAssertEqual(try StoreLocator.copyStore(from: source, to: destination), .none)
     }
+
+    // MARK: - Retiring a migrated fallback's history
+
+    /// Creates a real on-disk store seeded with the residue a migration
+    /// preserves in its source.
+    private func seededFallbackStore(in directory: URL) throws -> URL {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let url = directory.appendingPathComponent(StoreLocator.storeFileName)
+        try seedStore(at: url)
+        return url
+    }
+
+    private func seedStore(at url: URL) throws {
+        let container = try ModelContainer(
+            for: Entry.self, SpendCategory.self,
+            configurations: ModelConfiguration(url: url)
+        )
+        let context = ModelContext(container)
+        context.insert(Entry(amount: Decimal(string: "12")!, category: "chai"))
+        context.insert(Entry(amount: Decimal(string: "30")!, category: "chai"))
+        try context.save()
+    }
+
+    /// The regression this retirement exists for: fallback history copied into
+    /// the group store, then wiped by a delete-all, must not come back when the
+    /// candidate stores are reopened and the ordering rule runs again.
+    func testDeleteAllAfterMigrationCannotResurrectHistoryFromTheFallback() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("taplog-retire-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let fallback = try seededFallbackStore(in: root.appendingPathComponent("fallback"))
+        let group = root.appendingPathComponent("group").appendingPathComponent(StoreLocator.storeFileName)
+        let destination = try ModelContainer(
+            for: Entry.self, SpendCategory.self,
+            configurations: ModelConfiguration(url: group)
+        )
+
+        XCTAssertEqual(try StoreLocator.copyStore(from: try reopen(fallback), to: destination).entries, 2)
+        // The delete-all itself, committed successfully in the active store.
+        XCTAssertEqual(try StoreLocator.clearStore(destination), 2)
+
+        XCTAssertTrue(StoreLocator.retireFallbackHistory(activeStore: group, fallback: fallback))
+
+        // Reopen the fallback the way the ordering rule would on the next
+        // launch after the active store failed to open.
+        let resurrected = try ModelContext(try reopen(fallback))
+        XCTAssertEqual(try resurrected.fetch(FetchDescriptor<Entry>()).count, 0, "the fallback still holds entries")
+        XCTAssertEqual(try resurrected.fetch(FetchDescriptor<SpendCategory>()).count, 0, "the fallback still holds categories")
+        // The active store keeps its clean slate too.
+        let active = ModelContext(destination)
+        XCTAssertEqual(try active.fetch(FetchDescriptor<Entry>()).count, 0)
+    }
+
+    /// A failing retirement must leave the source untouched and say so.
+    func testAFailedRetirementPreservesTheFallbackSourceAndReportsFailure() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("taplog-retire-fail-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let fallback = try seededFallbackStore(in: root.appendingPathComponent("fallback"))
+        struct ForcedFailure: Error {}
+
+        XCTAssertFalse(StoreLocator.retireFallbackHistory(
+            activeStore: root.appendingPathComponent("group").appendingPathComponent(StoreLocator.storeFileName),
+            fallback: fallback,
+            clear: { _ in throw ForcedFailure() }
+        ))
+
+        XCTAssertEqual(
+            try ModelContext(try reopen(fallback)).fetch(FetchDescriptor<Entry>()).count,
+            2,
+            "a failed retirement deleted records the user may still need"
+        )
+    }
+
+    /// A store the app is already running on was cleared by the delete-all
+    /// itself; there is nothing to retire and nothing to fail over.
+    func testRetirementIsANoOpWhenTheAppRunsOnTheFallback() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("taplog-retire-same-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let fallback = try seededFallbackStore(in: root.appendingPathComponent("fallback"))
+        XCTAssertTrue(StoreLocator.retireFallbackHistory(activeStore: fallback, fallback: fallback))
+        XCTAssertEqual(try ModelContext(try reopen(fallback)).fetch(FetchDescriptor<Entry>()).count, 2)
+    }
+
+    private func reopen(_ url: URL) throws -> ModelContainer {
+        try ModelContainer(
+            for: Entry.self, SpendCategory.self,
+            configurations: ModelConfiguration(url: url)
+        )
+    }
 }
