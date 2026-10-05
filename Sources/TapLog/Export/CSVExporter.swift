@@ -58,7 +58,21 @@ enum CSVExporter {
 
     /// RFC 4180 quoting so commas, quotes, and newlines in notes or custom
     /// category names can never shift columns.
+    ///
+    /// Spreadsheet formula injection: Excel, Numbers and LibreOffice evaluate
+    /// cells whose text starts with `=`, `+`, `-` or `@`. Prefixing a single
+    /// quote forces the cell to be read as text. Skipped characters are
+    /// whitespace and C0 control characters, so `\t=` or `\u{01}=` variants
+    /// are neutralized too.
     private static func quote(_ field: String) -> String {
-        "\"\(field.replacingOccurrences(of: "\"", with: "\"\""))\""
+        let quoted = "\"\(field.replacingOccurrences(of: "\"", with: "\"\""))\""
+        return isFormulaLeading(field) ? "'" + quoted : quoted
+    }
+
+    private static let formulaStarters: Set<Character> = ["=", "+", "-", "@"]
+
+    private static func isFormulaLeading(_ field: String) -> Bool {
+        let significant = field.drop { $0.isWhitespace || ($0.unicodeScalars.allSatisfy { $0.value < 0x20 || $0.value == 0x7f }) }
+        return significant.first.map { formulaStarters.contains($0) } ?? false
     }
 }

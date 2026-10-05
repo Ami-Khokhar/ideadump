@@ -98,6 +98,47 @@ final class CSVExporterTests: XCTestCase {
         XCTAssertEqual(CSVExporter.makeCSV(entries: [pending], lookup: lookup), "Date,Amount,Category,Note,Archived,Intent\n")
     }
 
+    // MARK: - Spreadsheet formula injection
+
+    /// Cells whose text starts with `=`, `+`, `-` or `@` are evaluated as
+    /// formulas by Excel/Numbers/LibreOffice even inside quoted CSV fields.
+    /// A leading apostrophe forces them to be read as text.
+    func testFormulaLeadingNoteIsNeutralized() {
+        for (payload, expected) in [
+            ("=SUM(A1:A2)", "'=SUM(A1:A2)"),
+            ("+1+1", "'+1+1"),
+            ("-2 - discount", "'-2 - discount"),
+            ("@everyone", "'@everyone"),
+        ] {
+            XCTAssertEqual(row(Entry(amount: 1, category: "chai", note: payload))[3], expected)
+        }
+    }
+
+    func testWhitespaceAndControlPrefixDoNotHideFormulas() {
+        for payload in [" =cmd", "\t+v", "\u{01}=x", "\u{7f}@y"] {
+            let fields = row(Entry(amount: 1, category: "chai", note: payload))
+            XCTAssertTrue(fields[3].hasPrefix("'"), "expected neutralized note for \(payload.debugDescription)")
+        }
+    }
+
+    func testFormulaLeadingCategoryNameIsNeutralized() {
+        let lookup = CategoryLookup([SpendCategory(key: "eq", name: "=DANGER", emoji: "⚠️")])
+        let entry = Entry(amount: 2, category: "eq")
+        let csv = CSVExporter.makeCSV(entries: [entry], lookup: lookup)
+        let dataLine = csv.split(separator: "\n", omittingEmptySubsequences: false)[1]
+        XCTAssertTrue(dataLine.contains("'\"=DANGER\""), "got \(dataLine)")
+    }
+
+    func testOrdinaryTextIsNotPrefixedAndAmountsAreUntouched() {
+        XCTAssertEqual(row(Entry(amount: -2.5, category: "chai", note: "tea time"))[1], "-2.5")
+        XCTAssertEqual(row(Entry(amount: -2.5, category: "chai", note: "tea time"))[3], "tea time")
+        XCTAssertEqual(row(Entry(amount: 7, category: "chai", note: "ok =later"))[3], "ok =later")
+    }
+
+    func testUnicodeNoteSurvivesExport() {
+        XCTAssertEqual(row(Entry(amount: 4, category: "chai", note: "café ☕️ – naïve"))[3], "café ☕️ – naïve")
+    }
+
     // MARK: - Intent column
 
     /// The whole point of the column: an entry the user never answered for must
