@@ -36,6 +36,17 @@ final class WidgetLogReceiptTests: XCTestCase {
         XCTAssertEqual(receipt?.categoryKey, "rent")
     }
 
+    func testClearRemovesAPendingReceipt() {
+        write(at: noon)
+
+        WidgetLogReceipt.clear(defaults: defaults)
+
+        XCTAssertNil(
+            WidgetLogReceipt.consume(now: noon.addingTimeInterval(30), defaults: defaults),
+            "a delete-all must leave no receipt that announces a deleted entry"
+        )
+    }
+
     func testNothingPendingReturnsNil() {
         XCTAssertNil(WidgetLogReceipt.consume(now: noon, defaults: defaults))
     }

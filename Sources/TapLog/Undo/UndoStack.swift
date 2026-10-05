@@ -50,6 +50,19 @@ final class UndoStack: ObservableObject {
         action.undo?()
     }
 
+    /// Drops every recorded action, including the visible toast.
+    ///
+    /// A delete-all erases the history every earlier inverse operation would
+    /// restore, so keeping them would offer to bring back data the user just
+    /// deleted. A failed delete-all never reaches this: its caller returns
+    /// before any cleanup, and the failure notice it reports is not undoable
+    /// history to begin with.
+    func clearAll() {
+        dismissTask?.cancel()
+        history.removeAll()
+        current = nil
+    }
+
     private func showCurrent() {
         dismissTask?.cancel()
         current = history.last
