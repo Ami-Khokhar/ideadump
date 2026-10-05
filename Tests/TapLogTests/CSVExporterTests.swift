@@ -126,13 +126,53 @@ final class CSVExporterTests: XCTestCase {
         let entry = Entry(amount: 2, category: "eq")
         let csv = CSVExporter.makeCSV(entries: [entry], lookup: lookup)
         let dataLine = csv.split(separator: "\n", omittingEmptySubsequences: false)[1]
-        XCTAssertTrue(dataLine.contains("'\"=DANGER\""), "got \(dataLine)")
+        XCTAssertTrue(dataLine.contains("\"'=DANGER\""), "got \(dataLine)")
+    }
+
+    /// The category column goes through the same guard as the note column.
+    func testWhitespaceAndControlPrefixOnCategoryIsNeutralized() {
+        for name in [" =DANGER", "\t=DANGER", "\u{01}=DANGER"] {
+            let lookup = CategoryLookup([SpendCategory(key: "eq", name: name, emoji: "⚠️")])
+            let csv = CSVExporter.makeCSV(
+                entries: [Entry(amount: 2, category: "eq")], lookup: lookup
+            )
+            XCTAssertTrue(
+                csv.contains("'" + name),
+                "expected neutralized category for \(name.debugDescription)"
+            )
+        }
+    }
+
+    /// A spreadsheet reads the first scalar, so `=` plus a combining mark must
+    /// still be neutralized even though it is one grapheme cluster.
+    func testCombiningMarkAfterStarterIsNeutralized() {
+        let fields = row(Entry(amount: 1, category: "chai", note: "=\u{0301}cmd"))
+        XCTAssertEqual(fields[3], "'=\u{0301}cmd")
     }
 
     func testOrdinaryTextIsNotPrefixedAndAmountsAreUntouched() {
         XCTAssertEqual(row(Entry(amount: -2.5, category: "chai", note: "tea time"))[1], "-2.5")
         XCTAssertEqual(row(Entry(amount: -2.5, category: "chai", note: "tea time"))[3], "tea time")
         XCTAssertEqual(row(Entry(amount: 7, category: "chai", note: "ok =later"))[3], "ok =later")
+    }
+
+    /// A spreadsheet only honors the quotes when the field opens with them, so
+    /// the neutralizing apostrophe has to sit inside: a formula-leading note
+    /// that also holds a comma, a quote or a newline must stay one field.
+    func testFormulaLeadingNoteStaysOneWellFormedField() {
+        let entry = Entry(amount: 8, category: "chai", note: "=SUM(A1,B1)")
+        let csv = CSVExporter.makeCSV(entries: [entry], lookup: lookup)
+        XCTAssertTrue(
+            csv.hasSuffix(",\"'=SUM(A1,B1)\",no,unmarked\n"),
+            "column-shifting CSV: \(csv)"
+        )
+
+        let messy = Entry(amount: 8, category: "chai", note: "=A1\"B\"\nC,D")
+        let messyCSV = CSVExporter.makeCSV(entries: [messy], lookup: lookup)
+        XCTAssertTrue(
+            messyCSV.hasSuffix(",\"'=A1\"\"B\"\"\nC,D\",no,unmarked\n"),
+            "not one quoted field: \(messyCSV)"
+        )
     }
 
     func testUnicodeNoteSurvivesExport() {

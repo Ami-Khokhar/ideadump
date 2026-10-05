@@ -61,18 +61,25 @@ enum CSVExporter {
     ///
     /// Spreadsheet formula injection: Excel, Numbers and LibreOffice evaluate
     /// cells whose text starts with `=`, `+`, `-` or `@`. Prefixing a single
-    /// quote forces the cell to be read as text. Skipped characters are
-    /// whitespace and C0 control characters, so `\t=` or `\u{01}=` variants
-    /// are neutralized too.
+    /// quote forces the cell to be read as text. The apostrophe goes inside the
+    /// quotes so the field still opens with its quote and a comma in the note
+    /// cannot shift columns. Skipped characters are whitespace and C0 control
+    /// characters, so `\t=` or `\u{01}=` variants are neutralized too.
     private static func quote(_ field: String) -> String {
-        let quoted = "\"\(field.replacingOccurrences(of: "\"", with: "\"\""))\""
-        return isFormulaLeading(field) ? "'" + quoted : quoted
+        let escaped = field.replacingOccurrences(of: "\"", with: "\"\"")
+        let value = isFormulaLeading(field) ? "'" + escaped : escaped
+        return "\"\(value)\""
     }
 
-    private static let formulaStarters: Set<Character> = ["=", "+", "-", "@"]
+    private static let formulaStarters: Set<Unicode.Scalar> = ["=", "+", "-", "@"]
 
+    /// Compares the first scalar, not the first `Character`: a spreadsheet
+    /// decides on the scalar, and `=` followed by a combining mark is one
+    /// grapheme cluster that would otherwise be missed.
     private static func isFormulaLeading(_ field: String) -> Bool {
-        let significant = field.drop { $0.isWhitespace || ($0.unicodeScalars.allSatisfy { $0.value < 0x20 || $0.value == 0x7f }) }
-        return significant.first.map { formulaStarters.contains($0) } ?? false
+        let first = field.unicodeScalars.first {
+            !($0.properties.isWhitespace || $0.value < 0x20 || $0.value == 0x7f)
+        }
+        return first.map(formulaStarters.contains) ?? false
     }
 }
