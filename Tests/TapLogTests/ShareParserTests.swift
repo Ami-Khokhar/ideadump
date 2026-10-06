@@ -185,7 +185,7 @@ extension ShareParserTests {
     /// plausible amount. The cap must land between tokens instead.
     func testATruncatedShareNeverYieldsAPartialAmount() {
         let text = String(repeating: "x", count: ShareParser.maxTextLength - 7) + " Rs 1,234.56"
-        XCTAssertNil(ShareParser.parse(text).amount, "a half-cut amount must not become ₹12")
+        XCTAssertNil(ShareParser.parse(text).amount, "a half-cut amount must not yield a partial amount")
     }
 
     func testAnAmountBeforeTheCapIsStillFound() {
@@ -211,5 +211,25 @@ extension ShareParserTests {
             ShareParser.parse(ShareParser.boundedPiece(piece)).amount,
             "a piece cut before the parser must not yield a partial amount"
         )
+    }
+}
+
+// MARK: - The cut keeps complete tokens and keywords
+
+extension ShareParserTests {
+    func testACutOnWhitespaceKeepsTheLastCompleteToken() {
+        let amount = " Rs 100"
+        let text = String(repeating: "a", count: 96) + amount + " tail"
+        let bounded = ShareParser.cutAtTokenBoundary(text, limit: 96 + amount.count)
+        XCTAssertTrue(bounded.hasSuffix(amount), "a complete token at the boundary must not be dropped")
+    }
+
+    func testCappingAPieceKeepsTheHeadOfTheTokenItCuts() {
+        // The cut lands inside "Zzkeyword" (a token nothing else repeats), whose
+        // head must survive so the words around it are not lost with it.
+        let piece = "Rs 100 " + "Zzkeyword" + String(repeating: "x", count: ShareParser.maxFieldLength)
+        let bounded = ShareParser.boundedPiece(piece)
+        XCTAssertTrue(bounded.contains("Zzkeyword"), "the token the cut lands in must keep its head")
+        XCTAssertEqual(ShareParser.parse(bounded).amount, 100, "the amount before the cut is still found")
     }
 }

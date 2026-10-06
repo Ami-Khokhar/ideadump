@@ -85,9 +85,8 @@
 - Decision: the only supported shape is `taplog://log` (empty or `/` path, no
   port, no userinfo, no fragment) with the keys `amount`, `note` and
   `category`. An unknown key is ignored; a repeated key uses its first value;
-  `note` is capped at 200 characters and `category` at 60. A value whose
-  percent-decoding fails prefills nothing for that field, and any other
-  component yields no prefill.
+  `note` is capped at 200 characters and `category` at 60. Any other component
+  yields no prefill.
 - Consequence: a link that a person hand-writes with extra components will stop
   pre-filling. A deep link still only pre-fills the capture form; it never
   saves an expense, so a bad link costs a manual tap, not a wrong record.
