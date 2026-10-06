@@ -8,6 +8,104 @@ enum ProProduct {
     static let lifetimeID = "dev.amteshwar.taplog.pro.lifetime"
 }
 
+/// What the paywall shows for the one product. A plain value, so a test can
+/// stand in for a store answer without constructing a StoreKit product.
+struct ProOffer: Equatable {
+    let displayPrice: String
+}
+
+/// What a purchase attempt did, in plain terms. `ignored` is a result whose
+/// signature did not verify: it is not evidence of a purchase, so nothing is
+/// shown and nothing changes.
+enum ProPurchaseOutcome: Equatable {
+    case unlocked
+    case cancelled
+    case pending
+    case ignored
+    case failed(String)
+}
+
+/// Whether a verified transaction grants Pro. Pure, so the two rules that guard
+/// the entitlement — the transaction is for the product we sell, and it has not
+/// been revoked — are testable without a real StoreKit transaction.
+enum ProEntitlement {
+    static func grantsPro(productID: String, revocationDate: Date?) -> Bool {
+        productID == ProProduct.lifetimeID && revocationDate == nil
+    }
+}
+
+/// The StoreKit boundary. The real implementation talks to the App Store; a test
+/// replaces it with scripted answers, which is what makes the loading, retry,
+/// purchase and restore paths testable at all.
+@MainActor
+protocol ProStoreBackend {
+    func loadOffer() async -> ProOffer?
+    func purchase() async -> ProPurchaseOutcome
+    func isEntitled() async -> Bool
+    func sync() async throws
+}
+
+/// The real backend. StoreKit is the authority for all four answers.
+@MainActor
+final class StoreKitBackend: ProStoreBackend {
+    private var product: Product?
+
+    func loadOffer() async -> ProOffer? {
+        guard let product = try? await Product.products(for: [ProProduct.lifetimeID]).first else {
+            self.product = nil
+            return nil
+        }
+        self.product = product
+        return ProOffer(displayPrice: product.displayPrice)
+    }
+
+    func purchase() async -> ProPurchaseOutcome {
+        guard let product else {
+            return .failed("The App Store isn't reachable right now.")
+        }
+        do {
+            switch try await product.purchase() {
+            case .success(let verification):
+                guard case .verified(let transaction) = verification else {
+                    // An unverified result is not evidence of a purchase.
+                    return .ignored
+                }
+                await transaction.finish()
+                return .unlocked
+            case .userCancelled:
+                // Backing out is an answer, not an error. Saying anything here
+                // would be the app arguing with someone who just said no.
+                return .cancelled
+            case .pending:
+                // Ask to Buy and similar. The entitlement arrives through
+                // `Transaction.updates` if and when it is approved.
+                return .pending
+            @unknown default:
+                return .cancelled
+            }
+        } catch {
+            return .failed("That didn't go through. You have not been charged.")
+        }
+    }
+
+    func isEntitled() async -> Bool {
+        for await result in Transaction.currentEntitlements {
+            guard case .verified(let transaction) = result else { continue }
+            if ProEntitlement.grantsPro(
+                productID: transaction.productID,
+                revocationDate: transaction.revocationDate
+            ) {
+                return true
+            }
+        }
+        return false
+    }
+
+    func sync() async throws {
+        try await AppStore.sync()
+    }
+}
+
 /// Owns the Pro entitlement: what StoreKit says the user has, and the two
 /// operations (buy, restore) that can change it.
 ///
@@ -29,7 +127,7 @@ final class ProStore {
     /// The product, once the store has answered. Nil while loading, and stays
     /// nil if the lookup fails — the paywall reads this to decide whether it can
     /// show a real price or has to say the store is unreachable.
-    private(set) var product: Product?
+    private(set) var offer: ProOffer?
 
     /// Set when a purchase or restore fails in a way worth telling the user
     /// about. Cancellation is not a failure and never lands here.
@@ -37,7 +135,23 @@ final class ProStore {
 
     private(set) var isWorking = false
 
+    /// Product loading is its own state so the paywall can tell "still asking"
+    /// from "the store said no", and offer a retry only for the second.
+    enum LoadState: Equatable {
+        case idle
+        case loading
+        case loaded
+        case unavailable
+    }
+
+    private(set) var loadState: LoadState = .idle
+
+    private let backend: ProStoreBackend
     private var updatesTask: Task<Void, Never>?
+
+    init(backend: ProStoreBackend? = nil) {
+        self.backend = backend ?? StoreKitBackend()
+    }
 
     /// Begins listening for entitlement changes and reads the current one.
     ///
@@ -65,30 +179,30 @@ final class ProStore {
         Task { await refresh() }
     }
 
-    /// Fetches the product. Called by the paywall as it appears, never at launch.
+    /// Fetches the product. Called by the paywall as it appears, and again from
+    /// its retry control — so a first failure is not the paywall's last word. A
+    /// load already in flight, or one that succeeded, is left alone: the price
+    /// does not change between appearances, and re-asking on every presentation
+    /// would let a later failure wipe a price that was already shown.
     func loadProduct() async {
-        guard product == nil else { return }
-        do {
-            product = try await Product.products(for: [ProProduct.lifetimeID]).first
-        } catch {
-            product = nil
+        guard loadState != .loading, loadState != .loaded else { return }
+        loadState = .loading
+        if let offer = await backend.loadOffer() {
+            self.offer = offer
+            loadState = .loaded
+        } else {
+            offer = nil
+            loadState = .unavailable
         }
     }
 
     /// Recomputes `isPro` from what StoreKit currently vouches for.
     func refresh() async {
-        var entitled = false
-        for await result in Transaction.currentEntitlements {
-            guard case .verified(let transaction) = result else { continue }
-            guard transaction.productID == ProProduct.lifetimeID else { continue }
-            guard transaction.revocationDate == nil else { continue }
-            entitled = true
-        }
-        isPro = entitled
+        isPro = await backend.isEntitled()
     }
 
     func purchase() async {
-        guard let product else {
+        guard offer != nil else {
             failureMessage = "The App Store isn't reachable right now."
             return
         }
@@ -96,23 +210,13 @@ final class ProStore {
         isWorking = true
         defer { isWorking = false }
 
-        do {
-            switch try await product.purchase() {
-            case .success(let verification):
-                await apply(verification)
-            case .userCancelled:
-                // Backing out is an answer, not an error. Saying anything here
-                // would be the app arguing with someone who just said no.
-                break
-            case .pending:
-                // Ask to Buy and similar. The entitlement will arrive through
-                // `Transaction.updates` if and when it is approved.
-                break
-            @unknown default:
-                break
-            }
-        } catch {
-            failureMessage = "That didn't go through. You have not been charged."
+        switch await backend.purchase() {
+        case .unlocked:
+            await refresh()
+        case .cancelled, .pending, .ignored:
+            break
+        case .failed(let message):
+            failureMessage = message
         }
     }
 
@@ -127,7 +231,7 @@ final class ProStore {
         defer { isWorking = false }
 
         do {
-            try await AppStore.sync()
+            try await backend.sync()
             await refresh()
             if !isPro {
                 failureMessage = "No previous purchase found on this Apple Account."
