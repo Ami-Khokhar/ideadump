@@ -127,6 +127,7 @@
 		DABDD1131FE8B6E4541DC315 /* SpendCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF3DE2DAA95012E652F3392 /* SpendCategory.swift */; };
 		DB5A07BAB9D8D11A9ED5009E /* CategorySuggestions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7394D0DD38548F9FF448AB53 /* CategorySuggestions.swift */; };
 		DE82EC60EA70E81650BCBC59 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE3EA2E0EE86B74DE9992BA /* PaywallView.swift */; };
+		DFDEADF1A13372F860BA83E7 /* ProStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3B84BCE396FD7E54BA4CE4D /* ProStoreTests.swift */; };
 		E177EC93F4160211C460AAA6 /* CategoryEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9779FFE83DC74430532BAEA4 /* CategoryEntity.swift */; };
 		E37461D086CDA7EFB0634484 /* UndoStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52F262C9AE91426858ADB810 /* UndoStack.swift */; };
 		E43AC5B85F80BB9338E6897D /* RecapNotifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 256BCB7D411B244512C38AE8 /* RecapNotifierTests.swift */; };
@@ -286,6 +287,7 @@
 		F01CDE21A570CB1DA2BCCC31 /* BudgetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetsView.swift; sourceTree = "<group>"; };
 		F329029C78879DE79A69EE09 /* BudgetCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetCalculator.swift; sourceTree = "<group>"; };
 		F39BE7063CC4D232FC7DD8D1 /* CSVExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVExporter.swift; sourceTree = "<group>"; };
+		F3B84BCE396FD7E54BA4CE4D /* ProStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProStoreTests.swift; sourceTree = "<group>"; };
 		F5A6873766A3AAC068A5CF04 /* RecapMathTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecapMathTests.swift; sourceTree = "<group>"; };
 		F5D80F4F776E0564FC7F8201 /* ShareParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareParser.swift; sourceTree = "<group>"; };
 		F60213EFF64EA4A3F5924AED /* CapturePrefillTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapturePrefillTests.swift; sourceTree = "<group>"; };
@@ -388,6 +390,7 @@
 				B981E1CD86D1D49E1B89DAAA /* PersistenceTests.swift */,
 				A12B9E8555D01CE140C8948D /* PrivacyManifestTests.swift */,
 				AF288986677992AC204150B0 /* ProGateTests.swift */,
+				F3B84BCE396FD7E54BA4CE4D /* ProStoreTests.swift */,
 				06298F3516E12ADC7D9E14F1 /* QuickButtonRankingTests.swift */,
 				F5A6873766A3AAC068A5CF04 /* RecapMathTests.swift */,
 				256BCB7D411B244512C38AE8 /* RecapNotifierTests.swift */,
@@ -879,6 +882,7 @@
 				07F07FAE13CACDFD7F4246B3 /* PersistenceTests.swift in Sources */,
 				0DEA6701A81887424A915C7B /* PrivacyManifestTests.swift in Sources */,
 				E5218D8914FA9E19FB22ED90 /* ProGateTests.swift in Sources */,
+				DFDEADF1A13372F860BA83E7 /* ProStoreTests.swift in Sources */,
 				529A5A11BBCEC9580EECC9B4 /* QuickButtonRankingTests.swift in Sources */,
 				A053856F440889544F06D2C1 /* RecapMathTests.swift in Sources */,
 				E43AC5B85F80BB9338E6897D /* RecapNotifierTests.swift in Sources */,

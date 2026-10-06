@@ -48,7 +48,7 @@ struct PaywallView: View {
     }
 
     private var priceText: String {
-        store.product?.displayPrice ?? "—"
+        store.offer?.displayPrice ?? "—"
     }
 
     var body: some View {
@@ -176,26 +176,53 @@ struct PaywallView: View {
 
     private var purchaseArea: some View {
         VStack(spacing: 12) {
-            Button {
-                Task { await store.purchase() }
-            } label: {
-                Group {
-                    if store.isWorking {
-                        ProgressView()
-                            .tint(.white)
-                    } else {
-                        Text("Unlock for \(priceText)")
-                            .font(.headline)
-                    }
+            if store.loadState == .unavailable {
+                // The store did not answer. Say so, and let the user ask again
+                // rather than leaving a dead price on a bottom bar.
+                Button {
+                    Task { await store.loadProduct() }
+                } label: {
+                    Label("Try again", systemImage: "arrow.clockwise")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Theme.surface, in: Capsule())
+                        .foregroundStyle(Theme.textPrimary)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(Theme.accent, in: Capsule())
-                .foregroundStyle(.white)
+                .buttonStyle(.plain)
+                .disabled(store.isWorking)
+                .accessibilityLabel("Couldn't reach the App Store. Try again.")
+
+                Text("The App Store isn't reachable right now.")
+                    .font(.caption)
+                    .foregroundStyle(Theme.textTertiary)
+            } else {
+                Button {
+                    Task { await store.purchase() }
+                } label: {
+                    Group {
+                        if store.isWorking || store.loadState == .loading {
+                            ProgressView()
+                                .tint(.white)
+                        } else {
+                            Text("Unlock for \(priceText)")
+                                .font(.headline)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(Theme.accent, in: Capsule())
+                    .foregroundStyle(.white)
+                }
+                .buttonStyle(.plain)
+                .disabled(store.offer == nil || store.isWorking)
+                .opacity(store.offer == nil ? 0.5 : 1)
+                .accessibilityLabel(
+                    store.offer == nil
+                        ? "Price unavailable"
+                        : "Unlock TapLog Pro for \(priceText)"
+                )
             }
-            .buttonStyle(.plain)
-            .disabled(store.product == nil || store.isWorking)
-            .opacity(store.product == nil ? 0.5 : 1)
 
             Button("Restore purchase") {
                 Task { await store.restore() }

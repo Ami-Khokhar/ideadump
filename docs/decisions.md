@@ -98,3 +98,18 @@
 - Consequence: a new required-reason API added to shared code must be declared in
   all three manifests. `PrivacyManifestTests` fails when a declared category is
   unused, so the manifests cannot drift ahead of the code either.
+
+## The paywall retries a failed product load, and StoreKit stays the authority
+
+- Context: issue #8. `ProStore.loadProduct()` ran once per paywall. If the App
+  Store lookup failed, the price rendered as "—" on a disabled button with no
+  way to ask again, and no test covered the loading or failure path.
+- Decision: product loading has an explicit state (`idle`, `loading`, `loaded`,
+  `unavailable`) and the paywall shows a labelled "Try again" control when it is
+  `unavailable`. StoreKit remains the only entitlement authority: `isPro` is read
+  from `Transaction.currentEntitlements` (expected product, no revocation) and is
+  never persisted. The StoreKit boundary sits behind `ProStoreBackend`, so the
+  loading, purchase and restore paths are tested with a scripted store.
+- Consequence: retry only re-asks the App Store for the price; it never unlocks
+  anything. Restoring and the whole free app stay available with no product
+  loaded, and an unverified transaction still unlocks nothing.
