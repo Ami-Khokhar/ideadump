@@ -133,7 +133,7 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    NavigationLink("Privacy") {
+                    NavigationLink(PrivacyView.settingsRowTitle) {
                         PrivacyView()
                     }
                 } footer: {
