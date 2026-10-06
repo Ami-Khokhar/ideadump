@@ -15,21 +15,46 @@ struct CapturePrefill: Equatable {
         self.note = note
     }
 
+    /// Caps on the text a link can carry into the form. A link is
+    /// machine-supplied, so an over-long value is a bug or an attack; the cap
+    /// keeps a prefill from carrying an unbounded string into the field.
+    static let maxNoteLength = 200
+    static let maxCategoryLength = 60
+
     init?(url: URL) {
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-              components.scheme == "taplog",
-              components.host == "log" else {
+              (components.scheme ?? "").lowercased() == "taplog",
+              (components.host ?? "").lowercased() == "log",
+              // The supported shape is exactly `taplog://log` plus known query
+              // keys. A port, a userinfo section, a path or a fragment is not
+              // part of it, and accepting them would make one logical link mean
+              // more than one thing.
+              components.user == nil, components.password == nil,
+              components.port == nil,
+              components.path.isEmpty || components.path == "/",
+              components.fragment == nil else {
             return nil
         }
         let items = components.queryItems ?? []
 
+        // First occurrence wins for a repeated key, so a link that names the
+        // same field twice has one predictable answer instead of a surprise.
         func value(_ name: String) -> String? {
             items.first { $0.name == name }?.value
         }
 
         amountText = Self.machineAmount(value("amount"))
-        note = value("note")
-        categoryQuery = value("category")
+        note = Self.bounded(value("note"), to: Self.maxNoteLength)
+        categoryQuery = Self.bounded(value("category"), to: Self.maxCategoryLength)
+    }
+
+    /// Trims a text field from a link and caps its length; an empty result is
+    /// nil, so a link cannot prefill a blank field.
+    private static func bounded(_ raw: String?, to limit: Int) -> String? {
+        guard let raw else { return nil }
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        return String(trimmed.prefix(limit))
     }
 
     /// Validates an amount that arrived in a URL, returning nil for anything the

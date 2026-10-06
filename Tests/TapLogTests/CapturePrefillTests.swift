@@ -41,3 +41,61 @@ final class CapturePrefillTests: XCTestCase {
         XCTAssertNil(prefill?.categoryQuery)
     }
 }
+
+// MARK: - Bounded fields and URL shape
+
+extension CapturePrefillTests {
+    func testBoundsNoteAndCategoryLengths() {
+        let note = String(repeating: "n", count: 500)
+        let category = String(repeating: "c", count: 200)
+        let url = URL(string: "taplog://log?note=\(note)&category=\(category)")!
+        let prefill = CapturePrefill(url: url)
+        XCTAssertEqual(prefill?.note?.count, CapturePrefill.maxNoteLength)
+        XCTAssertEqual(prefill?.categoryQuery?.count, CapturePrefill.maxCategoryLength)
+    }
+
+    func testShortFieldsAreLeftAlone() {
+        let prefill = CapturePrefill(url: URL(string: "taplog://log?note=coffee&category=Tea")!)
+        XCTAssertEqual(prefill?.note, "coffee")
+        XCTAssertEqual(prefill?.categoryQuery, "Tea")
+    }
+
+    func testDuplicateKeysUseTheFirstValue() {
+        let prefill = CapturePrefill(url: URL(string: "taplog://log?amount=5&amount=99&note=first&note=second")!)
+        XCTAssertEqual(prefill?.amountText, "5")
+        XCTAssertEqual(prefill?.note, "first")
+    }
+
+    func testRejectsUnexpectedUrlComponents() {
+        XCTAssertNil(CapturePrefill(url: URL(string: "taplog://log:8080?amount=1")!))
+        XCTAssertNil(CapturePrefill(url: URL(string: "taplog://user@log?amount=1")!))
+        XCTAssertNil(CapturePrefill(url: URL(string: "taplog://log/extra?amount=1")!))
+        XCTAssertNil(CapturePrefill(url: URL(string: "taplog://log?amount=1#frag")!))
+    }
+
+    func testAcceptsAnEmptyOrSlashPath() {
+        XCTAssertNotNil(CapturePrefill(url: URL(string: "taplog://log?amount=1")!))
+        XCTAssertNotNil(CapturePrefill(url: URL(string: "taplog://log/?amount=1")!))
+    }
+
+    func testSchemeAndHostCaseAreAccepted() {
+        XCTAssertNotNil(CapturePrefill(url: URL(string: "TAPLOG://LOG?amount=1")!))
+    }
+
+    func testUnknownKeysAreIgnored() {
+        let prefill = CapturePrefill(url: URL(string: "taplog://log?amount=5&save=yes&category=Tea")!)
+        XCTAssertEqual(prefill?.amountText, "5")
+        XCTAssertEqual(prefill?.categoryQuery, "Tea")
+    }
+
+    func testAParameterWithoutAValueIsIgnored() {
+        let prefill = CapturePrefill(url: URL(string: "taplog://log?amount=5&note")!)
+        XCTAssertEqual(prefill?.amountText, "5")
+        XCTAssertNil(prefill?.note)
+    }
+
+    func testAWhitespaceOnlyFieldIsNil() {
+        let prefill = CapturePrefill(url: URL(string: "taplog://log?note=%20%20")!)
+        XCTAssertNil(prefill?.note)
+    }
+}
