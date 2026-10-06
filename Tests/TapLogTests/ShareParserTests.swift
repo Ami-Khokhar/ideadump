@@ -112,3 +112,63 @@ final class ShareParserTests: XCTestCase {
         XCTAssertTrue(ShareParser.mentionsSpending("₹40"))
     }
 }
+
+// MARK: - Bounded share input
+
+extension ShareParserTests {
+    func testBoundedTextKeepsOnlyTheFirstAttachments() {
+        let pieces = (1...20).map { "piece-\($0)" }
+        let text = ShareParser.boundedText(pieces)
+        XCTAssertTrue(text.contains("piece-1"))
+        XCTAssertTrue(text.contains("piece-\(ShareParser.maxAttachments)"))
+        XCTAssertFalse(text.contains("piece-\(ShareParser.maxAttachments + 1)"), "only maxAttachments pieces are considered")
+    }
+
+    func testBoundedTextSlicesAnOversizedFieldToTheFieldCap() {
+        let huge = String(repeating: "x", count: ShareParser.maxFieldLength * 3)
+        XCTAssertEqual(ShareParser.boundedText([huge]).count, ShareParser.maxFieldLength)
+    }
+
+    func testBoundedTextCapsTheWholeText() {
+        let piece = String(repeating: "y", count: ShareParser.maxFieldLength)
+        let text = ShareParser.boundedText(Array(repeating: piece, count: ShareParser.maxAttachments))
+        XCTAssertLessThanOrEqual(text.count, ShareParser.maxTextLength)
+    }
+
+    func testBoundedTextLeavesABoundarySizedShareIntact() {
+        let pieces = ["Rs 40 debited at BigBasket", "Your OTP is 482910"]
+        XCTAssertEqual(ShareParser.boundedText(pieces), "Rs 40 debited at BigBasket Your OTP is 482910")
+    }
+}
+
+// MARK: - Ambiguous amounts and OTP-plus-payment
+
+extension ShareParserTests {
+    func testAnchoredAmountWinsBesideAnOTP() {
+        let result = ShareParser.parse("Your OTP is 482910. You spent Rs 12.50 at Starbucks")
+        XCTAssertEqual(result.amount, Decimal(string: "12.50"))
+    }
+
+    func testSymbolLessPaymentBesideAnOTPIsDeclinedRatherThanGuessed() {
+        // Both numbers are bare; the parser cannot tell the code from the
+        // payment, so it declines instead of filing the code as an expense.
+        XCTAssertNil(ShareParser.parse("Your OTP is 482910. You spent 12.50 at Starbucks").amount)
+    }
+
+    func testTheFirstAnchoredAmountWinsWhenABalanceFollows() {
+        XCTAssertEqual(ShareParser.parse("Rs 100 debited at BigBasket. Balance Rs 5,000").amount, 100)
+    }
+
+    func testMentionsOneTimeCodeRecognizesCommonForms() {
+        XCTAssertTrue(ShareParser.mentionsOneTimeCode("Your OTP is 1234"))
+        XCTAssertTrue(ShareParser.mentionsOneTimeCode("Use verification code 123456"))
+        XCTAssertTrue(ShareParser.mentionsOneTimeCode("Enter your UPI PIN 1234"))
+        XCTAssertFalse(ShareParser.mentionsOneTimeCode("Rs 40 debited at BigBasket"))
+    }
+
+    func testParseIgnoresTextBeyondTheLengthCap() {
+        let filler = String(repeating: "x", count: ShareParser.maxTextLength)
+        XCTAssertNil(ShareParser.parse(filler + " Rs 10").amount, "text past the cap is not scanned")
+        XCTAssertEqual(ShareParser.parse("Rs 10 " + filler).amount, 10, "an amount inside the cap still parses")
+    }
+}

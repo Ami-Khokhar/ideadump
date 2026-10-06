@@ -51,3 +51,20 @@
 - Consequence: a failed delete-all leaves every copy intact and recoverable,
   because the cleanup only runs after the store's save succeeds. External
   recipients of a shared export and user backups are outside deletion scope.
+
+## Share-sheet input is bounded, and an ambiguous amount is declined
+
+- Context: issue #5. Shared text comes from another app and can be arbitrarily
+  large or split across many attachments, and a one-time code beside a payment
+  leaves two bare numbers the parser cannot tell apart. The old flow
+  concatenated every attachment without a limit and took the first bare number,
+  so an OTP could be filed as the payment.
+- Decision: consider at most `ShareParser.maxAttachments` attachments, slice each
+  to `maxFieldLength` and the joined text to `maxTextLength`, and cap the parser
+  input at the same length. A currency-anchored amount (`₹`, `$`, `Rs`, `INR`)
+  always wins; when the text also looks like a one-time-code message, the
+  symbol-less fallback is not used at all, so the amount is declined rather than
+  guessed.
+- Consequence: some symbol-less OTP-plus-payment messages no longer prefill an
+  amount. The share sheet says it could not find one and the user enters it in
+  the app. Refusing is recoverable; silently filing the code as spending is not.
