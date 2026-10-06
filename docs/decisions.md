@@ -68,3 +68,18 @@
 - Consequence: some symbol-less OTP-plus-payment messages no longer prefill an
   amount. The share sheet says it could not find one and the user enters it in
   the app. Refusing is recoverable; silently filing the code as spending is not.
+
+## A deep link prefills only from a known URL shape, with capped fields
+
+- Context: issue #6. `taplog://log?...` arrives from a widget, a Control Center
+  control, a Shortcut or another app. The amount was already validated as a
+  strict machine number, but the note and category were unbounded, and a port,
+  userinfo, path or fragment was accepted without meaning anything.
+- Decision: the only supported shape is `taplog://log` (empty or `/` path, no
+  port, no userinfo, no fragment) with the keys `amount`, `note` and
+  `category`. An unknown key is ignored; a repeated key uses its first value;
+  `note` is capped at 200 characters and `category` at 60. Any other component
+  yields no prefill.
+- Consequence: a link that a person hand-writes with extra components will stop
+  pre-filling. A deep link still only pre-fills the capture form; it never
+  saves an expense, so a bad link costs a manual tap, not a wrong record.
