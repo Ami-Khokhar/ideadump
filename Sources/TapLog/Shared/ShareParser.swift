@@ -41,13 +41,20 @@ enum ShareParser {
         return ShareParse(amount: extracted.value, note: note)
     }
 
+    /// A single shared piece, trimmed to the field cap between tokens. The share
+    /// extension calls this as it loads each attachment, so a number straddling
+    /// the field cap cannot survive as a fragment before the parser sees it.
+    static func boundedPiece(_ piece: String) -> String {
+        cutAtTokenBoundary(piece, limit: maxFieldLength)
+    }
+
     /// Slices `text` to at most `limit` characters without cutting a token in
-    /// half. A raw cut can leave a fragment of a number at the end — the
-    /// reviewer's example, `Rs 1,234.56` cut after `Rs 1,2` parses as `12` — so
-    /// the cut lands on the last whitespace before the limit, and a single
-    /// over-long token has its trailing numeric characters dropped. A partial
-    /// amount can then never survive the cap.
-    private static func cutAtTokenBoundary(_ text: String, limit: Int) -> String {
+    /// half. A raw cut can leave a fragment of a number at the end —
+    /// `Rs 1,234.56` cut after `Rs 1,2` parses as `1.20` — so the cut lands on
+    /// the last whitespace before the limit, and a single over-long token has
+    /// its trailing numeric characters dropped. A partial amount can then never
+    /// survive the cap.
+    static func cutAtTokenBoundary(_ text: String, limit: Int) -> String {
         guard text.count > limit else { return text }
         let prefix = String(text.prefix(limit))
         if let boundary = prefix.lastIndex(where: { $0.isWhitespace || $0.isNewline }) {

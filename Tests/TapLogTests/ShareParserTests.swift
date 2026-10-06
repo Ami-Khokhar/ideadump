@@ -193,3 +193,23 @@ extension ShareParserTests {
         XCTAssertEqual(ShareParser.parse(text).amount, Decimal(string: "1234.56"))
     }
 }
+
+// MARK: - The per-piece cut the share extension applies
+
+extension ShareParserTests {
+    func testABoundedPieceKeepsAnAmountInsideTheFieldCap() {
+        let piece = "Rs 1,234.56 debited " + String(repeating: "x", count: ShareParser.maxFieldLength)
+        XCTAssertEqual(
+            ShareParser.parse(ShareParser.boundedPiece(piece)).amount,
+            Decimal(string: "1234.56")
+        )
+    }
+
+    func testABoundedPieceDoesNotCutANumberInHalf() {
+        let piece = String(repeating: "x", count: ShareParser.maxFieldLength - 7) + " Rs 1,234.56"
+        XCTAssertNil(
+            ShareParser.parse(ShareParser.boundedPiece(piece)).amount,
+            "a piece cut before the parser must not yield a partial amount"
+        )
+    }
+}
