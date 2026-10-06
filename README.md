@@ -40,7 +40,8 @@ xcrun simctl openurl booted "taplog://log?amount=12.50&note=coffee&category=Coff
 
 **All code milestones (M0–M5 + the agent-portion of M6) are built and verified on the
 iOS 26.5 simulator.** Remaining before TestFlight: real-device code signing, Action
-Button / widget-on-lock-screen checks, and capture timing — see `build-plan.md`.
+Button / widget-on-lock-screen checks, and capture timing — see `build-plan.md` and
+`docs/release-runbook.md` for the full gate list.
 
 ## Test on your iPhone (10–15 min, free Apple ID works)
 

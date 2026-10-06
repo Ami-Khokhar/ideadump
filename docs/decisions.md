@@ -6,9 +6,11 @@
   sheet or a foreign `taplog://` link. A cell whose text opens with `=`, `+`, `-`
   or `@` is evaluated as a formula by Excel, Numbers, Sheets and LibreOffice,
   even when the CSV field is quoted.
-- Decision: prefix such a field with a single apostrophe. The apostrophe goes
-  inside the field's quotes, after any leading whitespace or C0/DEL control
-  characters. The character is not stripped and the field is still RFC 4180
+- Decision: prefix such a field with a single apostrophe, written as the first
+  character inside the field's quotes. The guard looks past any leading
+  whitespace or C0/DEL control characters when deciding whether to add it, so
+  ` =cmd` exports as the field `"' =cmd"` — apostrophe first, the original text
+  after it. The character is not stripped and the field is still RFC 4180
   quoted.
 - Consequence: a consumer that is not a spreadsheet sees a literal leading
   apostrophe on formula-leading notes and category names. Any importer or
@@ -24,10 +26,13 @@
   promotes the fallback — which still holds the entries the user deleted, and
   the history comes back.
 - Decision: immediately after a delete-all commits successfully, the app
-  retires the fallback's records — deletes every entry and category in the
-  Application Support store and removes its history marker. The retirement
-  only runs when the app is not itself running on the fallback, and any
-  failure (unopenable store, failed save) preserves every record and logs.
+  retires the fallback's history — deletes every entry, resets each category's
+  usage count, and removes the history marker. Categories themselves stay,
+  because a budget target, an emoji and a sort order are configuration rather
+  than history, and the fallback is only reached when the active store fails to
+  open. The retirement only runs when the app is not itself running on the
+  fallback, and any failure (unopenable store, failed save) preserves every
+  record and logs.
 - Consequence: a user who deletes all history cannot have it resurrected by a
   store they can no longer see. The cost is that a retirement that races with
   an unfinished migration could drop the fallback's copy — which is why the
@@ -109,7 +114,9 @@
   `unavailable`. StoreKit remains the only entitlement authority: `isPro` is read
   from `Transaction.currentEntitlements` (expected product, no revocation) and is
   never persisted. The StoreKit boundary sits behind `ProStoreBackend`, so the
-  loading, purchase and restore paths are tested with a scripted store.
+  loading, purchase and restore paths are tested with a scripted store. A load
+  that already succeeded is left alone, so the price is fetched once per app run
+  and a later failure cannot remove a price that was already shown.
 - Consequence: retry only re-asks the App Store for the price; it never unlocks
   anything. Restoring and the whole free app stay available with no product
   loaded, and an unverified transaction still unlocks nothing.
