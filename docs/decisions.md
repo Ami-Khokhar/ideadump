@@ -113,3 +113,17 @@
 - Consequence: retry only re-asks the App Store for the price; it never unlocks
   anything. Restoring and the whole free app stay available with no product
   loaded, and an unverified transaction still unlocks nothing.
+
+## The privacy screen states current behavior and links no policy page
+
+- Context: issue #9. Nowhere in the app explained what TapLog does with the
+  user's records, exports and purchases, and no production policy URL has been
+  approved for hosting.
+- Decision: Settings gains a labelled Privacy destination whose content states
+  what the app does today — records on the device, user-controlled export and
+  backup, Apple handling payment and Siri requests, and what "Delete all entries"
+  can and cannot reach. No URL, contact address or assurance is added, and the
+  public policy link stays explicitly pending an owner-approved page.
+- Consequence: adding the hosted policy page later is a one-line change in
+  `PrivacyView`. `PrivacyViewTests` fails if a placeholder URL, an invented
+  contact or a blanket assurance is introduced.

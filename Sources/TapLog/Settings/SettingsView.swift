@@ -133,6 +133,14 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    NavigationLink("Privacy") {
+                        PrivacyView()
+                    }
+                } footer: {
+                    Text("How TapLog handles your records, exports, purchases and requests to Siri.")
+                }
+
+                Section {
                     Button("Delete all entries", role: .destructive) {
                         showingClearConfirmation = true
                     }
