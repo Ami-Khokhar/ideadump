@@ -99,3 +99,26 @@ extension CapturePrefillTests {
         XCTAssertNil(prefill?.note)
     }
 }
+
+// MARK: - Boundary and malformed-encoding cases
+
+extension CapturePrefillTests {
+    func testAValueAtTheCapIsNotTruncated() {
+        let note = String(repeating: "n", count: CapturePrefill.maxNoteLength)
+        let category = String(repeating: "c", count: CapturePrefill.maxCategoryLength)
+        let url = URL(string: "taplog://log?note=\(note)&category=\(category)")!
+        let prefill = CapturePrefill(url: url)
+        XCTAssertEqual(prefill?.note, note, "a value exactly at the cap must survive intact")
+        XCTAssertEqual(prefill?.categoryQuery, category)
+    }
+
+    func testMalformedPercentEncodingLeavesThatFieldNil() {
+        var components = URLComponents()
+        components.scheme = "taplog"
+        components.host = "log"
+        components.percentEncodedQuery = "amount=1&note=%E0%A4"
+        let prefill = CapturePrefill(url: components.url!)
+        XCTAssertEqual(prefill?.amountText, "1")
+        XCTAssertNil(prefill?.note, "an undecodable value prefills nothing")
+    }
+}

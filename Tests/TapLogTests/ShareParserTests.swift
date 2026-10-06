@@ -135,9 +135,18 @@ extension ShareParserTests {
         XCTAssertLessThanOrEqual(text.count, ShareParser.maxTextLength)
     }
 
-    func testBoundedTextLeavesABoundarySizedShareIntact() {
+    func testBoundedTextLeavesAnOrdinaryShareIntact() {
         let pieces = ["Rs 40 debited at BigBasket", "Your OTP is 482910"]
         XCTAssertEqual(ShareParser.boundedText(pieces), "Rs 40 debited at BigBasket Your OTP is 482910")
+    }
+
+    func testBoundedTextKeepsPiecesAtTheFieldCap() {
+        let first = String(repeating: "a", count: ShareParser.maxFieldLength)
+        let second = String(repeating: "b", count: ShareParser.maxFieldLength)
+        let text = ShareParser.boundedText([first, second])
+        XCTAssertTrue(text.hasPrefix(first), "the first piece is within every cap")
+        XCTAssertLessThanOrEqual(text.count, ShareParser.maxTextLength)
+        XCTAssertTrue(text.contains(String(repeating: "b", count: 1999)), "the second piece is cut by only the separator")
     }
 }
 
@@ -170,5 +179,17 @@ extension ShareParserTests {
         let filler = String(repeating: "x", count: ShareParser.maxTextLength)
         XCTAssertNil(ShareParser.parse(filler + " Rs 10").amount, "text past the cap is not scanned")
         XCTAssertEqual(ShareParser.parse("Rs 10 " + filler).amount, 10, "an amount inside the cap still parses")
+    }
+
+    /// A raw cut can leave a fragment of a number that then parses as a smaller,
+    /// plausible amount. The cap must land between tokens instead.
+    func testATruncatedShareNeverYieldsAPartialAmount() {
+        let text = String(repeating: "x", count: ShareParser.maxTextLength - 7) + " Rs 1,234.56"
+        XCTAssertNil(ShareParser.parse(text).amount, "a half-cut amount must not become ₹12")
+    }
+
+    func testAnAmountBeforeTheCapIsStillFound() {
+        let text = "Rs 1,234.56 debited " + String(repeating: "x", count: ShareParser.maxTextLength)
+        XCTAssertEqual(ShareParser.parse(text).amount, Decimal(string: "1234.56"))
     }
 }

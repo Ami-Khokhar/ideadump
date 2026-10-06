@@ -24,7 +24,9 @@ enum ShareParser {
         for piece in pieces.prefix(maxAttachments) {
             let separator = kept.isEmpty ? 0 : 1
             guard total + separator < maxTextLength else { break }
-            let slice = String(piece.prefix(min(maxFieldLength, maxTextLength - total - separator)))
+            let slice = cutAtTokenBoundary(
+                piece, limit: min(maxFieldLength, maxTextLength - total - separator)
+            )
             kept.append(slice)
             total += slice.count + separator
         }
@@ -32,11 +34,30 @@ enum ShareParser {
     }
 
     static func parse(_ text: String) -> ShareParse {
-        let text = String(text.prefix(maxTextLength))
+        let text = cutAtTokenBoundary(text, limit: maxTextLength)
         guard !text.isEmpty else { return ShareParse(amount: nil, note: nil) }
         let extracted = extractAmount(from: text)
         let note = extractNote(from: text, amountString: extracted.raw)
         return ShareParse(amount: extracted.value, note: note)
+    }
+
+    /// Slices `text` to at most `limit` characters without cutting a token in
+    /// half. A raw cut can leave a fragment of a number at the end — the
+    /// reviewer's example, `Rs 1,234.56` cut after `Rs 1,2` parses as `12` — so
+    /// the cut lands on the last whitespace before the limit, and a single
+    /// over-long token has its trailing numeric characters dropped. A partial
+    /// amount can then never survive the cap.
+    private static func cutAtTokenBoundary(_ text: String, limit: Int) -> String {
+        guard text.count > limit else { return text }
+        let prefix = String(text.prefix(limit))
+        if let boundary = prefix.lastIndex(where: { $0.isWhitespace || $0.isNewline }) {
+            return String(prefix[..<boundary])
+        }
+        var trimmed = prefix
+        while let last = trimmed.last, last.isNumber || last == "," || last == "." {
+            trimmed.removeLast()
+        }
+        return trimmed
     }
 
     /// Whether the text says money actually moved.
