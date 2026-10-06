@@ -77,14 +77,18 @@ Every budget tree and the monthly recap
 ## App Review notes
 
 ```text
-TapLog needs no account and no login. All data stays on the device; the app makes no network requests.
+TapLog needs no account and no login. All data stays on the device; the app makes no network requests of its own. Its only network traffic goes to the App Store: the paywall fetches the Pro product price, and purchase, restore (AppStore.sync), and transaction updates run through StoreKit.
 
-To see the in-app purchase (TapLog Pro, non-consumable):
-1. Open the app and go through the short welcome.
-2. Tap the bar-chart button at the top right to open Recap.
-3. Tap "Month". The paywall opens.
+The main screen is the keypad. Its top bar holds History (clock, top left) and, on the right, Budgets (leaf), Recap (bar chart) and an ellipsis menu whose only item is Settings. The first time you open Budgets or Recap, a one-time explainer sheet appears; dismiss it to continue to that screen.
 
-A second way: tap the leaf button to open Budgets, and create a fourth budget. Three are free.
+To reach the in-app purchase (TapLog Pro, non-consumable), any of these works:
+1. Recap -> "Month". Tap Recap (bar chart) at the top right, dismiss the explainer if it appears, then tap "Month"; the paywall opens.
+2. Budgets -> add a fourth tree. Tap Budgets (leaf) at the top right, dismiss the explainer if it appears, then tap "Add a budget". Three trees are free, and the paywall opens in front of the fourth.
+3. Settings -> "TapLog Pro". Tap the ellipsis at the top right, tap Settings, then tap "TapLog Pro" in the Pro section.
+
+Restore is in the same Pro section: Settings -> "Restore purchase". It is offered whether or not Pro is unlocked.
+
+Checked against the source in this build: the top-bar labels, the three paywall entry points, the Settings Pro and Restore controls, and the StoreKit product id (dev.amteshwar.taplog.pro.lifetime). Still needs a device or simulator pass before submission: the labels as rendered on screen, and a real StoreKit sandbox purchase and restore. Those have not been run, and this note does not claim they passed.
 
 Siri and Action Button: the app registers App Shortcuts ("Log chai in TapLog", "Open capture in TapLog"). The Action Button runs the "Open Expense Capture" shortcut, which opens the keypad.
 ```
