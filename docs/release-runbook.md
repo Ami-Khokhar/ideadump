@@ -3,8 +3,9 @@
 Every row is a gate that must be closed before submission, and every gate needs
 one artifact — a command's output, a screenshot, or a signed document — kept
 next to the row or under `reports/release-evidence/`. A row with no artifact is
-**not tested**, however likely it is to pass. Nothing in this runbook has been
-executed for this release; the status column says so.
+**not tested**, however likely it is to pass. No gate in this runbook has been
+closed for this release; the only checks that have run are the source and static
+ones the status column names.
 
 This is an engineering checklist, not legal or tax advice, and it does not
 authorize any account change, hosting change or submission. Items marked
@@ -27,8 +28,8 @@ column names who must produce the artifact.
 | S2 | Toolchain and SDK minimum (Xcode 26 / iOS 26 SDK) | `xcodebuild -version`, `xcodebuild -showsdks`, and `DTPlatformVersion` / `DTSDKName` from the built `Info.plist` | owner | not tested |
 | S3 | File protection on device, before first unlock and after relock | On a physical device: the class of the SwiftData store, its `-wal` and `-shm` files, and `taplog-export.csv`. Capture with the device rebooted but not yet unlocked, and again after a lock. Use the file-protection attribute shown by the OS; the app must not set a weaker class than iOS applies by default | owner | not tested |
 | S4 | Widget and Siri stay on-device | The widget and Siri flows produce an entry without a network request from TapLog; App Privacy answers match; each `.appex` bundles `PrivacyInfo.xcprivacy` | owner | partly checked (manifests and source), device pass not tested |
-| S5 | Canary logs carry no records | `log stream` (or a sysdiagnose) over one log, one share-sheet capture, one purchase and one Siri log: no amount, note, category name or export content appears | owner | not tested |
-| S6 | Canary network traffic | A proxy or Network instrument over the same actions: the only traffic is to Apple for StoreKit. Any other host is a finding | owner | not tested |
+| S5 | Canary logs carry no records | Log one entry whose note is `taplog-canary-<uuid>` and whose amount is 4711, then `log stream --predicate 'subsystem == "dev.amteshwar.taplog"'`, and send the same marker through the share sheet, a purchase and Siri. No amount, note, category name or export text from it appears | owner | not tested |
+| S6 | Canary network traffic | A proxy or Network instrument over the same actions with the same `taplog-canary-<uuid>` marker: the only traffic is to Apple for StoreKit. Any other host is a finding | owner | not tested |
 | S7 | Real StoreKit behaviour in sandbox | Screenshots and receipts for: a completed purchase, a restore on a clean install, an Ask-to-Buy **pending**, and a **refund/revocation** removing the entitlement. Product id must be `dev.amteshwar.taplog.pro.lifetime` | owner | blocked on the Paid Apps Agreement, tax form and bank account showing Active |
 | S8 | Verified entitlement policy | Source inspection: `ProEntitlement.grantsPro` requires the expected product id and no revocation date, and `isPro` is never persisted. Unit tests in `ProStoreTests` cover the store paths | owner | partly checked (tests pass), not a substitute for S7 |
 | S9 | Screenshots and accessibility | The App Store screenshots; a VoiceOver pass over capture, history, budgets, recap, settings and the privacy screen; Dynamic Type at the largest size | owner | not tested |
