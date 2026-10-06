@@ -180,9 +180,12 @@ final class ProStore {
     }
 
     /// Fetches the product. Called by the paywall as it appears, and again from
-    /// its retry control — so a first failure is not the paywall's last word.
+    /// its retry control — so a first failure is not the paywall's last word. A
+    /// load already in flight, or one that succeeded, is left alone: the price
+    /// does not change between appearances, and re-asking on every presentation
+    /// would let a later failure wipe a price that was already shown.
     func loadProduct() async {
-        guard loadState != .loading else { return }
+        guard loadState != .loading, loadState != .loaded else { return }
         loadState = .loading
         if let offer = await backend.loadOffer() {
             self.offer = offer

@@ -1,9 +1,9 @@
 import XCTest
 @testable import TapLog
 
-/// The paywall's loading, retry, purchase and restore paths, driven through a
-/// scripted store. StoreKit stays the real authority in the app; these tests
-/// replace only the boundary, so every branch the paywall shows is exercised.
+/// The paywall's store paths — product loading and retry, purchase outcomes,
+/// and restore — driven through a scripted backend. StoreKit stays the real
+/// authority in the app; these tests replace only that boundary.
 @MainActor
 final class ProStoreTests: XCTestCase {
 
@@ -110,6 +110,34 @@ final class ProStoreTests: XCTestCase {
 
         XCTAssertFalse(store.isPro, "an unverified transaction is not evidence of a purchase")
         XCTAssertNil(store.failureMessage)
+    }
+
+    func testAFailedPurchaseReportsTheMessageFromTheStore() async {
+        let backend = FakeBackend()
+        backend.offer = ProOffer(displayPrice: "₹199")
+        backend.purchaseOutcome = .failed("That didn't go through. You have not been charged.")
+        let store = makeStore(backend)
+        await store.loadProduct()
+
+        await store.purchase()
+
+        XCTAssertFalse(store.isPro)
+        XCTAssertEqual(store.failureMessage, "That didn't go through. You have not been charged.")
+    }
+
+    func testASecondAppearanceDoesNotReloadOnceThePriceIsKnown() async {
+        let backend = FakeBackend()
+        backend.offer = ProOffer(displayPrice: "₹199")
+        let store = makeStore(backend)
+
+        await store.loadProduct()
+        // A later failure must not wipe a price that was already shown.
+        backend.offer = nil
+        await store.loadProduct()
+
+        XCTAssertEqual(store.loadState, .loaded)
+        XCTAssertEqual(store.offer, ProOffer(displayPrice: "₹199"))
+        XCTAssertEqual(backend.loadCount, 1)
     }
 
     // MARK: - Restore
