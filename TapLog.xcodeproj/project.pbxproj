@@ -11,8 +11,10 @@
 		02757F7C23442471CBA41280 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B3F20CAA7F3778A486477A5 /* SettingsView.swift */; };
 		03D459D8382BC1695FFB1F77 /* CSVExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F39BE7063CC4D232FC7DD8D1 /* CSVExporter.swift */; };
 		07F07FAE13CACDFD7F4246B3 /* PersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B981E1CD86D1D49E1B89DAAA /* PersistenceTests.swift */; };
+		08EFE43237CB2E5EF87692DD /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 99A11D0A9A57DF1114499006 /* PrivacyInfo.xcprivacy */; };
 		094D0F1EF81E4C5C70080BDE /* TreeStateGlyph.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7E884616B36F59271A32D33 /* TreeStateGlyph.swift */; };
 		0A06D0E1446BD988D6E632FC /* IntentSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AFDF5F905D85495CC043D15 /* IntentSupport.swift */; };
+		0DEA6701A81887424A915C7B /* PrivacyManifestTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A12B9E8555D01CE140C8948D /* PrivacyManifestTests.swift */; };
 		10D68A923A8E2E9C9AD3B4D2 /* ShareParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D80F4F776E0564FC7F8201 /* ShareParser.swift */; };
 		10FC99EA0CD361A92052B43D /* OpenCaptureIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81FFDEB986BB922DED4CE884 /* OpenCaptureIntent.swift */; };
 		16E73425085637DCCF43CD1C /* OnboardingCategoriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FCAFA2601272F61B499A280 /* OnboardingCategoriesView.swift */; };
@@ -43,6 +45,7 @@
 		4A321A4F3A2BD08C5909D91A /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 810495CA92DCD2037BFC789F /* Log.swift */; };
 		4AF040C455CC9F3F424076FC /* AmountTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = E61E6D1F80EEF58F89B322BC /* AmountTextField.swift */; };
 		4BA53740A22BDA4BE58BB8A8 /* CaptureBookkeepingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61FEEF255C865D34F51F7B91 /* CaptureBookkeepingTests.swift */; };
+		4E65056101340FC533270CF8 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 925E6B05A99C13CEE2EDF5E4 /* PrivacyInfo.xcprivacy */; };
 		4E8BBBDCD22E7104B21745E0 /* TreeStateGlyph.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7E884616B36F59271A32D33 /* TreeStateGlyph.swift */; };
 		517CA2752492795FF822A77F /* UndoStackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE5755275B1B7EDCCE0DC33B /* UndoStackTests.swift */; };
 		529A5A11BBCEC9580EECC9B4 /* QuickButtonRankingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06298F3516E12ADC7D9E14F1 /* QuickButtonRankingTests.swift */; };
@@ -244,14 +247,17 @@
 		8AFDF5F905D85495CC043D15 /* IntentSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentSupport.swift; sourceTree = "<group>"; };
 		8B8D01B5CCF0A361CA78B6BC /* BotanicalStamp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotanicalStamp.swift; sourceTree = "<group>"; };
 		8CDF629996C6BC1B1C2D0187 /* OpenCaptureIntentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenCaptureIntentTests.swift; sourceTree = "<group>"; };
+		925E6B05A99C13CEE2EDF5E4 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		9380549822DEC6CE9FCD846D /* RetentionManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetentionManagerTests.swift; sourceTree = "<group>"; };
 		953A37CF714907853384322D /* ProGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProGate.swift; sourceTree = "<group>"; };
 		95C3DF8E229C7D62CF453AE9 /* PaperGround.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperGround.swift; sourceTree = "<group>"; };
 		9779FFE83DC74430532BAEA4 /* CategoryEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryEntity.swift; sourceTree = "<group>"; };
 		991D5BACEE57C2FC20B39564 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		99A11D0A9A57DF1114499006 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		99EA4B91D0684941C91F1C32 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		9CCFD7C9C1623952E799140E /* QuickLogIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickLogIntent.swift; sourceTree = "<group>"; };
 		A11A5BAE40E4C480798191FA /* FirstBudgetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstBudgetTests.swift; sourceTree = "<group>"; };
+		A12B9E8555D01CE140C8948D /* PrivacyManifestTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyManifestTests.swift; sourceTree = "<group>"; };
 		A3108DEEDA2FCB5AC31A5327 /* GroveSceneModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroveSceneModel.swift; sourceTree = "<group>"; };
 		A496395D787F5EFB6A65610E /* QuickButtonRanking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickButtonRanking.swift; sourceTree = "<group>"; };
 		A6DF1C21877AEDEBAE486B62 /* TreeMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TreeMark.swift; sourceTree = "<group>"; };
@@ -355,6 +361,7 @@
 		411B9F33292450102E826BAE /* TapLogWidget */ = {
 			isa = PBXGroup;
 			children = (
+				925E6B05A99C13CEE2EDF5E4 /* PrivacyInfo.xcprivacy */,
 				8AFDA712F13988B761C89CF1 /* SpendWidget.swift */,
 				B9DFFBA84BFB8F6EF268CCB4 /* TapLogControlWidget.swift */,
 				BE6D869DDDC20393088C7D57 /* TapLogWidgetBundle.swift */,
@@ -379,6 +386,7 @@
 				8CDF629996C6BC1B1C2D0187 /* OpenCaptureIntentTests.swift */,
 				89C5DCBB71A6A6C6F8C5DED4 /* PaywallEvidenceTests.swift */,
 				B981E1CD86D1D49E1B89DAAA /* PersistenceTests.swift */,
+				A12B9E8555D01CE140C8948D /* PrivacyManifestTests.swift */,
 				AF288986677992AC204150B0 /* ProGateTests.swift */,
 				06298F3516E12ADC7D9E14F1 /* QuickButtonRankingTests.swift */,
 				F5A6873766A3AAC068A5CF04 /* RecapMathTests.swift */,
@@ -396,6 +404,7 @@
 		48A0F0DD26E15EF914B64A9D /* TapLogShare */ = {
 			isa = PBXGroup;
 			children = (
+				99A11D0A9A57DF1114499006 /* PrivacyInfo.xcprivacy */,
 				D1313CBDF617D18A21F9F2E9 /* ShareViewController.swift */,
 			);
 			path = TapLogShare;
@@ -597,6 +606,7 @@
 			buildConfigurationList = 4A1340FBB2EDD99950693A2A /* Build configuration list for PBXNativeTarget "TapLogWidget" */;
 			buildPhases = (
 				930E78B83D8BF60FC54AC728 /* Sources */,
+				0BA4AD57E9E9DEC5D9663B4B /* Resources */,
 			);
 			buildRules = (
 			);
@@ -653,6 +663,7 @@
 			buildConfigurationList = 96E2A177E76043BD02F3989D /* Build configuration list for PBXNativeTarget "TapLogShare" */;
 			buildPhases = (
 				E71609ADD56292AEC6D90E1B /* Sources */,
+				C97CB19C519525F3B446FCC7 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -715,12 +726,28 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		0BA4AD57E9E9DEC5D9663B4B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4E65056101340FC533270CF8 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4699CFB659F1AE5B84CBA891 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				5B5B4E010F25507C430EA1AE /* Assets.xcassets in Resources */,
 				631EFA4564610AD191A5DBA9 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C97CB19C519525F3B446FCC7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				08EFE43237CB2E5EF87692DD /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -850,6 +877,7 @@
 				6F0F50E8824E78BC1D7F8C7F /* OpenCaptureIntentTests.swift in Sources */,
 				AFBDC3241836DBC82C28A959 /* PaywallEvidenceTests.swift in Sources */,
 				07F07FAE13CACDFD7F4246B3 /* PersistenceTests.swift in Sources */,
+				0DEA6701A81887424A915C7B /* PrivacyManifestTests.swift in Sources */,
 				E5218D8914FA9E19FB22ED90 /* ProGateTests.swift in Sources */,
 				529A5A11BBCEC9580EECC9B4 /* QuickButtonRankingTests.swift in Sources */,
 				A053856F440889544F06D2C1 /* RecapMathTests.swift in Sources */,

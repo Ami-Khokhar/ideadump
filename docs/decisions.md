@@ -83,3 +83,18 @@
 - Consequence: a link that a person hand-writes with extra components will stop
   pre-filling. A deep link still only pre-fills the capture form; it never
   saves an expense, so a bad link costs a manual tap, not a wrong record.
+
+## Every shipped target bundles the same privacy manifest
+
+- Context: issue #7. The required-reason API code in `Sources/TapLog/Shared`
+  compiles into the widget and the share extension, but only the app target
+  packaged a `PrivacyInfo.xcprivacy`, so an extension could ship without one.
+- Decision: each target's source directory carries a `PrivacyInfo.xcprivacy` and
+  XcodeGen packages it into that target's resources. All three declare
+  `NSPrivacyAccessedAPICategoryUserDefaults` for `1C8F.1` (the App Group suite)
+  and `CA92.1` (the process's own defaults), and nothing else: no code compiled
+  into them uses file timestamps, disk space, system boot time or active
+  keyboards.
+- Consequence: a new required-reason API added to shared code must be declared in
+  all three manifests. `PrivacyManifestTests` fails when a declared category is
+  unused, so the manifests cannot drift ahead of the code either.
