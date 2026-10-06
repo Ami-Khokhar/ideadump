@@ -76,4 +76,23 @@ final class PrivacyManifestTests: XCTestCase {
             }
         }
     }
+
+    /// The manifests only ship if the generated project copies one into each
+    /// target — the files on disk would still look correct without it. Mirrors
+    /// the entitlement-wiring guard in `StoreLocatorTests`.
+    func testTheGeneratedProjectCopiesAManifestIntoEveryTarget() throws {
+        let pbxproj = try String(
+            contentsOf: repoRoot.appendingPathComponent("TapLog.xcodeproj/project.pbxproj"),
+            encoding: .utf8
+        )
+        let phases = pbxproj.components(separatedBy: "isa = PBXResourcesBuildPhase;")
+        // The first segment is everything before the phases, including the
+        // PBXBuildFile declarations that also name the manifests.
+        let withManifest = phases.dropFirst().filter { $0.contains("PrivacyInfo.xcprivacy in Resources") }
+        XCTAssertEqual(
+            withManifest.count,
+            Self.manifests.count,
+            "each shipped target's Resources phase must copy a PrivacyInfo.xcprivacy — run xcodegen"
+        )
+    }
 }
