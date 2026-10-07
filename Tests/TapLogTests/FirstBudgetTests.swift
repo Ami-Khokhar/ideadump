@@ -140,14 +140,14 @@ final class FirstBudgetTests: XCTestCase {
 
     // MARK: - The confirmation line
 
-    func testConfirmationSummaryNamesTheCadence() {
-        XCTAssertTrue(
-            FirstBudgetPick.confirmationSummary(amount: 500, period: .weekly).contains("a week"),
-            "a weekly target reads as weekly"
+    func testConfirmationSummaryPinsTheWholeLine() {
+        XCTAssertEqual(
+            FirstBudgetPick.confirmationSummary(amount: 500, period: .weekly),
+            "\(Money.format(500)) a week. Change it whenever you like."
         )
-        XCTAssertTrue(
-            FirstBudgetPick.confirmationSummary(amount: 500, period: .monthly).contains("a month"),
-            "a monthly target reads as monthly"
+        XCTAssertEqual(
+            FirstBudgetPick.confirmationSummary(amount: 1200, period: .monthly),
+            "\(Money.format(1200)) a month. Change it whenever you like."
         )
     }
 }

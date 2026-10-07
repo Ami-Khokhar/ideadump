@@ -116,9 +116,10 @@ struct FirstBudgetView: View {
     /// — they watched the tree grow while they set the amount — so this confirms
     /// rather than explains, and the grove stays a door they open.
     private func confirmation(for category: SpendCategory) -> some View {
-        VStack(alignment: .leading, spacing: 22) {
+        let tree = plantedTree(for: category)
+        return VStack(alignment: .leading, spacing: 22) {
             HStack(alignment: .center, spacing: 16) {
-                TreeMark(state: .growing, color: Theme.accent)
+                TreeMark(state: tree.state, color: tree.color)
                     .frame(width: 56, height: 56)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 4) {
@@ -146,6 +147,17 @@ struct FirstBudgetView: View {
             .accessibilityHint("Opens the budgets screen")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// The tree the user actually planted. The mark and the colour come from the
+    /// same budget report the grove reads, so a category already over its new
+    /// target wilts here rather than showing a healthy tree that changes the
+    /// moment the sheet closes.
+    private func plantedTree(for category: SpendCategory) -> (state: TreeHealthMark, color: Color) {
+        guard let report = BudgetCalculator.report(for: category, entries: entries) else {
+            return (.seedling, Theme.accent)
+        }
+        return (TreeHealthMark(report.health), report.isOver ? Theme.clay : Theme.accent)
     }
 
     private func headline(for category: SpendCategory) -> some View {

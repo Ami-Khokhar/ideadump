@@ -296,7 +296,11 @@ struct ContentView: View {
             activeDeferredPrompt = nil
             if openBudgetsAfterPrompt {
                 openBudgetsAfterPrompt = false
-                route = .budgets
+                // Presenting straight from `onDismiss` races the dismissal, as
+                // `continueAfterExplainer` documents; open the grove on the next
+                // runloop, through the one entry point that also shows its
+                // one-time explainer.
+                DispatchQueue.main.async { openRoute(.budgets) }
             }
         }) { prompt in
             switch prompt {
