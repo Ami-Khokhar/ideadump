@@ -24,8 +24,15 @@ struct FirstBudgetView: View {
     /// records the dismissal either way — the offer is made once.
     let onDone: () -> Void
 
+    /// Called when the user, having planted, chooses to go and look at the
+    /// grove. Kept separate from `onDone` so the default way out is back to
+    /// logging, and the grove is a door they open rather than one they are
+    /// pushed through.
+    let onSeeGrove: () -> Void
+
     @State private var amount: Decimal = 0
     @State private var period: BudgetPeriod = .weekly
+    @State private var planted = false
     @State private var errorMessage: String?
 
     /// The category to offer. Whichever one they have logged most, so the target
@@ -43,7 +50,9 @@ struct FirstBudgetView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    if let topCategory {
+                    if planted, let topCategory {
+                        confirmation(for: topCategory)
+                    } else if let topCategory {
                         headline(for: topCategory)
                         BudgetTargetEditor(
                             categoryKey: topCategory.key,
@@ -71,26 +80,77 @@ struct FirstBudgetView: View {
             .scrollContentBackground(.hidden)
             .floatingToolbarScrollEdge()
             .background(PaperGround())
-            .navigationTitle("Plant a tree")
+            .navigationTitle(planted ? "Planted" : "Plant a tree")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                // One tap out, always available, never buried behind a
-                // confirmation. This is an offer, not a step.
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Not now") { onDone() }
+            .task {
+                #if DEBUG
+                if ProcessInfo.processInfo.arguments.contains("-firstBudgetPlanted") {
+                    amount = 500
+                    planted = true
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Plant it") { plant() }
-                        .fontWeight(.semibold)
-                        .disabled(!canPlant)
+                #endif
+            }
+            .toolbar {
+                if planted {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { onDone() }
+                            .fontWeight(.semibold)
+                    }
+                } else {
+                    // One tap out, always available, never buried behind a
+                    // confirmation. This is an offer, not a step.
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Not now") { onDone() }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Plant it") { plant() }
+                            .fontWeight(.semibold)
+                            .disabled(!canPlant)
+                    }
                 }
             }
         }
     }
 
+    /// What the user sees once the target saves. The payoff is already on screen
+    /// — they watched the tree grow while they set the amount — so this confirms
+    /// rather than explains, and the grove stays a door they open.
+    private func confirmation(for category: SpendCategory) -> some View {
+        VStack(alignment: .leading, spacing: 22) {
+            HStack(alignment: .center, spacing: 16) {
+                TreeMark(state: .growing, color: Theme.accent)
+                    .frame(width: 56, height: 56)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("\(category.name) has a tree")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(Theme.textPrimary)
+                    Text(FirstBudgetPick.confirmationSummary(amount: amount, period: period))
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.textSecondary)
+                }
+                .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Button {
+                onSeeGrove()
+            } label: {
+                Text("See your grove")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(Theme.accent, in: Capsule())
+                    .foregroundStyle(Color.white)
+            }
+            .buttonStyle(PressStyle())
+            .accessibilityHint("Opens the budgets screen")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     private func headline(for category: SpendCategory) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Give \(category.name) a weekly target")
+            Text("Give \(category.name) a target")
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(Theme.textPrimary)
             Text("Watch it grow.")
@@ -109,7 +169,7 @@ struct FirstBudgetView: View {
 
         do {
             try modelContext.save()
-            onDone()
+            planted = true
         } catch {
             original.restore(to: category)
             errorMessage = "Could not save: \(error.localizedDescription)"
@@ -121,6 +181,13 @@ struct FirstBudgetView: View {
 ///
 /// Split out from the view so the choice can be tested without a SwiftUI host.
 enum FirstBudgetPick {
+
+    /// The line shown once a tree is planted. Pure so a test can pin the cadence
+    /// wording without a SwiftUI host.
+    static func confirmationSummary(amount: Decimal, period: BudgetPeriod) -> String {
+        let cadence = period == .weekly ? "a week" : "a month"
+        return "\(Money.format(amount)) \(cadence). Change it whenever you like."
+    }
 
     /// The most-logged category, falling back to the first in sort order when
     /// nothing has been logged yet. Ties break on `sortOrder` so the offer does
