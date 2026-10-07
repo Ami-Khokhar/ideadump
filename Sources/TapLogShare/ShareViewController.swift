@@ -117,9 +117,9 @@ final class ShareViewController: UIViewController {
                 group.enter()
                 provider.loadItem(forTypeIdentifier: UTType.plainText.identifier, options: nil) { result, _ in
                     if let string = result as? String {
-                        // Cap at the source, between tokens: the shared string
-                        // itself can be huge, and a raw cut could leave a
-                        // fragment of a number behind.
+                        // The shared string itself can be huge, and a raw cut
+                        // could leave a fragment of a number behind — cap through
+                        // `boundedPiece`, never a raw `prefix(...)`.
                         let piece = ShareParser.boundedPiece(string)
                         accumulationQueue.sync {
                             textParts.append(piece)
