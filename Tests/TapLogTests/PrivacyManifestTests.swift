@@ -85,14 +85,27 @@ final class PrivacyManifestTests: XCTestCase {
             contentsOf: repoRoot.appendingPathComponent("TapLog.xcodeproj/project.pbxproj"),
             encoding: .utf8
         )
-        let phases = pbxproj.components(separatedBy: "isa = PBXResourcesBuildPhase;")
-        // The first segment is everything before the phases, including the
-        // PBXBuildFile declarations that also name the manifests.
-        let withManifest = phases.dropFirst().filter { $0.contains("PrivacyInfo.xcprivacy in Resources") }
+        // Each target copies its own manifest file, so there is one build file
+        // per target and they point at distinct file references. A count alone
+        // would not catch three phases all sharing one file.
+        let refs = pbxproj
+            .components(separatedBy: "PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = ")
+            .dropFirst()
+            .compactMap { $0.split(separator: " ").first.map(String.init) }
         XCTAssertEqual(
-            withManifest.count,
+            Set(refs).count,
             Self.manifests.count,
-            "each shipped target's Resources phase must copy a PrivacyInfo.xcprivacy — run xcodegen"
+            "expected one manifest build file per shipped target (\(Self.manifests.count)); found \(Set(refs).count) — run xcodegen after editing project.yml"
+        )
+
+        let phases = pbxproj
+            .components(separatedBy: "isa = PBXResourcesBuildPhase;")
+            .dropFirst()
+            .filter { $0.contains("PrivacyInfo.xcprivacy in Resources") }
+        XCTAssertEqual(
+            phases.count,
+            Self.manifests.count,
+            "expected one manifest-copying Resources phase per shipped target (\(Self.manifests.count)); found \(phases.count) — a target lost its manifest or gained a duplicate"
         )
     }
 }

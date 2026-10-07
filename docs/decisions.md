@@ -107,7 +107,10 @@
   keyboards.
 - Consequence: a new required-reason API added to shared code must be declared in
   all three manifests. `PrivacyManifestTests` fails when a declared category is
-  unused, so the manifests cannot drift ahead of the code either.
+  unused, so the manifests cannot drift ahead of the code either. XcodeGen must
+  also keep copying one into each target: the same suite fails when the generated
+  project stops doing so, and a new shipped target means adding it to the test's
+  list.
 
 ## The paywall retries a failed product load, and StoreKit stays the authority
 
