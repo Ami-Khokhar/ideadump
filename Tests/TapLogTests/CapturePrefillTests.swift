@@ -113,11 +113,9 @@ extension CapturePrefillTests {
     }
 
     func testMalformedPercentEncodingLeavesThatFieldNil() {
-        var components = URLComponents()
-        components.scheme = "taplog"
-        components.host = "log"
-        components.percentEncodedQuery = "amount=1&note=%E0%A4"
-        let prefill = CapturePrefill(url: components.url!)
+        // A syntactically valid escape that does not decode to UTF-8.
+        let url = URL(string: "taplog://log?amount=1&note=%E0%A4")!
+        let prefill = CapturePrefill(url: url)
         XCTAssertEqual(prefill?.amountText, "1")
         XCTAssertNil(prefill?.note, "an undecodable value prefills nothing")
     }
