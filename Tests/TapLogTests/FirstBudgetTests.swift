@@ -137,4 +137,17 @@ final class FirstBudgetTests: XCTestCase {
     func testNoCategoriesMeansNothingToOffer() {
         XCTAssertNil(FirstBudgetPick.category(from: [], entries: [entry("chai")]))
     }
+
+    // MARK: - The confirmation line
+
+    func testConfirmationSummaryPinsTheWholeLine() {
+        XCTAssertEqual(
+            FirstBudgetPick.confirmationSummary(amount: 500, period: .weekly),
+            "\(Money.format(500)) a week. Change it whenever you like."
+        )
+        XCTAssertEqual(
+            FirstBudgetPick.confirmationSummary(amount: 1200, period: .monthly),
+            "\(Money.format(1200)) a month. Change it whenever you like."
+        )
+    }
 }

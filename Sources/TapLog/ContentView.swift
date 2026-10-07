@@ -35,6 +35,9 @@ struct ContentView: View {
     @State private var activeDeferredPrompt: DeferredPrompt?
     @State private var loggedInCurrentSession = false
     @State private var suppressDeferredPromptsThisSession = false
+    /// Set when the first-tree offer chooses to open the grove, so the route
+    /// waits for the offer's own sheet to finish dismissing before presenting.
+    @State private var openBudgetsAfterPrompt = false
     /// Set when a log lands, cleared when the undo toast for it goes away.
     ///
     /// A prompt presented while the toast is alive would cover it and take the
@@ -174,6 +177,13 @@ struct ContentView: View {
                 isOnboardingCapture = true
                 handledActivation = false
             }
+            // Opens the first-tree offer straight away so it can be reviewed
+            // without replaying onboarding. Pair with `-seedSampleData` so there
+            // is a category to name, and with `-firstBudgetPlanted` to land on
+            // the confirmation.
+            if args.contains("-firstBudget") {
+                deferredPrompt = .firstBudget
+            }
             if let index = args.lastIndex(of: "-route"),
                args.indices.contains(index + 1),
                let route = Route(rawValue: args[index + 1]) {
@@ -284,6 +294,14 @@ struct ContentView: View {
                 }
             }
             activeDeferredPrompt = nil
+            if openBudgetsAfterPrompt {
+                openBudgetsAfterPrompt = false
+                // Presenting straight from `onDismiss` races the dismissal, as
+                // `continueAfterExplainer` documents; open the grove on the next
+                // runloop, through the one entry point that also shows its
+                // one-time explainer.
+                DispatchQueue.main.async { openRoute(.budgets) }
+            }
         }) { prompt in
             switch prompt {
             case .categories:
@@ -295,10 +313,17 @@ struct ContentView: View {
                 .tint(Theme.accent)
                 .onAppear { activeDeferredPrompt = .categories }
             case .firstBudget:
-                FirstBudgetView(onDone: {
-                    OnboardingFlow.dismissFirstBudget()
-                    deferredPrompt = nil
-                })
+                FirstBudgetView(
+                    onDone: {
+                        OnboardingFlow.dismissFirstBudget()
+                        deferredPrompt = nil
+                    },
+                    onSeeGrove: {
+                        OnboardingFlow.dismissFirstBudget()
+                        openBudgetsAfterPrompt = true
+                        deferredPrompt = nil
+                    }
+                )
                 .presentationDetents([.large])
                 .tint(Theme.accent)
                 .onAppear { activeDeferredPrompt = .firstBudget }
