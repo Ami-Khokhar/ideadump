@@ -14,7 +14,7 @@ import SwiftData
 struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
 
-    /// Read here rather than passed in: this sheet has three call sites, all of
+    /// Read here rather than passed in: this sheet has four call sites, all of
     /// them already inside the container, and the evidence belongs to the screen
     /// that shows it rather than to whichever screen happened to open it.
     @Query(filter: #Predicate<Entry> { !$0.isArchived && !$0.isPending })
