@@ -50,23 +50,26 @@ final class PrivacyViewTests: XCTestCase {
         }
     }
 
-    /// Apple is named only for the routes Apple handles. The widget and the
-    /// Action Button run TapLog's own code and touch no Apple service.
-    func testTheWidgetRouteDoesNotClaimAppleHandlesIt() {
+    /// Apple is named only for the routes Apple handles. The Action Button runs
+    /// a Shortcut, so it belongs with Siri; the Home Screen widget runs TapLog's
+    /// own code and touches no Apple service.
+    func testEachRouteNamesTheRightParty() {
         let widget = PrivacyView.sections.first { $0.title.contains("widget") }
-        let body = widget?.body ?? ""
+        let widgetBody = widget?.body ?? ""
         XCTAssertTrue(
-            body.localizedCaseInsensitiveContains("TapLog's own code"),
+            widgetBody.localizedCaseInsensitiveContains("TapLog's own code"),
             "the widget route must be described as TapLog's own code on the device"
         )
         XCTAssertFalse(
-            body.localizedCaseInsensitiveContains("Apple handles"),
-            "no Apple service is involved in a widget log"
+            widgetBody.localizedCaseInsensitiveContains("Apple"),
+            "no Apple service is involved in a widget tap"
         )
-        let siri = PrivacyView.sections.first { $0.title.contains("Siri") }
+
+        let shortcuts = PrivacyView.sections.first { $0.title.contains("Siri") }
+        XCTAssertEqual(shortcuts?.title, "Siri, Shortcuts and the Action Button")
         XCTAssertTrue(
-            (siri?.body ?? "").localizedCaseInsensitiveContains("Apple handles"),
-            "Apple handles the Siri and Shortcut routes"
+            (shortcuts?.body ?? "").localizedCaseInsensitiveContains("Apple's Shortcuts"),
+            "Apple's Shortcuts handles the voice, Shortcut and Action Button routes"
         )
     }
 

@@ -27,12 +27,12 @@ struct PrivacyView: View {
             "Unlocking TapLog Pro and restoring a purchase both go through Apple's App Store. Apple processes the payment; TapLog is told only whether the purchase is valid, and never sees your card details."
         ),
         (
-            "Siri and Shortcuts",
-            "When you log by voice or through a Shortcut, Apple handles the request and hands the result to TapLog, which stores the entry the same way as one you type."
+            "Siri, Shortcuts and the Action Button",
+            "When you log by voice, through a Shortcut or from the Action Button, Apple's Shortcuts handles the request and hands it to TapLog, which writes the entry the same way as one you type."
         ),
         (
-            "The widget and the Action Button",
-            "Those routes run TapLog's own code on this device. The entry is written straight into the same on-device store, with no Apple service and no network in the path."
+            "The Home Screen widget",
+            "A tap on the widget runs TapLog's own code on this device and writes the entry straight into the same on-device store. Nothing leaves the device."
         ),
         (
             "Deleting your history",

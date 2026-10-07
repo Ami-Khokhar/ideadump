@@ -131,8 +131,19 @@
   backup, Apple handling payment and Siri requests, and what "Delete all entries"
   can and cannot reach. No URL, contact address or assurance is added, and the
   public policy link stays explicitly pending an owner-approved page.
-- Consequence: adding the hosted policy page later means replacing the
+- Consequence: adding the hosted policy page later is a one-line change in
+  `PrivacyView`. `PrivacyViewTests` fails if a placeholder URL, an invented
+  contact or a blanket assurance is introduced.
+
+## A hosted policy page is more than a one-line change
+
+- Context: follow-up issue #32. The entry above promised that adding the hosted
+  privacy-policy page would be a one-line change in `PrivacyView`. It is not: the
+  screen's copy is now data, and two content tests pin the pending state.
+- Decision: supersede that consequence. Adding the page means replacing the
   "A public privacy policy" section in `PrivacyView.sections`, dropping or
   inverting the two tests that pin the pending state, and keeping the
-  no-invented-contact and no-assurance assertions. `PrivacyViewTests` fails if a
-  placeholder URL, an invented contact or a blanket assurance is introduced.
+  no-invented-contact and no-assurance assertions.
+- Consequence: `PrivacyViewTests` still fails if a placeholder URL, an invented
+  contact or a blanket assurance is introduced, so the replacement cannot quietly
+  weaken the screen.
