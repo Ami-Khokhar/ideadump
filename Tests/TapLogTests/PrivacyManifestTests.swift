@@ -77,38 +77,76 @@ final class PrivacyManifestTests: XCTestCase {
         }
     }
 
-    /// The shipped target names, taken from the manifest paths so the two lists
-    /// cannot drift: `Sources/<Target>/PrivacyInfo.xcprivacy`.
-    private var shippedTargets: [String] {
+    /// The shipped target names, taken from the manifest paths. A path that does
+    /// not have the expected shape fails the suite rather than silently shrinking
+    /// the check to nothing.
+    private func shippedTargets() -> [String] {
         Self.manifests.compactMap { path in
             let parts = path.split(separator: "/")
-            return parts.count >= 3 ? String(parts[1]) : nil
+            guard parts.count == 3, parts[0] == "Sources", parts[2] == "PrivacyInfo.xcprivacy" else {
+                XCTFail("manifest path is not Sources/<Target>/PrivacyInfo.xcprivacy: \(path)")
+                return nil
+            }
+            return String(parts[1])
         }
     }
 
-    /// The body of the pbxproj block that starts at `marker` and ends at the next
-    /// top-level object close.
-    private func pbxBlock(_ pbxproj: String, _ marker: String) -> String? {
-        guard let start = pbxproj.range(of: marker)?.upperBound,
-              let end = pbxproj.range(of: "\n\t\t};", range: start..<pbxproj.endIndex) else {
-            return nil
+    /// The target names declared in project.yml, minus the unit-test bundle.
+    private func declaredTargets() throws -> [String] {
+        let yaml = try String(
+            contentsOf: repoRoot.appendingPathComponent("project.yml"), encoding: .utf8
+        )
+        var names: [String] = []
+        var inTargets = false
+        for line in yaml.components(separatedBy: "\n") {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if line == "targets:" { inTargets = true; continue }
+            guard inTargets else { continue }
+            if trimmed.isEmpty { continue }
+            if !line.hasPrefix(" ") { break }
+            // A target name sits at two-space indent and ends with a colon.
+            if line.hasPrefix("  "), !line.hasPrefix("   "), line.hasSuffix(":") {
+                names.append(String(trimmed.dropLast()))
+            }
         }
-        return String(pbxproj[start..<end.lowerBound])
+        return names
+    }
+
+    /// The body of the pbxproj block that starts at the regular-expression
+    /// `marker` and ends at the next top-level object close. Whitespace is
+    /// tolerated, so a formatting change in xcodegen's output does not read as a
+    /// missing block.
+    private func pbxBlock(_ pbxproj: String, marker: String) -> String? {
+        guard let match = pbxproj.range(of: marker, options: .regularExpression) else { return nil }
+        let tail = pbxproj[match.upperBound...]
+        guard let end = tail.range(of: #"\n[ \t]*\};"#, options: .regularExpression) else { return nil }
+        return String(tail[..<end.lowerBound])
     }
 
     /// The manifests only ship if the generated project copies one into each
-    /// target — the files on disk would still look correct without it. This
-    /// checks the wiring per target, so a failure names the target that lost its
-    /// manifest. Mirrors the entitlement-wiring guard in `StoreLocatorTests`.
+    /// target — the files on disk would still look correct without it. Checks
+    /// that every target in project.yml is covered, that each target's Resources
+    /// phase copies its own distinct manifest, and names the target on failure.
+    /// Mirrors the entitlement-wiring guard in `StoreLocatorTests`.
     func testEveryShippedTargetResourcesPhaseCopiesItsManifest() throws {
         let pbxproj = try String(
             contentsOf: repoRoot.appendingPathComponent("TapLog.xcodeproj/project.pbxproj"),
             encoding: .utf8
         )
-        for target in shippedTargets {
+        let shipped = shippedTargets()
+        XCTAssertEqual(shipped.count, Self.manifests.count, "every manifest path must name a target")
+        let declared = try declaredTargets()
+        XCTAssertEqual(
+            Set(declared).subtracting(["TapLogTests"]).sorted(),
+            Set(shipped).sorted(),
+            "project.yml targets and PrivacyManifestTests.manifests disagree — add the missing target to the list"
+        )
+
+        var buildFileByTarget: [String: String] = [:]
+        for target in shipped {
             let targetBlock = try XCTUnwrap(
-                pbxBlock(pbxproj, "/* \(target) */ = {\n\t\t\tisa = PBXNativeTarget;"),
-                "no PBXNativeTarget block for \(target)"
+                pbxBlock(pbxproj, marker: "/\\* \(target) \\*/ = \\{\\s*\\n\\s*isa = PBXNativeTarget;"),
+                "no PBXNativeTarget block for \(target) (or the pbxproj format changed)"
             )
             let phaseLine = try XCTUnwrap(
                 targetBlock.components(separatedBy: "\n").first { $0.contains("/* Resources */,") },
@@ -118,13 +156,22 @@ final class PrivacyManifestTests: XCTestCase {
                 .split(separator: " ").first.map(String.init) ?? ""
             XCTAssertFalse(phaseID.isEmpty, "could not read \(target)'s Resources phase id")
             let phaseBlock = try XCTUnwrap(
-                pbxBlock(pbxproj, "\(phaseID) /* Resources */ = {\n\t\t\tisa = PBXResourcesBuildPhase;"),
-                "no Resources phase block for \(target)"
+                pbxBlock(pbxproj, marker: "\(phaseID) /\\* Resources \\*/ = \\{\\s*\\n\\s*isa = PBXResourcesBuildPhase;"),
+                "no Resources phase block for \(target) (or the pbxproj format changed)"
             )
-            XCTAssertTrue(
-                phaseBlock.contains("PrivacyInfo.xcprivacy in Resources"),
-                "\(target)'s Resources phase does not copy its PrivacyInfo.xcprivacy — run xcodegen after editing project.yml"
-            )
+            guard let line = phaseBlock.components(separatedBy: "\n")
+                .first(where: { $0.contains("PrivacyInfo.xcprivacy in Resources") }),
+                let buildFileID = line.trimmingCharacters(in: .whitespaces)
+                    .split(separator: " ").first.map(String.init) else {
+                XCTFail("\(target)'s Resources phase does not copy its PrivacyInfo.xcprivacy — run xcodegen after editing project.yml")
+                continue
+            }
+            buildFileByTarget[target] = buildFileID
         }
+        XCTAssertEqual(
+            Set(buildFileByTarget.values).count,
+            shipped.count,
+            "each shipped target must copy its own manifest build file; got \(buildFileByTarget)"
+        )
     }
 }
