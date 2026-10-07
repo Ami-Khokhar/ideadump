@@ -79,11 +79,11 @@ Every budget tree and the monthly recap
 ```text
 TapLog needs no account and no login. All data stays on the device; the app makes no network requests of its own. Its only network traffic goes to the App Store: the paywall fetches the Pro product price, and purchase, restore (AppStore.sync), and transaction updates run through StoreKit.
 
-On a fresh install the app opens on a welcome screen; tap Continue (or Skip) to reach the keypad. The main screen is the keypad. Its top bar holds History (clock, top left) and, on the right, Budgets (leaf), Recap (bar chart) and an ellipsis menu whose only item is Settings. The first time you open Budgets or Recap, a one-time explainer sheet appears; dismiss it to continue to that screen.
+On a fresh install the app opens on a welcome screen; tap "Log my first expense" (or "Skip for now") to reach the keypad. The main screen is the keypad. Its top bar holds History (clock, top left) and, on the right, Budgets (leaf), Recap (bar chart) and an ellipsis menu whose only item is Settings. The first time you open Budgets or Recap, a one-time explainer sheet appears; dismiss it to continue to that screen.
 
 To reach the in-app purchase (TapLog Pro, non-consumable), any of these works:
 1. Recap -> "Month". Tap Recap (bar chart) at the top right, dismiss the explainer if it appears, then tap "Month"; the paywall opens.
-2. Budgets. Tap Budgets (leaf) at the top right and dismiss the explainer if it appears. On a fresh install the screen is empty: tap "Set your first budget" and create three budgets. After that, the plus button at the top right (its VoiceOver label is "Add a budget") opens the paywall in front of the fourth tree.
+2. Budgets. Tap Budgets (leaf) at the top right and dismiss the explainer if it appears. On a fresh install the screen is empty: tap "Set your first budget" for the first tree, then add the second and third with the plus button at the top right (its VoiceOver label is "Add a budget"). Tap the plus once more; the paywall opens in front of the fourth tree.
 3. Settings -> "TapLog Pro". Tap the ellipsis at the top right, tap Settings, then tap "TapLog Pro" in the Pro section.
 4. A category editor -> "Grow a fourth tree". Open the category manager from the keypad and edit a category; once the free trees are all used, the edit form shows a "Grow a fourth tree" button that opens the paywall.
 
