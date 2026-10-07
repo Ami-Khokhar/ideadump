@@ -182,7 +182,8 @@ extension ShareParserTests {
     }
 
     /// A raw cut can leave a fragment of a number that then parses as a smaller,
-    /// plausible amount. The cap must land between tokens instead.
+    /// plausible amount. The cap must not leave such a fragment: a token that
+    /// straddles it keeps its head and loses its trailing digits.
     func testATruncatedShareNeverYieldsAPartialAmount() {
         let text = String(repeating: "x", count: ShareParser.maxTextLength - 7) + " Rs 1,234.56"
         XCTAssertNil(ShareParser.parse(text).amount, "a half-cut amount must not yield a partial amount")
