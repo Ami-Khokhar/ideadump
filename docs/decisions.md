@@ -29,8 +29,11 @@
   retires the fallback's history — deletes every entry, resets each category's
   usage count, and removes the history marker. Categories themselves stay,
   because a budget target, an emoji and a sort order are configuration rather
-  than history, and the fallback is only reached when the active store fails to
-  open. The retirement only runs when the app is not itself running on the
+  than history, and the fallback is used whenever the ordering rule ranks it
+  first: when there is no App Group store to open, when the pinned location is
+  the fallback and its store file is still there, or when the fallback is the
+  location that already holds history.
+  The retirement only runs when the app is not itself running on the
   fallback, and any failure (unopenable store, failed save) preserves every
   record and logs.
 - Consequence: a user who deletes all history cannot have it resurrected by a
