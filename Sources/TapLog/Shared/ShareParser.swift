@@ -43,9 +43,9 @@ enum ShareParser {
         return ShareParse(amount: extracted.value, note: note)
     }
 
-    /// A single shared piece, trimmed to the field cap between tokens. The share
-    /// extension calls this as it loads each attachment, so a number straddling
-    /// the field cap cannot survive as a fragment before the parser sees it.
+    /// A single shared piece, trimmed to the field cap without leaving a fragment
+    /// of a number. The share extension calls this as it loads each attachment,
+    /// so a straddling number cannot reach the parser as a fragment.
     static func boundedPiece(_ piece: String) -> String {
         cutAtTokenBoundary(piece, limit: maxFieldLength)
     }
