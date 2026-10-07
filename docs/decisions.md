@@ -67,17 +67,20 @@
   leaves two bare numbers the parser cannot tell apart. The old flow
   concatenated every attachment without a limit and took the first bare number,
   so an OTP could be filed as the payment.
-- Decision: consider at most `ShareParser.maxAttachments` attachments, cut each
-  piece to `maxFieldLength` and the joined text to `maxTextLength` at the last
-  whitespace before the limit rather than at a raw offset, and cap the parser
-  input the same way. A currency-anchored amount (`₹`, `$`, `Rs`, `INR`) always
-  wins; when the text also looks like a one-time-code message, the symbol-less
-  fallback is not used at all, so the amount is declined rather than guessed.
+- Decision: consider at most `ShareParser.maxAttachments` attachments and cut
+  each piece to `maxFieldLength` and the joined text to `maxTextLength` through
+  `ShareParser.cutAtTokenBoundary`: a cut that lands on whitespace keeps the
+  prefix unchanged, and a cut inside a token keeps that token's head and drops
+  only its trailing digits, commas and dots. The parser input is capped the same
+  way. A currency-anchored amount (`₹`, `$`, `Rs`, `INR`) always wins; when the
+  text also looks like a one-time-code message, the symbol-less fallback is not
+  used at all, so the amount is declined rather than guessed.
 - Consequence: some symbol-less OTP-plus-payment messages no longer prefill an
   amount. The share sheet says it could not find one and the user enters it in
-  the app. A share whose amount straddles the cap also yields no amount, because
-  a partial number is never parsed. Refusing is recoverable; silently filing the
-  code — or a fragment of the amount — as spending is not.
+  the app. A token that straddles a cap keeps its head and loses its tail, so an
+  amount in the lost tail is declined rather than read in fragments. Refusing is
+  recoverable; silently filing the code — or a fragment of the amount — as
+  spending is not.
 
 ## A deep link prefills only from a known URL shape, with capped fields
 

@@ -233,3 +233,17 @@ extension ShareParserTests {
         XCTAssertEqual(ShareParser.parse(bounded).amount, 100, "the amount before the cut is still found")
     }
 }
+
+// MARK: - A cut beside a code marker
+
+extension ShareParserTests {
+    func testACutBesideAnOTPMarkerStillDeclinesTheCode() {
+        // "OTP." keeps its word boundary after the cap strips the tail, so the
+        // marker is still seen (the round-one cut dropped the whole token).
+        let piece = "You spent 482910 OTP." + String(repeating: "x", count: ShareParser.maxFieldLength)
+        XCTAssertNil(
+            ShareParser.parse(ShareParser.boundedPiece(piece)).amount,
+            "the OTP marker beside the cut must survive"
+        )
+    }
+}
