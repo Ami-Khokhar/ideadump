@@ -16,15 +16,19 @@ enum ShareParser {
     static let maxTextLength = 4_000
 
     /// Joins the pieces a share offered into the bounded text the parser sees.
-    /// Keeps the first `maxAttachments` pieces, slices each to `maxFieldLength`
-    /// and the whole to `maxTextLength`, so nothing downstream is unbounded.
+    /// Keeps the first `maxAttachments` pieces and applies the field and total
+    /// caps through `cutAtTokenBoundary`, so a cap never lands inside a number:
+    /// a token that straddles a cap keeps its head and loses its trailing digits,
+    /// and an amount in the lost tail is declined rather than read in fragments.
     static func boundedText(_ pieces: [String]) -> String {
         var kept: [String] = []
         var total = 0
         for piece in pieces.prefix(maxAttachments) {
             let separator = kept.isEmpty ? 0 : 1
             guard total + separator < maxTextLength else { break }
-            let slice = String(piece.prefix(min(maxFieldLength, maxTextLength - total - separator)))
+            let slice = cutAtTokenBoundary(
+                piece, limit: min(maxFieldLength, maxTextLength - total - separator)
+            )
             kept.append(slice)
             total += slice.count + separator
         }
@@ -32,11 +36,50 @@ enum ShareParser {
     }
 
     static func parse(_ text: String) -> ShareParse {
-        let text = String(text.prefix(maxTextLength))
+        let text = cutAtTokenBoundary(text, limit: maxTextLength)
         guard !text.isEmpty else { return ShareParse(amount: nil, note: nil) }
         let extracted = extractAmount(from: text)
         let note = extractNote(from: text, amountString: extracted.raw)
         return ShareParse(amount: extracted.value, note: note)
+    }
+
+    /// A single shared piece, trimmed to the field cap between tokens. The share
+    /// extension calls this as it loads each attachment, so a number straddling
+    /// the field cap cannot survive as a fragment before the parser sees it.
+    static func boundedPiece(_ piece: String) -> String {
+        cutAtTokenBoundary(piece, limit: maxFieldLength)
+    }
+
+    /// Slices `text` to at most `limit` characters without cutting a number in
+    /// half. A raw cut can leave a fragment of a number at the end —
+    /// `Rs 1,234.56` cut after `Rs 1,2` parses as `1.20` — so when the cut lands
+    /// inside a token, the token keeps its non-numeric head and loses its
+    /// trailing run of digits, commas and dots. The head of a token cannot carry
+    /// a partial number, and keeping it means a keyword beside the cut (an OTP
+    /// marker, "spent") is not lost with the tail.
+    static func cutAtTokenBoundary(_ text: String, limit: Int) -> String {
+        guard text.count > limit else { return text }
+        let cutIndex = text.index(text.startIndex, offsetBy: limit)
+        let prefix = String(text[..<cutIndex])
+        // What was cut decides: if it is whitespace, every token in the prefix
+        // is complete and nothing needs dropping.
+        if text[cutIndex].isWhitespace { return prefix }
+        guard let separator = prefix.lastIndex(where: \.isWhitespace) else {
+            return stripTrailingNumber(prefix)
+        }
+        let head = prefix[...separator]
+        let partial = prefix[prefix.index(after: separator)...]
+        return String(head) + stripTrailingNumber(String(partial))
+    }
+
+    /// Drops a trailing run of digits and numeric separators, so the remainder
+    /// cannot be read as a partial amount.
+    private static func stripTrailingNumber(_ token: String) -> String {
+        var trimmed = token
+        while let last = trimmed.last, last.isNumber || last == "," || last == "." {
+            trimmed.removeLast()
+        }
+        return trimmed
     }
 
     /// Whether the text says money actually moved.
