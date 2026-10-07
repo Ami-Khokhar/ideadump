@@ -77,35 +77,54 @@ final class PrivacyManifestTests: XCTestCase {
         }
     }
 
+    /// The shipped target names, taken from the manifest paths so the two lists
+    /// cannot drift: `Sources/<Target>/PrivacyInfo.xcprivacy`.
+    private var shippedTargets: [String] {
+        Self.manifests.compactMap { path in
+            let parts = path.split(separator: "/")
+            return parts.count >= 3 ? String(parts[1]) : nil
+        }
+    }
+
+    /// The body of the pbxproj block that starts at `marker` and ends at the next
+    /// top-level object close.
+    private func pbxBlock(_ pbxproj: String, _ marker: String) -> String? {
+        guard let start = pbxproj.range(of: marker)?.upperBound,
+              let end = pbxproj.range(of: "\n\t\t};", range: start..<pbxproj.endIndex) else {
+            return nil
+        }
+        return String(pbxproj[start..<end.lowerBound])
+    }
+
     /// The manifests only ship if the generated project copies one into each
-    /// target — the files on disk would still look correct without it. Mirrors
-    /// the entitlement-wiring guard in `StoreLocatorTests`.
-    func testTheGeneratedProjectCopiesAManifestIntoEveryTarget() throws {
+    /// target — the files on disk would still look correct without it. This
+    /// checks the wiring per target, so a failure names the target that lost its
+    /// manifest. Mirrors the entitlement-wiring guard in `StoreLocatorTests`.
+    func testEveryShippedTargetResourcesPhaseCopiesItsManifest() throws {
         let pbxproj = try String(
             contentsOf: repoRoot.appendingPathComponent("TapLog.xcodeproj/project.pbxproj"),
             encoding: .utf8
         )
-        // Each target copies its own manifest file, so there is one build file
-        // per target and they point at distinct file references. A count alone
-        // would not catch three phases all sharing one file.
-        let refs = pbxproj
-            .components(separatedBy: "PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = ")
-            .dropFirst()
-            .compactMap { $0.split(separator: " ").first.map(String.init) }
-        XCTAssertEqual(
-            Set(refs).count,
-            Self.manifests.count,
-            "expected one manifest build file per shipped target (\(Self.manifests.count)); found \(Set(refs).count) — run xcodegen after editing project.yml"
-        )
-
-        let phases = pbxproj
-            .components(separatedBy: "isa = PBXResourcesBuildPhase;")
-            .dropFirst()
-            .filter { $0.contains("PrivacyInfo.xcprivacy in Resources") }
-        XCTAssertEqual(
-            phases.count,
-            Self.manifests.count,
-            "expected one manifest-copying Resources phase per shipped target (\(Self.manifests.count)); found \(phases.count) — a target lost its manifest or gained a duplicate"
-        )
+        for target in shippedTargets {
+            let targetBlock = try XCTUnwrap(
+                pbxBlock(pbxproj, "/* \(target) */ = {\n\t\t\tisa = PBXNativeTarget;"),
+                "no PBXNativeTarget block for \(target)"
+            )
+            let phaseLine = try XCTUnwrap(
+                targetBlock.components(separatedBy: "\n").first { $0.contains("/* Resources */,") },
+                "\(target) has no Resources build phase"
+            )
+            let phaseID = phaseLine.trimmingCharacters(in: .whitespaces)
+                .split(separator: " ").first.map(String.init) ?? ""
+            XCTAssertFalse(phaseID.isEmpty, "could not read \(target)'s Resources phase id")
+            let phaseBlock = try XCTUnwrap(
+                pbxBlock(pbxproj, "\(phaseID) /* Resources */ = {\n\t\t\tisa = PBXResourcesBuildPhase;"),
+                "no Resources phase block for \(target)"
+            )
+            XCTAssertTrue(
+                phaseBlock.contains("PrivacyInfo.xcprivacy in Resources"),
+                "\(target)'s Resources phase does not copy its PrivacyInfo.xcprivacy — run xcodegen after editing project.yml"
+            )
+        }
     }
 }
