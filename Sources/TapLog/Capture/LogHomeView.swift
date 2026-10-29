@@ -80,9 +80,11 @@ struct LogHomeView: View {
                 .ignoresSafeArea()
 
             // The opening plant (fades out as content fades in)
-            openingView
-                .opacity(1 - openingPhase)
-                .ignoresSafeArea()
+            if !skipSplash {
+                openingView
+                    .opacity(1 - openingPhase)
+                    .ignoresSafeArea()
+            }
 
             // Main content (fades in)
             mainContent
@@ -120,11 +122,10 @@ struct LogHomeView: View {
         }
         .onChange(of: skipSplash) { _, newValue in
             // Handle intent activation received after onAppear — e.g. the app
-            // was already visible when OpenCaptureIntent fired.
+            // was already visible when OpenCaptureIntent fired. Remove the
+            // opening immediately so it cannot dissolve partway through.
             if newValue && openingPhase < 1 {
-                withAnimation(reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 1.0)) {
-                    openingPhase = 1
-                }
+                openingPhase = 1
             }
         }
         .onChange(of: prefill) { applyPrefill() }

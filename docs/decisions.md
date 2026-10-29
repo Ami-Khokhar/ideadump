@@ -158,3 +158,17 @@
 - Consequence: `PrivacyViewTests` still fails if a placeholder URL, an invented
   contact or a blanket assurance is introduced, so the replacement cannot quietly
   weaken the screen.
+
+## Pending capture intents resolve before the opening animation
+
+- Context: issue #60. A cold widget deep link can reach `onOpenURL` after the
+  first capture view appears, so the opening plant may begin before the app
+  knows it should route directly to capture.
+- Decision: initialize the splash decision from the durable pending intent
+  flag, without consuming the payload. When a direct-capture URL arrives later,
+  remove the opening and reveal capture without animating a partial dissolve.
+- Consequence: pending AppIntent activations skip the opening on the first
+  render, and ordinary launches retain their full animation. The existing
+  widget `Link` still sends only a URL, so a cold widget launch may show part of
+  the opening before `onOpenURL` arrives; this path remains unresolved without
+  an earlier lifecycle signal.

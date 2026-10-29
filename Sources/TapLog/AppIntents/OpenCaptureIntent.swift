@@ -54,6 +54,14 @@ struct OpenCaptureIntent: AppIntent {
     /// already active and `didBecomeActiveNotification` won't fire.
     static let activationNotification = Notification.Name("OpenCaptureIntent.activation")
 
+    /// Lets the first root-view render make the splash decision before the UI
+    /// consumes the activation in `onAppear`.
+    static func hasPendingActivation(
+        defaults: UserDefaults = StoreLocator.sharedDefaults
+    ) -> Bool {
+        defaults.bool(forKey: Keys.pendingActive)
+    }
+
     // MARK: - Write Helpers (static, usable from tests)
 
     /// Writes a pending capture activation to UserDefaults and posts the
