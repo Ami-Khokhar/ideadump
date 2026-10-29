@@ -11,7 +11,7 @@ struct QuickButton: Identifiable {
     var id: String { "\(categoryKey)-\(amount)" }
 }
 
-/// Shown before any history exists, and whenever the store cannot be read.
+/// Sensible quick-log defaults before the user has enough history.
 /// Deliberately not main-actor isolated: `placeholder(in:)` is nonisolated.
 private var defaultQuickButtons: [QuickButton] {
     [
@@ -26,6 +26,7 @@ struct SpendSnapshot: TimelineEntry {
     let total: Decimal
     let count: Int
     let quickButtons: [QuickButton]
+    let isAvailable: Bool
 }
 
 /// Fetches today's totals from the shared store. Lives outside the provider struct
@@ -33,14 +34,14 @@ struct SpendSnapshot: TimelineEntry {
 /// which shadows the SwiftData model of the same name.
 @MainActor
 private func loadTodaySnapshot() -> SpendSnapshot {
-    // `makeContainer()` traps when no candidate store opens. A trap here kills the
-    // widget process and leaves the user staring at "Unable to Load", so the
-    // timeline degrades to an empty snapshot instead — the same choice the share
-    // extension makes.
-    guard let container = try? StoreLocator.container() else {
-        return SpendSnapshot(date: .now, total: 0, count: 0, quickButtons: defaultQuickButtons)
+    let context: ModelContext
+    do {
+        context = try StoreLocator.widgetReadContext()
+    } catch {
+        Log.store.warning("widget snapshot unavailable: shared store could not be opened (\(Log.describe(error), privacy: .public))")
+        return unavailableSnapshot()
     }
-    let context = container.mainContext
+
     let now = Date.now
     let startOfDay = Calendar.current.startOfDay(for: now)
     // Upper bound as well as lower: an entry dated later today hasn't been spent
@@ -51,14 +52,26 @@ private func loadTodaySnapshot() -> SpendSnapshot {
             $0.date >= startOfDay && $0.date <= now && !$0.isArchived && !$0.isPending
         }
     )
-    let entries: [Entry] = (try? context.fetch(descriptor)) ?? []
+    let entries: [Entry]
+    do {
+        entries = try context.fetch(descriptor)
+    } catch {
+        Log.store.error("widget snapshot unavailable: shared store read failed (\(Log.describe(error), privacy: .public))")
+        return unavailableSnapshot()
+    }
     let total = entries.reduce(Decimal(0)) { $0 + $1.amount }
+    Log.store.notice("widget snapshot read shared store with \(entries.count, privacy: .public) entries")
     return SpendSnapshot(
         date: .now,
         total: total,
         count: entries.count,
-        quickButtons: makeQuickButtons(context: context)
+        quickButtons: makeQuickButtons(context: context),
+        isAvailable: true
     )
+}
+
+private func unavailableSnapshot() -> SpendSnapshot {
+    SpendSnapshot(date: .now, total: 0, count: 0, quickButtons: defaultQuickButtons, isAvailable: false)
 }
 
 /// Learns the user's top category+amount pairs from actual history.
@@ -129,7 +142,8 @@ struct SpendProvider: TimelineProvider {
             date: .now,
             total: 0,
             count: 0,
-            quickButtons: defaultQuickButtons
+            quickButtons: defaultQuickButtons,
+            isAvailable: true
         )
     }
 
@@ -189,19 +203,29 @@ struct SpendWidgetEntryView: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .firstTextBaseline) {
-                    Label("Today", systemImage: "creditcard")
+                    Label(
+                        entry.isAvailable ? "Today" : "Unavailable",
+                        systemImage: entry.isAvailable ? "creditcard" : "exclamationmark.triangle"
+                    )
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                     Spacer()
                 }
-                Text(Money.format(entry.total))
-                    .font(.title2.bold())
-                    .monospacedDigit()
-                    .minimumScaleFactor(0.7)
-                    .lineLimit(1)
+                if entry.isAvailable {
+                    Text(Money.format(entry.total))
+                        .font(.title2.bold())
+                        .monospacedDigit()
+                        .minimumScaleFactor(0.7)
+                        .lineLimit(1)
+                } else {
+                    Text("Open TapLog to check storage")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
                 Spacer(minLength: 0)
                 Link(destination: URL(string: "taplog://log")!) {
-                    Text("Log expense →")
+                    Text(entry.isAvailable ? "Log expense →" : "Open TapLog →")
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(.tint)
                 }
@@ -233,42 +257,61 @@ struct SpendWidgetEntryView: View {
     private var mediumContent: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
-                Label("Today", systemImage: "creditcard")
+                Label(
+                    entry.isAvailable ? "Today" : "Unavailable",
+                    systemImage: entry.isAvailable ? "creditcard" : "exclamationmark.triangle"
+                )
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text("\(entry.count) logged")
-                    .font(.caption2)
+                if entry.isAvailable {
+                    Text("\(entry.count) logged")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            if entry.isAvailable {
+                Text(Money.format(entry.total))
+                    .font(.title2.bold())
+                    .monospacedDigit()
+                    .minimumScaleFactor(0.7)
+                    .lineLimit(1)
+            } else {
+                Text("Widget data unavailable")
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Text(Money.format(entry.total))
-                .font(.title2.bold())
-                .monospacedDigit()
-                .minimumScaleFactor(0.7)
-                .lineLimit(1)
             Spacer(minLength: 0)
             HStack(spacing: 6) {
-                ForEach(entry.quickButtons) { button in
-                    quickLogButton(
-                        amount: button.amount,
-                        category: button.categoryKey,
-                        label: button.label
-                    )
-                }
-                // Custom amount button — opens the app
-                Link(destination: URL(string: "taplog://log")!) {
-                    VStack(spacing: 2) {
-                        Image(systemName: "number")
-                            .font(.caption)
-                        // The user's currency, not a hardcoded rupee — this
-                        // button read "₹?" for someone logging in dollars.
-                        Text("\(Money.currencySymbol)?")
-                            .font(.caption2.weight(.semibold))
+                if entry.isAvailable {
+                    ForEach(entry.quickButtons) { button in
+                        quickLogButton(
+                            amount: button.amount,
+                            category: button.categoryKey,
+                            label: button.label
+                        )
                     }
-                    .foregroundStyle(.tint)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 6)
-                    .background(Color.accentColor.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
+                    // Custom amount button — opens the app
+                    Link(destination: URL(string: "taplog://log")!) {
+                        VStack(spacing: 2) {
+                            Image(systemName: "number")
+                                .font(.caption)
+                            // The user's currency, not a hardcoded rupee — this
+                            // button read "₹?" for someone logging in dollars.
+                            Text("\(Money.currencySymbol)?")
+                                .font(.caption2.weight(.semibold))
+                        }
+                        .foregroundStyle(.tint)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                        .background(Color.accentColor.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
+                    }
+                } else {
+                    Link(destination: URL(string: "taplog://log")!) {
+                        Label("Open TapLog to check storage", systemImage: "arrow.up.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tint)
+                    }
                 }
             }
         }

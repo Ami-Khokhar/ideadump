@@ -66,6 +66,25 @@ final class StoreLocatorTests: XCTestCase {
     }
 
     @MainActor
+    func testFreshContextReadsChangesSavedThroughAnotherContext() throws {
+        let container = try makeStore()
+        let initialReader = StoreLocator.makeFreshContext(for: container)
+        XCTAssertTrue(try initialReader.fetch(FetchDescriptor<Entry>()).isEmpty)
+
+        let writer = ModelContext(container)
+        writer.insert(Entry(amount: Decimal(string: "21.50")!, category: "chai"))
+        try writer.save()
+
+        // A context already used for a read can keep its registered models and
+        // fetch state. The widget creates a new context from its cached container
+        // for each timeline read, so it sees the saved write.
+        let widgetReader = StoreLocator.makeFreshContext(for: container)
+        let entries = try widgetReader.fetch(FetchDescriptor<Entry>())
+        XCTAssertEqual(entries.count, 1)
+        XCTAssertEqual(entries.first?.amount, Decimal(string: "21.50"))
+    }
+
+    @MainActor
     func testMakeContainerSucceeds() {
         // fatalError inside makeContainer means reaching this line is the assertion:
         // both the App Group path and its fallback produce a usable container.
