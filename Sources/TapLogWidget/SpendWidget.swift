@@ -26,7 +26,7 @@ struct SpendSnapshot: TimelineEntry {
     let total: Decimal
     let count: Int
     let quickButtons: [QuickButton]
-    let isAvailable: Bool
+    var isAvailable: Bool = true
 }
 
 /// Fetches today's totals from the shared store. Lives outside the provider struct
