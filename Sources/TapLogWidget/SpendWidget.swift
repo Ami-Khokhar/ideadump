@@ -142,9 +142,33 @@ struct SpendProvider: TimelineProvider {
     func getTimeline(in context: Context, completion: @escaping (Timeline<SpendSnapshot>) -> Void) {
         Task { @MainActor in
             let snapshot = loadTodaySnapshot()
-            let nextRefresh = Calendar.current.date(byAdding: .minute, value: 15, to: .now)
-                ?? .now.addingTimeInterval(900)
-            completion(Timeline(entries: [snapshot], policy: .after(nextRefresh)))
+            let now = Date.now
+            let calendar = Calendar.current
+            let startOfTomorrow = calendar.date(
+                byAdding: .day,
+                value: 1,
+                to: calendar.startOfDay(for: now)
+            ) ?? now.addingTimeInterval(86_400)
+            let midnightReset = SpendSnapshot(
+                date: startOfTomorrow,
+                total: 0,
+                count: 0,
+                quickButtons: snapshot.quickButtons
+            )
+            let rollingRefresh = calendar.date(byAdding: .minute, value: 30, to: now)
+                ?? now.addingTimeInterval(1_800)
+
+            // WidgetKit treats `.after` and app-triggered reloads as requests; its
+            // per-widget budget can defer or drop them. Log saves, currency changes,
+            // and foregrounding request immediate reloads, but no cadence is exact.
+            // A log rebuilds this timeline (including the pending midnight entry).
+            // If WidgetKit defers that reload, the old zero reset can briefly hide
+            // same-day logs after midnight; widgets cannot fetch a new total at the
+            // boundary without a granted timeline refresh.
+            completion(Timeline(
+                entries: [snapshot, midnightReset],
+                policy: .after(min(rollingRefresh, startOfTomorrow))
+            ))
         }
     }
 }
