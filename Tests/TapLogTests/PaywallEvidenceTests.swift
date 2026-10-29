@@ -77,5 +77,4 @@ final class PaywallEvidenceTests: XCTestCase {
         XCTAssertTrue(many.summaryLine.contains("24 days"), many.summaryLine)
         XCTAssertTrue(many.summaryLine.hasSuffix("tracked"), many.summaryLine)
     }
-
 }
