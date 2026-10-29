@@ -103,34 +103,26 @@ final class ShareViewController: UIViewController {
             return
         }
 
-        var attributedTexts: [String?] = []
-        var attachmentTexts: [[String?]] = []
+        var textParts: [String?] = []
         var pendingProviders: [(
-            itemIndex: Int,
-            attachmentIndex: Int,
+            index: Int,
             provider: NSItemProvider,
             typeIdentifier: String
         )] = []
-        var pieces = 0
         let accumulationQueue = DispatchQueue(label: "dev.amteshwar.taplog.share-text-accumulation")
         let group = DispatchGroup()
 
         // Another app chooses how many attachments to offer; stop at the cap
         // instead of loading everything it names.
-        for item in items {
-            if pieces >= ShareParser.maxAttachments { break }
-            let attributedText = ShareParser.text(from: item.attributedContentText)
-            if let attributedText,
-               !attributedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                attributedTexts.append(attributedText)
-                attachmentTexts.append([])
-                pieces += 1
+        outer: for item in items {
+            if textParts.count >= ShareParser.maxAttachments { break }
+            if let attributedText = ShareParser.nonemptyText(from: item.attributedContentText) {
+                textParts.append(attributedText)
                 continue
             }
 
-            var itemProviders: [(provider: NSItemProvider, typeIdentifier: String)] = []
             for provider in item.attachments ?? [] {
-                if pieces >= ShareParser.maxAttachments { break }
+                if textParts.count >= ShareParser.maxAttachments { break outer }
                 let typeIdentifier: String
                 if provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) {
                     typeIdentifier = UTType.plainText.identifier
@@ -139,26 +131,19 @@ final class ShareViewController: UIViewController {
                 } else {
                     continue
                 }
-                itemProviders.append((provider, typeIdentifier))
-                pieces += 1
-            }
-            guard !itemProviders.isEmpty else { continue }
-
-            let itemIndex = attributedTexts.count
-            attributedTexts.append(nil)
-            attachmentTexts.append(Array(repeating: nil, count: itemProviders.count))
-            for (attachmentIndex, candidate) in itemProviders.enumerated() {
-                pendingProviders.append((itemIndex, attachmentIndex, candidate.provider, candidate.typeIdentifier))
+                let index = textParts.count
+                textParts.append(nil)
+                pendingProviders.append((index, provider, typeIdentifier))
             }
         }
 
         for pending in pendingProviders {
             group.enter()
             pending.provider.loadItem(forTypeIdentifier: pending.typeIdentifier, options: nil) { result, _ in
-                if let string = ShareParser.text(from: result) {
+                if let string = ShareParser.nonemptyText(from: result) {
                     // Write to the reserved slot so callback order cannot reorder the share.
                     accumulationQueue.sync {
-                        attachmentTexts[pending.itemIndex][pending.attachmentIndex] = string
+                        textParts[pending.index] = string
                     }
                 }
                 group.leave()
@@ -166,13 +151,7 @@ final class ShareViewController: UIViewController {
         }
 
         group.notify(queue: accumulationQueue) {
-            let textParts = attributedTexts.indices.compactMap { index in
-                ShareParser.preferredText(
-                    attributedText: attributedTexts[index],
-                    attachmentTexts: attachmentTexts[index].compactMap { $0 }
-                )
-            }
-            let allText = ShareParser.boundedText(textParts)
+            let allText = ShareParser.boundedText(textParts.compactMap { $0 })
             DispatchQueue.main.async {
                 completion(allText)
             }

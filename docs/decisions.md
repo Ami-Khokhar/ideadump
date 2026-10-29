@@ -6,14 +6,16 @@
   amount the parser declines both reached the same message, while Messages may
   provide its body as `attributedContentText` and attachment providers may return
   `Data` or `NSAttributedString` instead of `String`.
-- Decision: extract attributed item text and text-conforming attachments, convert
-  supported Foundation payloads to bounded strings, and retain whether the
-  parser received meaningful text so the extension can show a distinct message
-  for an empty share and an unreadable amount. Do not log shared content or its
-  prefix because payment messages can include personal and financial details.
+- Decision: use a nonempty attributed body as that item's text and consult
+  text-conforming attachments only when its body is empty. Convert supported
+  Foundation payloads to bounded strings, store attachment results in source
+  order, and retain whether the parser received meaningful text so the extension
+  can show a distinct message for an empty share and an unreadable amount. Do not
+  log shared content or its prefix because payment messages can include personal
+  and financial details.
 - Consequence: unsupported payloads and malformed UTF-8 still contribute no
   text; supported text remains subject to the existing per-piece, attachment
-  count and total text limits.
+  count and total text limits, applied once across the ordered pieces.
 
 ## CSV export marks formula-leading text with an apostrophe
 

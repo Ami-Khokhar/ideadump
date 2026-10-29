@@ -141,21 +141,22 @@ extension ShareParserTests {
         XCTAssertEqual(bounded.flatMap { ShareParser.parse($0).amount }, 42)
     }
 
-    func testAttributedShareBodyWinsOverDuplicateAttachmentText() {
+    func testNonemptyAttributedBodyIsPreservedForExtraction() {
         let body = "You spent $12.50 at Starbucks"
-        let selected = ShareParser.preferredText(
-            attributedText: body,
-            attachmentTexts: [body, body]
+        XCTAssertEqual(
+            ShareParser.nonemptyText(from: NSAttributedString(string: body)),
+            body
         )
-        XCTAssertEqual(selected, body)
-        XCTAssertEqual(selected.flatMap { ShareParser.parse($0).amount }, Decimal(string: "12.50"))
     }
 
-    func testEmptyAttributedShareBodyFallsBackToTextAttachments() {
-        XCTAssertEqual(
-            ShareParser.preferredText(attributedText: " \n", attachmentTexts: ["Rs 40 debited"]),
-            "Rs 40 debited"
-        )
+    func testEmptyAttributedShareBodyAllowsAttachmentFallback() {
+        XCTAssertNil(ShareParser.nonemptyText(from: NSAttributedString(string: " \n")))
+    }
+
+    func testTextPartsKeepLaterAttachmentAmountsWithinTheTotalCap() {
+        let firstAttachment = String(repeating: "x", count: ShareParser.maxFieldLength)
+        let text = ShareParser.boundedText([firstAttachment, "Rs 50 debited"])
+        XCTAssertEqual(ShareParser.parse(text).amount, 50)
     }
 }
 

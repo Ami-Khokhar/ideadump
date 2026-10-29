@@ -16,17 +16,6 @@ enum ShareParser {
     static let maxFieldLength = 2_000
     static let maxTextLength = 4_000
 
-    /// Uses a nonempty attributed body in preference to attachment copies of
-    /// the same share, then falls back to the item's text attachments.
-    static func preferredText(attributedText: String?, attachmentTexts: [String]) -> String? {
-        if let attributedText,
-           !attributedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return boundedPiece(attributedText)
-        }
-        let fallback = boundedText(attachmentTexts)
-        return fallback.isEmpty ? nil : fallback
-    }
-
     /// Converts the payload types the share sheet uses for text without
     /// retaining unbounded content from another app.
     static func text(from payload: Any?) -> String? {
@@ -45,6 +34,15 @@ enum ShareParser {
             return nil
         }
         return boundedPiece(text)
+    }
+
+    /// Converts a text payload only when it contains meaningful content.
+    static func nonemptyText(from payload: Any?) -> String? {
+        guard let text = text(from: payload),
+              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+        return text
     }
 
     /// Decodes at most enough UTF-8 bytes to supply the capped field plus one
