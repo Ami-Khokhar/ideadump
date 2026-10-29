@@ -1,5 +1,20 @@
 # Decisions
 
+## Capture fills its viewport when content fits and scrolls when it does not
+
+- Context: issue #66. The capture content sat in a `ScrollView`, which proposes
+  an unbounded height to its content. The amount spacers therefore stayed at
+  their minimum lengths, leaving unused space after the category tiles on tall
+  screens.
+- Decision: size a `ViewThatFits` against the finite viewport above the pinned
+  keypad. Its first candidate is the capture stack with a minimum height equal
+  to that viewport, allowing its spacers to divide remaining space; the fallback
+  is a scroll view containing the same stack when its content does not fit.
+- Consequence: the tiles stay connected to the keypad on tall screens, while
+  short screens and larger text retain access to the full category row by
+  scrolling. The keypad and Log bar keep their existing safe-area inset and
+  `CaptureBottomBar` dimensions.
+
 ## CSV export marks formula-leading text with an apostrophe
 
 - Context: issue #2. A note or category name can arrive from another app's share
