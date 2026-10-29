@@ -103,25 +103,34 @@ final class ShareViewController: UIViewController {
             return
         }
 
-        var textParts: [String] = []
+        var attributedTexts: [String?] = []
+        var attachmentTexts: [[String?]] = []
+        var pendingProviders: [(
+            itemIndex: Int,
+            attachmentIndex: Int,
+            provider: NSItemProvider,
+            typeIdentifier: String
+        )] = []
+        var pieces = 0
         let accumulationQueue = DispatchQueue(label: "dev.amteshwar.taplog.share-text-accumulation")
         let group = DispatchGroup()
 
-        var providers = 0
-        var pieces = 0
         // Another app chooses how many attachments to offer; stop at the cap
         // instead of loading everything it names.
-        outer: for item in items {
+        for item in items {
             if pieces >= ShareParser.maxAttachments { break }
-            if let attributedText = ShareParser.text(from: item.attributedContentText) {
-                accumulationQueue.sync {
-                    textParts.append(attributedText)
-                }
+            let attributedText = ShareParser.text(from: item.attributedContentText)
+            if let attributedText,
+               !attributedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                attributedTexts.append(attributedText)
+                attachmentTexts.append([])
                 pieces += 1
+                continue
             }
-            guard let attachments = item.attachments else { continue }
-            for provider in attachments {
-                if providers >= ShareParser.maxAttachments || pieces >= ShareParser.maxAttachments { break outer }
+
+            var itemProviders: [(provider: NSItemProvider, typeIdentifier: String)] = []
+            for provider in item.attachments ?? [] {
+                if pieces >= ShareParser.maxAttachments { break }
                 let typeIdentifier: String
                 if provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) {
                     typeIdentifier = UTType.plainText.identifier
@@ -130,24 +139,39 @@ final class ShareViewController: UIViewController {
                 } else {
                     continue
                 }
-                providers += 1
+                itemProviders.append((provider, typeIdentifier))
                 pieces += 1
-                group.enter()
-                provider.loadItem(forTypeIdentifier: typeIdentifier, options: nil) { result, _ in
-                    if let string = ShareParser.text(from: result) {
-                        // The shared string itself can be huge, and a raw cut
-                        // could leave a fragment of a number behind — cap through
-                        // `boundedPiece`, never a raw `prefix(...)`.
-                        accumulationQueue.sync {
-                            textParts.append(string)
-                        }
+            }
+            guard !itemProviders.isEmpty else { continue }
+
+            let itemIndex = attributedTexts.count
+            attributedTexts.append(nil)
+            attachmentTexts.append(Array(repeating: nil, count: itemProviders.count))
+            for (attachmentIndex, candidate) in itemProviders.enumerated() {
+                pendingProviders.append((itemIndex, attachmentIndex, candidate.provider, candidate.typeIdentifier))
+            }
+        }
+
+        for pending in pendingProviders {
+            group.enter()
+            pending.provider.loadItem(forTypeIdentifier: pending.typeIdentifier, options: nil) { result, _ in
+                if let string = ShareParser.text(from: result) {
+                    // Write to the reserved slot so callback order cannot reorder the share.
+                    accumulationQueue.sync {
+                        attachmentTexts[pending.itemIndex][pending.attachmentIndex] = string
                     }
-                    group.leave()
                 }
+                group.leave()
             }
         }
 
         group.notify(queue: accumulationQueue) {
+            let textParts = attributedTexts.indices.compactMap { index in
+                ShareParser.preferredText(
+                    attributedText: attributedTexts[index],
+                    attachmentTexts: attachmentTexts[index].compactMap { $0 }
+                )
+            }
             let allText = ShareParser.boundedText(textParts)
             DispatchQueue.main.async {
                 completion(allText)

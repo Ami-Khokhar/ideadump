@@ -133,6 +133,30 @@ extension ShareParserTests {
         let text = "Rs 40 " + String(repeating: "x", count: ShareParser.maxFieldLength)
         XCTAssertLessThanOrEqual(ShareParser.text(from: Data(text.utf8))?.count ?? .max, ShareParser.maxFieldLength)
     }
+
+    func testSharePayloadConversionBoundsLargeDataWithoutLosingAnEarlierAmount() {
+        let text = "Rs 42 debited " + String(repeating: "x", count: ShareParser.maxFieldLength * 6)
+        let bounded = ShareParser.text(from: Data(text.utf8))
+        XCTAssertEqual(bounded?.count, ShareParser.maxFieldLength)
+        XCTAssertEqual(bounded.flatMap { ShareParser.parse($0).amount }, 42)
+    }
+
+    func testAttributedShareBodyWinsOverDuplicateAttachmentText() {
+        let body = "You spent $12.50 at Starbucks"
+        let selected = ShareParser.preferredText(
+            attributedText: body,
+            attachmentTexts: [body, body]
+        )
+        XCTAssertEqual(selected, body)
+        XCTAssertEqual(selected.flatMap { ShareParser.parse($0).amount }, Decimal(string: "12.50"))
+    }
+
+    func testEmptyAttributedShareBodyFallsBackToTextAttachments() {
+        XCTAssertEqual(
+            ShareParser.preferredText(attributedText: " \n", attachmentTexts: ["Rs 40 debited"]),
+            "Rs 40 debited"
+        )
+    }
 }
 
 // MARK: - Bounded share input

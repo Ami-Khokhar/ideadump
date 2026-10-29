@@ -16,6 +16,17 @@ enum ShareParser {
     static let maxFieldLength = 2_000
     static let maxTextLength = 4_000
 
+    /// Uses a nonempty attributed body in preference to attachment copies of
+    /// the same share, then falls back to the item's text attachments.
+    static func preferredText(attributedText: String?, attachmentTexts: [String]) -> String? {
+        if let attributedText,
+           !attributedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return boundedPiece(attributedText)
+        }
+        let fallback = boundedText(attachmentTexts)
+        return fallback.isEmpty ? nil : fallback
+    }
+
     /// Converts the payload types the share sheet uses for text without
     /// retaining unbounded content from another app.
     static func text(from payload: Any?) -> String? {
@@ -28,12 +39,43 @@ enum ShareParser {
         case let value as NSAttributedString:
             text = value.string
         case let value as Data:
-            guard let decoded = String(data: value, encoding: .utf8) else { return nil }
+            guard let decoded = decodeBoundedUTF8(value) else { return nil }
             text = decoded
         default:
             return nil
         }
         return boundedPiece(text)
+    }
+
+    /// Decodes at most enough UTF-8 bytes to supply the capped field plus one
+    /// complete character for boundary handling.
+    private static func decodeBoundedUTF8(_ data: Data) -> String? {
+        let byteLimit = (maxFieldLength + 1) * 4
+        var bytes = Array(data.prefix(byteLimit))
+        if data.count > byteLimit, !bytes.isEmpty {
+            let end = bytes.count
+            var start = end - 1
+            while start > 0 && bytes[start] & 0xC0 == 0x80 {
+                start -= 1
+            }
+            let lead = bytes[start]
+            let expectedLength: Int
+            if lead & 0x80 == 0 {
+                expectedLength = 1
+            } else if lead & 0xE0 == 0xC0 {
+                expectedLength = 2
+            } else if lead & 0xF0 == 0xE0 {
+                expectedLength = 3
+            } else if lead & 0xF8 == 0xF0 {
+                expectedLength = 4
+            } else {
+                expectedLength = 0
+            }
+            if expectedLength > end - start {
+                bytes.removeSubrange(start..<end)
+            }
+        }
+        return String(bytes: bytes, encoding: .utf8)
     }
 
     /// Joins the pieces a share offered into the bounded text the parser sees.
