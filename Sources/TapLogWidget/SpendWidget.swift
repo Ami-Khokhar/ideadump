@@ -22,9 +22,9 @@ private var defaultQuickButtons: [QuickButton] {
 }
 
 struct SpendSnapshot: TimelineEntry {
-    let date: Date
-    let total: Decimal
-    let count: Int
+    var date: Date
+    var total: Decimal
+    var count: Int
     let quickButtons: [QuickButton]
 }
 
@@ -149,12 +149,11 @@ struct SpendProvider: TimelineProvider {
                 value: 1,
                 to: calendar.startOfDay(for: now)
             ) ?? now.addingTimeInterval(86_400)
-            let midnightReset = SpendSnapshot(
-                date: startOfTomorrow,
-                total: 0,
-                count: 0,
-                quickButtons: snapshot.quickButtons
-            )
+            // Preserve the snapshot's other state when advancing its totals.
+            var midnightReset = snapshot
+            midnightReset.date = startOfTomorrow
+            midnightReset.total = 0
+            midnightReset.count = 0
             let rollingRefresh = calendar.date(byAdding: .minute, value: 30, to: now)
                 ?? now.addingTimeInterval(1_800)
 
