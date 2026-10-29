@@ -40,7 +40,9 @@ final class ShareViewController: UIViewController {
 
             guard let amount = parsed.amount, amount > 0 else {
                 DispatchQueue.main.async {
-                    label.text = "Couldn't find an amount to log. Open TapLog to enter it manually."
+                    label.text = parsed.hasText
+                        ? "Shared text had no amount TapLog could read. Open TapLog to enter it manually."
+                        : "Nothing was shared with TapLog. Open TapLog to enter an expense manually."
                     doneButton.isHidden = false
                 }
                 return
@@ -106,23 +108,38 @@ final class ShareViewController: UIViewController {
         let group = DispatchGroup()
 
         var providers = 0
+        var pieces = 0
         // Another app chooses how many attachments to offer; stop at the cap
         // instead of loading everything it names.
         outer: for item in items {
+            if pieces >= ShareParser.maxAttachments { break }
+            if let attributedText = ShareParser.text(from: item.attributedContentText) {
+                accumulationQueue.sync {
+                    textParts.append(attributedText)
+                }
+                pieces += 1
+            }
             guard let attachments = item.attachments else { continue }
             for provider in attachments {
-                if providers >= ShareParser.maxAttachments { break outer }
-                guard provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) else { continue }
+                if providers >= ShareParser.maxAttachments || pieces >= ShareParser.maxAttachments { break outer }
+                let typeIdentifier: String
+                if provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) {
+                    typeIdentifier = UTType.plainText.identifier
+                } else if provider.hasItemConformingToTypeIdentifier(UTType.text.identifier) {
+                    typeIdentifier = UTType.text.identifier
+                } else {
+                    continue
+                }
                 providers += 1
+                pieces += 1
                 group.enter()
-                provider.loadItem(forTypeIdentifier: UTType.plainText.identifier, options: nil) { result, _ in
-                    if let string = result as? String {
+                provider.loadItem(forTypeIdentifier: typeIdentifier, options: nil) { result, _ in
+                    if let string = ShareParser.text(from: result) {
                         // The shared string itself can be huge, and a raw cut
                         // could leave a fragment of a number behind — cap through
                         // `boundedPiece`, never a raw `prefix(...)`.
-                        let piece = ShareParser.boundedPiece(string)
                         accumulationQueue.sync {
-                            textParts.append(piece)
+                            textParts.append(string)
                         }
                     }
                     group.leave()
