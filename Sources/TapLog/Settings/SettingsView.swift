@@ -163,7 +163,7 @@ struct SettingsView: View {
                 }
             }
             .sheet(isPresented: $showingPaywall) {
-                PaywallView(reason: .anotherTree)
+                PaywallView(reason: .settings)
                     .tint(Theme.accent)
             }
             .sheet(isPresented: $showingFrontDoors) {

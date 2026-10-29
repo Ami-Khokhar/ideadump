@@ -77,4 +77,12 @@ final class PaywallEvidenceTests: XCTestCase {
         XCTAssertTrue(many.summaryLine.contains("24 days"), many.summaryLine)
         XCTAssertTrue(many.summaryLine.hasSuffix("tracked"), many.summaryLine)
     }
+
+    func testSettingsPaywallExplainsTheOfferWithoutClaimingTheGroveIsFull() {
+        let reason = PaywallView.Reason.settings
+
+        XCTAssertFalse(reason.subhead.contains("grove is full"))
+        XCTAssertTrue(reason.subhead.contains("target for every category"))
+        XCTAssertTrue(reason.subhead.contains("monthly recap"))
+    }
 }
