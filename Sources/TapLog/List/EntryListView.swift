@@ -245,7 +245,7 @@ struct EntryListView: View {
             } label: {
                 Image(systemName: "pencil")
                     .foregroundStyle(Theme.textSecondary)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 44, height: 44)
             }
             .buttonStyle(.borderless)
             .accessibilityLabel("Edit entry")
@@ -254,7 +254,7 @@ struct EntryListView: View {
                 delete(entry)
             } label: {
                 Image(systemName: "trash")
-                    .frame(width: 36, height: 36)
+                    .frame(width: 44, height: 44)
             }
             .buttonStyle(.borderless)
             .accessibilityLabel("Delete entry")
