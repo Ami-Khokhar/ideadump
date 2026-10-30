@@ -76,7 +76,9 @@ Button / widget-on-lock-screen checks, and capture timing — see `build-plan.md
      and focuses the amount. This is the same route as the **Open Expense Capture** action.
    - **Siri hands-free / Shortcuts:** say “Hey Siri, log an expense in TapLog”, or open
      Shortcuts → TapLog → “Log Expense”; Siri asks for the amount, then the category, then
-     an optional note (say “skip” for none), and logs without opening TapLog.
+     an optional note (say “skip” for none), and logs without opening TapLog. You can also
+     say “Log chai in TapLog” to provide a category in the phrase. Numeric phrases such as
+     “Log 50 in TapLog” are not supported; give the amount when Siri asks.
    - **Action Button (iPhone 15 Pro+):** Settings → Action Button → Shortcut → choose
      **Log Expense** for the headless amount → category → note prompts and silent save.
    - **Your own shortcut:** add the **Log Expense** action to any shortcut (Home Screen

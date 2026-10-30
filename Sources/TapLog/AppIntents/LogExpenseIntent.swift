@@ -54,7 +54,13 @@ struct LogExpenseIntent: AppIntent {
         // app's own process, where a container is already open.
         let container = try StoreLocator.container()
         let context = container.mainContext
-        let categories = (try? context.fetch(FetchDescriptor<SpendCategory>())) ?? []
+        let categories: [SpendCategory]
+        do {
+            categories = try context.fetch(FetchDescriptor<SpendCategory>())
+        } catch {
+            Log.intents.error("Failed to fetch categories before Siri log: \(Log.describe(error), privacy: .public)")
+            throw TapLogIntentError.categoriesUnavailable
+        }
 
         let categoryKey = Self.resolvedKey(entity: category, categories: categories)
 
@@ -63,6 +69,10 @@ struct LogExpenseIntent: AppIntent {
         do {
             try context.save()
         } catch {
+            // The shared main context survives this intent. Remove this failed
+            // insert so a later save cannot commit an expense Siri reported as
+            // failed.
+            context.delete(entry)
             Log.intents.error("Failed to save entry from Siri: \(Log.describe(error), privacy: .public)")
             throw TapLogIntentError.saveFailed
         }
