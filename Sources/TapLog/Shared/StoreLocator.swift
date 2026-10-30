@@ -43,9 +43,15 @@ enum StoreLocator {
 
     enum StoreError: LocalizedError {
         case noUsableStore
+        case widgetRequiresSharedStore
 
         var errorDescription: String? {
-            "TapLog could not open its expense store."
+            switch self {
+            case .noUsableStore:
+                "TapLog could not open its expense store."
+            case .widgetRequiresSharedStore:
+                "The widget requires the shared expense store."
+            }
         }
     }
 
@@ -85,6 +91,21 @@ enum StoreLocator {
     /// surface as a spoken Siri error, never as a crash.
     static func container() throws -> ModelContainer {
         try cachedStore.get().container
+    }
+
+    /// A new read context for each widget snapshot, backed by the one container
+    /// cached for this process. The widget cannot use the app-only fallback: it
+    /// would show a plausible but unrelated zero total instead of shared data.
+    static func widgetReadContext() throws -> ModelContext {
+        guard isUsingSharedStore else { throw StoreError.widgetRequiresSharedStore }
+        return makeFreshContext(for: try container())
+    }
+
+    /// Creates a context without opening another container for the same store.
+    /// Kept as the single construction path so a reader can refresh its view of
+    /// writes made through another context or process.
+    static func makeFreshContext(for container: ModelContainer) -> ModelContext {
+        ModelContext(container)
     }
 
     /// App-launch accessor. A store we cannot open at all leaves nothing to show,
