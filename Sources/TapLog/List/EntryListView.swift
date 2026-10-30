@@ -14,8 +14,8 @@ enum OnboardingStep: Int, Identifiable {
 }
 
 /// The History tab — a browse surface for past entries. Logging happens on the
-/// home (Log) tab, so this screen has no "+"; entries are edited on tap and
-/// archived/deleted by swipe.
+/// home (Log) tab, so this screen has no "+"; entries are edited or deleted
+/// directly from their row, and archive/restore remains a deliberate swipe.
 struct EntryListView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var undoStack: UndoStack
@@ -235,21 +235,42 @@ struct EntryListView: View {
     }
 
     private func entryRow(_ entry: Entry) -> some View {
-        EntryRowView(entry: entry, lookup: lookup)
-            .contentShape(Rectangle())
-            .onTapGesture { editingEntry = entry }
-            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                if showingArchived {
-                    Button("Unarchive") { unarchive(entry) }
-                        .tint(Theme.accent)
-                } else {
-                    Button("Archive") { archive(entry) }
-                        .tint(Theme.accent)
-                }
-                Button(role: .destructive) { delete(entry) } label: {
-                    Label("Delete", systemImage: "trash")
-                }
+        HStack(spacing: 10) {
+            EntryRowView(entry: entry, lookup: lookup)
+                .contentShape(Rectangle())
+                .onTapGesture { editingEntry = entry }
+
+            Button {
+                editingEntry = entry
+            } label: {
+                Image(systemName: "pencil")
+                    .foregroundStyle(Theme.textSecondary)
+                    .frame(width: 44, height: 44)
             }
+            .buttonStyle(.borderless)
+            .accessibilityLabel("Edit entry")
+
+            Button(role: .destructive) {
+                delete(entry)
+            } label: {
+                Image(systemName: "trash")
+                    .frame(width: 44, height: 44)
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel("Delete entry")
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            if showingArchived {
+                Button("Unarchive") { unarchive(entry) }
+                    .tint(Theme.accent)
+            } else {
+                Button("Archive") { archive(entry) }
+                    .tint(Theme.accent)
+            }
+            Button(role: .destructive) { delete(entry) } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
     }
 
     // MARK: - Pending (share sheet) actions

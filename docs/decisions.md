@@ -1,5 +1,20 @@
 # Decisions
 
+## History rows expose edit and delete, and a full swipe does not archive
+
+- Context: issue #58. History already opened editing when a row was tapped and
+  offered archive and delete through swipe actions, but neither route was
+  discoverable on screen. A full swipe executed the first swipe action, Archive,
+  which silently removed the entry from totals and the active list.
+- Decision: show labelled pencil and trash controls on every active and
+  archived entry row, keep tapping the row as an edit shortcut, and disable
+  full-swipe execution for archive/restore actions. Keep deletion immediate and
+  undoable through the existing undo stack.
+- Consequence: edit and delete are visible directly in History, while archive
+  and restore still require a deliberate swipe action. Delete continues to use
+  the established persistence and bookkeeping path, including restoring
+  counters on undo.
+
 ## CSV export marks formula-leading text with an apostrophe
 
 - Context: issue #2. A note or category name can arrive from another app's share
