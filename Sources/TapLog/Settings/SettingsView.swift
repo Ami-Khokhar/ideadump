@@ -31,6 +31,9 @@ struct SettingsView: View {
                             Text("\(currency.symbol)  \(currency.name)").tag(currency.code)
                         }
                     }
+                    .onChange(of: currencyCode) { _, _ in
+                        WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
+                    }
                 } header: {
                     Text("Currency")
                 } footer: {

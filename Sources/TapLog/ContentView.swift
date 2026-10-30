@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import Combine
+import WidgetKit
 
 /// App root: a single capture-first home screen. History, Budgets and Recap sit on
 /// the navigation bar beside it; Settings (and the front doors it holds) stay behind
@@ -201,6 +202,7 @@ struct ContentView: View {
         // Handle warm/background activation: the scene becomes active after the
         // intent wrote its payload while the app was suspended.
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
             consumePendingIntent()
             offerWidgetUndo()
             reconcileOnboarding(with: confirmedEntries.count)

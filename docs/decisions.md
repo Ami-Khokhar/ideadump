@@ -1,5 +1,24 @@
 # Decisions
 
+## The spend widget rolls over at midnight and refreshes on likely opportunities
+
+- Context: issue #62. The spend widget had one snapshot and requested a refresh
+  every 15 minutes. That request exceeds a reasonable WidgetKit budget and does
+  not guarantee a fixed cadence; the single snapshot also kept yesterday's total
+  under the "Today" label after midnight. Currency changes and app foregrounding
+  did not request a reload.
+- Decision: each timeline contains the current day's snapshot and a zero-total,
+  zero-count entry at the next calendar midnight. It requests another timeline
+  after 30 minutes, or at midnight when that comes first. The app also requests a
+  widget reload when currency changes and when it enters the foreground; existing
+  log and undo reloads remain in place.
+- Consequence: WidgetKit can defer or drop both scheduled and explicit reloads,
+  so neither the rolling cadence nor a log's appearance has a one-second or exact
+  midnight guarantee. A log reload rebuilds the pending midnight entry. If that
+  reload is deferred, an older zero-total reset can briefly hide logs recorded
+  later that day after midnight. The app cannot read a new total at the boundary
+  unless WidgetKit grants a timeline refresh.
+
 ## CSV export marks formula-leading text with an apostrophe
 
 - Context: issue #2. A note or category name can arrive from another app's share

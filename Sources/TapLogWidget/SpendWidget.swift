@@ -22,9 +22,9 @@ private var defaultQuickButtons: [QuickButton] {
 }
 
 struct SpendSnapshot: TimelineEntry {
-    let date: Date
-    let total: Decimal
-    let count: Int
+    var date: Date
+    var total: Decimal
+    var count: Int
     let quickButtons: [QuickButton]
 }
 
@@ -142,9 +142,32 @@ struct SpendProvider: TimelineProvider {
     func getTimeline(in context: Context, completion: @escaping (Timeline<SpendSnapshot>) -> Void) {
         Task { @MainActor in
             let snapshot = loadTodaySnapshot()
-            let nextRefresh = Calendar.current.date(byAdding: .minute, value: 15, to: .now)
-                ?? .now.addingTimeInterval(900)
-            completion(Timeline(entries: [snapshot], policy: .after(nextRefresh)))
+            let now = Date.now
+            let calendar = Calendar.current
+            let startOfTomorrow = calendar.date(
+                byAdding: .day,
+                value: 1,
+                to: calendar.startOfDay(for: now)
+            ) ?? now.addingTimeInterval(86_400)
+            // Preserve the snapshot's other state when advancing its totals.
+            var midnightReset = snapshot
+            midnightReset.date = startOfTomorrow
+            midnightReset.total = 0
+            midnightReset.count = 0
+            let rollingRefresh = calendar.date(byAdding: .minute, value: 30, to: now)
+                ?? now.addingTimeInterval(1_800)
+
+            // WidgetKit treats `.after` and app-triggered reloads as requests; its
+            // per-widget budget can defer or drop them. Log saves, currency changes,
+            // and foregrounding request immediate reloads, but no cadence is exact.
+            // A log rebuilds this timeline (including the pending midnight entry).
+            // If WidgetKit defers that reload, the old zero reset can briefly hide
+            // same-day logs after midnight; widgets cannot fetch a new total at the
+            // boundary without a granted timeline refresh.
+            completion(Timeline(
+                entries: [snapshot, midnightReset],
+                policy: .after(min(rollingRefresh, startOfTomorrow))
+            ))
         }
     }
 }
