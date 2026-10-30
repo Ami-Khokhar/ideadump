@@ -168,30 +168,23 @@ struct LogHomeView: View {
 
     /// The keypad and Log button are pinned as a bottom inset so the two controls
     /// that finish the task are always under the thumb, whatever the screen height.
-    /// Everything above them scrolls, which is what keeps this usable on a 4.7"
-    /// device where the keypad alone claims most of the viewport.
+    /// The content fills the viewport when it fits and becomes scrollable when
+    /// the keypad leaves too little room, as on a 4.7" device.
     private var mainContent: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: 0) {
-                // Deliberately empty above the amount. This screen used to open
-                // with a streak wreath, today's total and a "Use the keypad"
-                // hint stacked over the number they were competing with. All
-                // three are gone: the streak has its own screen, today's total
-                // is on History, and the hint taught a keypad that is already
-                // the only thing on the lower half of the screen.
-                //
-                // No trees either, in any form — a grove strip, tile badges and
-                // a background horizon were each tried and each gave the eye a
-                // second place to land. What survives is the one 2pt rule under
-                // each tile, which adds no object to the row.
-                Spacer(minLength: 48)
-                amountArea
-                Spacer(minLength: 36)
-                categoryLine
-                tileRow()
+        GeometryReader { viewport in
+            ViewThatFits(in: .vertical) {
+                // This candidate sees a finite height, so the spacers divide
+                // the viewport. When content exceeds it, use the scrolling
+                // candidate below instead of compressing the category row.
+                captureContent
+                    .frame(minHeight: viewport.size.height, alignment: .top)
+
+                ScrollView(.vertical, showsIndicators: false) {
+                    captureContent
+                }
+                .scrollBounceBehavior(.basedOnSize)
             }
         }
-        .scrollBounceBehavior(.basedOnSize)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 0) {
                 // Unconditional now. The keypad used to yield the bottom of the
@@ -204,6 +197,27 @@ struct LogHomeView: View {
                     .padding(.top, CaptureBottomBar.logButtonLiftPadding)
             }
             .background(Theme.paper)
+        }
+    }
+
+    private var captureContent: some View {
+        VStack(spacing: 0) {
+            // Deliberately empty above the amount. This screen used to open
+            // with a streak wreath, today's total and a "Use the keypad"
+            // hint stacked over the number they were competing with. All
+            // three are gone: the streak has its own screen, today's total
+            // is on History, and the hint taught a keypad that is already
+            // the only thing on the lower half of the screen.
+            //
+            // No trees either, in any form — a grove strip, tile badges and
+            // a background horizon were each tried and each gave the eye a
+            // second place to land. What survives is the one 2pt rule under
+            // each tile, which adds no object to the row.
+            Spacer(minLength: 48)
+            amountArea
+            Spacer(minLength: 36)
+            categoryLine
+            tileRow()
         }
     }
 
