@@ -3,6 +3,7 @@ import Foundation
 struct ShareParse {
     let amount: Decimal?
     let note: String?
+    let hasText: Bool
 }
 
 /// Extracts a plausible amount and merchant from a bank payment notification
@@ -14,6 +15,66 @@ enum ShareParser {
     static let maxAttachments = 8
     static let maxFieldLength = 2_000
     static let maxTextLength = 4_000
+
+    /// Converts the payload types the share sheet uses for text without
+    /// retaining unbounded content from another app.
+    static func text(from payload: Any?) -> String? {
+        let text: String
+        switch payload {
+        case let value as String:
+            text = value
+        case let value as NSString:
+            text = value as String
+        case let value as NSAttributedString:
+            text = value.string
+        case let value as Data:
+            guard let decoded = decodeBoundedUTF8(value) else { return nil }
+            text = decoded
+        default:
+            return nil
+        }
+        return boundedPiece(text)
+    }
+
+    /// Converts a text payload only when it contains meaningful content.
+    static func nonemptyText(from payload: Any?) -> String? {
+        guard let text = text(from: payload),
+              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+        return text
+    }
+
+    /// Decodes at most enough UTF-8 bytes to supply the capped field plus one
+    /// complete character for boundary handling.
+    private static func decodeBoundedUTF8(_ data: Data) -> String? {
+        let byteLimit = (maxFieldLength + 1) * 4
+        var bytes = Array(data.prefix(byteLimit))
+        if data.count > byteLimit, !bytes.isEmpty {
+            let end = bytes.count
+            var start = end - 1
+            while start > 0 && bytes[start] & 0xC0 == 0x80 {
+                start -= 1
+            }
+            let lead = bytes[start]
+            let expectedLength: Int
+            if lead & 0x80 == 0 {
+                expectedLength = 1
+            } else if lead & 0xE0 == 0xC0 {
+                expectedLength = 2
+            } else if lead & 0xF0 == 0xE0 {
+                expectedLength = 3
+            } else if lead & 0xF8 == 0xF0 {
+                expectedLength = 4
+            } else {
+                expectedLength = 0
+            }
+            if expectedLength > end - start {
+                bytes.removeSubrange(start..<end)
+            }
+        }
+        return String(bytes: bytes, encoding: .utf8)
+    }
 
     /// Joins the pieces a share offered into the bounded text the parser sees.
     /// Keeps the first `maxAttachments` pieces and applies the field and total
@@ -37,10 +98,11 @@ enum ShareParser {
 
     static func parse(_ text: String) -> ShareParse {
         let text = cutAtTokenBoundary(text, limit: maxTextLength)
-        guard !text.isEmpty else { return ShareParse(amount: nil, note: nil) }
+        let hasText = !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        guard hasText else { return ShareParse(amount: nil, note: nil, hasText: false) }
         let extracted = extractAmount(from: text)
         let note = extractNote(from: text, amountString: extracted.raw)
-        return ShareParse(amount: extracted.value, note: note)
+        return ShareParse(amount: extracted.value, note: note, hasText: true)
     }
 
     /// A single shared piece, trimmed to the field cap without leaving a fragment

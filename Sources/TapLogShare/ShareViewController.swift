@@ -40,7 +40,9 @@ final class ShareViewController: UIViewController {
 
             guard let amount = parsed.amount, amount > 0 else {
                 DispatchQueue.main.async {
-                    label.text = "Couldn't find an amount to log. Open TapLog to enter it manually."
+                    label.text = parsed.hasText
+                        ? "Shared text had no amount TapLog could read. Open TapLog to enter it manually."
+                        : "Nothing was shared with TapLog. Open TapLog to enter an expense manually."
                     doneButton.isHidden = false
                 }
                 return
@@ -101,37 +103,55 @@ final class ShareViewController: UIViewController {
             return
         }
 
-        var textParts: [String] = []
+        var textParts: [String?] = []
+        var pendingProviders: [(
+            index: Int,
+            provider: NSItemProvider,
+            typeIdentifier: String
+        )] = []
         let accumulationQueue = DispatchQueue(label: "dev.amteshwar.taplog.share-text-accumulation")
         let group = DispatchGroup()
 
-        var providers = 0
         // Another app chooses how many attachments to offer; stop at the cap
         // instead of loading everything it names.
         outer: for item in items {
-            guard let attachments = item.attachments else { continue }
-            for provider in attachments {
-                if providers >= ShareParser.maxAttachments { break outer }
-                guard provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) else { continue }
-                providers += 1
-                group.enter()
-                provider.loadItem(forTypeIdentifier: UTType.plainText.identifier, options: nil) { result, _ in
-                    if let string = result as? String {
-                        // The shared string itself can be huge, and a raw cut
-                        // could leave a fragment of a number behind — cap through
-                        // `boundedPiece`, never a raw `prefix(...)`.
-                        let piece = ShareParser.boundedPiece(string)
-                        accumulationQueue.sync {
-                            textParts.append(piece)
-                        }
-                    }
-                    group.leave()
+            if textParts.count >= ShareParser.maxAttachments { break }
+            if let attributedText = ShareParser.nonemptyText(from: item.attributedContentText) {
+                textParts.append(attributedText)
+                continue
+            }
+
+            for provider in item.attachments ?? [] {
+                if textParts.count >= ShareParser.maxAttachments { break outer }
+                let typeIdentifier: String
+                if provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) {
+                    typeIdentifier = UTType.plainText.identifier
+                } else if provider.hasItemConformingToTypeIdentifier(UTType.text.identifier) {
+                    typeIdentifier = UTType.text.identifier
+                } else {
+                    continue
                 }
+                let index = textParts.count
+                textParts.append(nil)
+                pendingProviders.append((index, provider, typeIdentifier))
+            }
+        }
+
+        for pending in pendingProviders {
+            group.enter()
+            pending.provider.loadItem(forTypeIdentifier: pending.typeIdentifier, options: nil) { result, _ in
+                if let string = ShareParser.nonemptyText(from: result) {
+                    // Write to the reserved slot so callback order cannot reorder the share.
+                    accumulationQueue.sync {
+                        textParts[pending.index] = string
+                    }
+                }
+                group.leave()
             }
         }
 
         group.notify(queue: accumulationQueue) {
-            let allText = ShareParser.boundedText(textParts)
+            let allText = ShareParser.boundedText(textParts.compactMap { $0 })
             DispatchQueue.main.async {
                 completion(allText)
             }
