@@ -4,9 +4,9 @@ import SwiftData
 /// The one screen that asks for money.
 ///
 /// It is built out of the same trees the rest of the app is built out of, and it
-/// arrives only at the two moments someone has just tried to do the thing it
-/// sells — another tree, or the month view. Nobody is shown this on launch, and
-/// nobody is shown it twice for the same tap.
+/// arrives when someone reaches a paid feature, or opens Pro from Settings.
+/// Nobody is shown this on launch, and nobody is shown it twice for the same
+/// tap.
 ///
 /// It says what it costs, once, and it says what happens if you say no: the app
 /// keeps working. An expense tracker that nags is an expense tracker people
@@ -22,18 +22,20 @@ struct PaywallView: View {
 
     var store: ProStore = .shared
 
-    /// What the user was reaching for when this appeared. Only the headline
-    /// changes — the offer is the same either way.
+    /// What the user was reaching for when this appeared. The offer is the same
+    /// either way; only the explanation changes.
     let reason: Reason
 
     enum Reason {
         case anotherTree
         case monthlyRecap
+        case settings
 
         var headline: String {
             switch self {
             case .anotherTree: "Grow a whole grove"
             case .monthlyRecap: "See the longer view"
+            case .settings: "Make room for more"
             }
         }
 
@@ -43,6 +45,8 @@ struct PaywallView: View {
                 "Your grove is full. TapLog Pro lets you plant a target for every category you care about."
             case .monthlyRecap:
                 "Your weekly recap is free forever. Pro adds the monthly one, for the patterns a week is too short to show."
+            case .settings:
+                "TapLog Pro adds a target for every category and the monthly recap. One payment, yours for good."
             }
         }
     }

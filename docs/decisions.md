@@ -1,5 +1,36 @@
 # Decisions
 
+## Keep the current Pro gates and let users choose when to see the offer
+
+- Context: issue #59 asked whether the fourth budget, the first monthly recap
+  request, and the Settings entry are the right criteria and placements for the
+  lifetime Pro offer. The repository has no reliable measurement of how many
+  users reach any trigger, how often they convert, or whether they refund or
+  complain. The paywall's `PaywallEvidence` only selects record-specific copy;
+  it does not decide whether the offer appears.
+- Decision: keep the existing product criteria: the first three budgets are
+  free and Pro unlocks further budgets; weekly recaps stay free and Pro unlocks
+  the monthly span; CSV export stays free because it is the user's only way to
+  take local-only records out of the app. Each gate applies to an attempted new
+  action, so existing budgets and records remain usable. Do not add a time-based
+  gate or delay the monthly gate without evidence that users find the current
+  moment disruptive. Keep each ask at the action that reached the gate, and
+  retain the Pro row in Settings as a clearly labeled, optional entry point.
+  That row uses general Pro copy describing both paid benefits instead of
+  pretending the user's grove is full. The ask is never shown on launch or
+  repeated for the same tap.
+- Placement: Budgets shows the offer when the user taps add with three existing
+  budgets; the category editor shows it when saving a new budget at that same
+  limit; the recap shows it when the user taps Month; Settings shows it only
+  when the user taps TapLog Pro. `PaywallEvidence` controls whether the offer
+  displays the user's record or decorative grove, not whether the ask fires.
+- Consequence: the product remains useful without budgets, and users who do
+  not reach a gated action can use the app indefinitely without an unsolicited
+  ask. We cannot claim these placements maximize conversion or minimize refunds
+  without measurement. Any future change to thresholds, timing, or a post-recap
+  surface should first define a user-respecting success measure and obtain
+  evidence, without adding unauthorized metrics collection.
+
 ## CSV export marks formula-leading text with an apostrophe
 
 - Context: issue #2. A note or category name can arrive from another app's share

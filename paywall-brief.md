@@ -165,23 +165,30 @@ willingness-to-pay judgement.
 If any are blank, state the assumption you're using and flag how much it moves
 your answer. Do not invent them.
 
-## What is currently built
+## Current product policy and triggers
 
-Shipping today, so you know what you'd be overturning:
+Issue #59 reviewed the shipped line and kept it pending evidence about actual
+trigger reach, conversion, refunds, or complaints:
 
-- **Free**: all capture, every front door, unlimited entries, unlimited history,
-  categories, habit mechanics and notification, CSV export, **one budget tree**,
+- **Free**: capture, every front door, unlimited entries and history, categories,
+  habit mechanics and notification, CSV export, the first **three budget trees**,
   and the **weekly** recap.
-- **Paid**: a target for every category (unlimited grove) and the **monthly**
-  recap span.
-- **Two triggers**: trying to create a second budget, and tapping the month
-  toggle on the recap.
-- Deleting a budget returns the free slot; existing budgets are never taken away
-  from someone who doesn't pay.
+- **Pro**: further budget trees and the **monthly** recap span, unlocked by one
+  lifetime purchase.
+- **Triggers**: tapping add in Budgets with three budgets; saving a new budget in
+  the category editor at the same limit; tapping Month in Recap; or choosing
+  TapLog Pro in Settings.
+- Deleting a budget returns the free slot; existing budgets and records remain
+  usable.
+- `PaywallEvidence` only chooses between showing the user's record and the
+  decorative grove. It does not decide whether the paywall appears.
+- There is no launch paywall or time-based ask. Settings remains an optional,
+  user-initiated offer with copy that names both paid benefits.
 
-This line was drawn to satisfy a constraint of "don't gate anything already
-shipped," which is a constraint about upgrade fairness, not about what converts.
-It has never been tested against a user.
+No user behavior data is available to justify changing the gates or adding an
+extra prompt. CSV remains free because it is the only way to take local-only
+records out of the app. The rationale and placement decision are recorded in
+[`docs/decisions.md`](docs/decisions.md).
 
 ## Tensions I already see — engage with these, don't just restate them
 
