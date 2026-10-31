@@ -26,8 +26,8 @@ struct ContentView: View {
     @State private var prefill: CapturePrefill?
     @State private var route: Route?
     /// When true the logo splash is skipped and the capture screen is revealed
-    /// immediately. Set by a pending intent activation.
-    @State private var intentDirectCapture = false
+    /// immediately. Set by a pending intent or direct-capture URL activation.
+    @State private var intentDirectCapture = OpenCaptureIntent.hasPendingActivation()
     /// Tracks that the current launch handled a direct-capture activation, so the
     /// delayed onboarding flow cannot override it.
     @State private var handledActivation = false

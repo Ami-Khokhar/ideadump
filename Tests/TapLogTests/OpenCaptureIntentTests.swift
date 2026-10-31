@@ -30,6 +30,23 @@ final class OpenCaptureIntentTests: XCTestCase {
         }
     }
 
+    func testPendingActivationIsVisibleToFirstRenderSplashDecision() {
+        OpenCaptureIntent.writePendingActivation(amount: "12", defaults: defaults)
+
+        XCTAssertTrue(OpenCaptureIntent.hasPendingActivation(defaults: defaults))
+        // The launch-time peek must not consume the payload; ContentView still
+        // consumes it through the existing activation path after appearing.
+        if case .open(let prefill) = OpenCaptureIntent.consumePendingActivation(defaults: defaults) {
+            XCTAssertEqual(prefill?.amountText, "12")
+        } else {
+            XCTFail("expected pending activation to remain available after the splash decision")
+        }
+    }
+
+    func testNoPendingActivationKeepsOrdinaryLaunchSplashDecision() {
+        XCTAssertFalse(OpenCaptureIntent.hasPendingActivation(defaults: defaults))
+    }
+
     // MARK: - .open with prefill
 
     func testConsumeReturnsOpenWithPrefill() {
