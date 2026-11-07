@@ -9,15 +9,39 @@
   did not request a reload.
 - Decision: each timeline contains the current day's snapshot and a zero-total,
   zero-count entry at the next calendar midnight. It requests another timeline
-  after 30 minutes, or at midnight when that comes first. The app also requests a
-  widget reload when currency changes and when it enters the foreground; existing
-  log and undo reloads remain in place.
+  after 30 minutes, or at midnight when that comes first. The app requests a
+  widget reload when the currency changes and when it enters the foreground,
+  but the foreground request is gated: `WidgetReload` records the log counter and
+  currency the widget was last asked to render, and an activation asks again only
+  when one of them has moved since. A plain foregrounding therefore spends no
+  budget. Existing log, undo, edit and delete reloads remain in place.
 - Consequence: WidgetKit can defer or drop both scheduled and explicit reloads,
   so neither the rolling cadence nor a log's appearance has a one-second or exact
   midnight guarantee. A log reload rebuilds the pending midnight entry. If that
   reload is deferred, an older zero-total reset can briefly hide logs recorded
   later that day after midnight. The app cannot read a new total at the boundary
-  unless WidgetKit grants a timeline refresh.
+  unless WidgetKit grants a timeline refresh. The activation gate compares two
+  cheap values rather than the rendered total, so an edit that changes an amount
+  without changing the log counter is caught by its own reload path, not by this
+  one; if that reload was dropped, the activation gate will not notice.
+
+## Lock Screen spend widgets use widget-level deep links and accessory backgrounds
+
+- Context: issue #61. The circular Lock Screen widget attached its URL to an
+  image, and the rectangular widget used `Link`; accessory widgets need a URL
+  on the widget's content, and a Link-based rectangular label could render
+  clipped or fail to route. The generic Home Screen fallback also allowed an
+  unsupported family to inherit a layout that does not fit the Lock Screen.
+- Decision: put `taplog://log` on each accessory content root, render the
+  rectangular prompt as one compact icon-and-text row, and give both offered
+  Lock Screen families `AccessoryWidgetBackground` through
+  `containerBackground(for: .widget)`. Keep `.accessoryInline` out of
+  `supportedFamilies`, but render it as one linked line if WidgetKit requests
+  it; unsupported families render no Home Screen content.
+- Consequence: both offered Lock Screen widgets route through the app's existing
+  capture deep link and use the system's accessory background treatment. Adding
+  another family later requires an explicit layout rather than silently
+  reusing the small Home Screen view.
 
 ## CSV export marks formula-leading text with an apostrophe
 
