@@ -155,21 +155,35 @@ struct SpendWidgetEntryView: View {
 
     var body: some View {
         switch family {
+        case .systemSmall:
+            smallView
         case .systemMedium:
             mediumView
         case .accessoryCircular:
-            Image(systemName: "plus")
-                .font(.title3.weight(.semibold))
-                .widgetURL(URL(string: "taplog://log")!)
-            .accessibilityLabel("Log expense")
-        case .accessoryRectangular:
-            Link(destination: URL(string: "taplog://log")!) {
-                Label("Log expense", systemImage: "plus.circle.fill")
-                    .font(.caption.weight(.semibold))
+            ZStack {
+                Image(systemName: "plus")
+                    .font(.title3.weight(.semibold))
             }
+            .widgetURL(URL(string: "taplog://log")!)
+            .accessibilityLabel("Log expense")
+            .containerBackground(for: .widget) { AccessoryWidgetBackground() }
+        case .accessoryRectangular:
+            HStack(spacing: 5) {
+                Image(systemName: "plus.circle.fill")
+                Text("Log expense")
+            }
+            .font(.caption.weight(.semibold))
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .widgetURL(URL(string: "taplog://log")!)
             .accessibilityLabel("Open TapLog expense capture")
+            .containerBackground(for: .widget) { AccessoryWidgetBackground() }
+        case .accessoryInline:
+            (Text(Image(systemName: "plus.circle.fill")) + Text(" Log expense"))
+                .widgetURL(URL(string: "taplog://log")!)
+                .accessibilityLabel("Log expense")
         default:
-            smallView
+            EmptyView()
         }
     }
 

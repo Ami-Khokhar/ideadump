@@ -20,8 +20,9 @@
   pretending the user's grove is full. The ask is never shown on launch or
   repeated for the same tap.
 - Placement: Budgets shows the offer when the user taps add with three existing
-  budgets; the category editor shows it when saving a new budget at that same
-  limit; the recap shows it when the user taps Month; Settings shows it only
+  budgets; the category editor shows it from its "Grow a fourth tree" button,
+  and only when the category has no budget yet and three budgets already
+  exist; the recap shows it when the user taps Month; Settings shows it only
   when the user taps TapLog Pro. `PaywallEvidence` controls whether the offer
   displays the user's record or decorative grove, not whether the ask fires.
 - Consequence: the product remains useful without budgets, and users who do
@@ -30,6 +31,24 @@
   without measurement. Any future change to thresholds, timing, or a post-recap
   surface should first define a user-respecting success measure and obtain
   evidence, without adding unauthorized metrics collection.
+
+## Lock Screen spend widgets use widget-level deep links and accessory backgrounds
+
+- Context: issue #61. The circular Lock Screen widget attached its URL to an
+  image, and the rectangular widget used `Link`; accessory widgets need a URL
+  on the widget's content, and a Link-based rectangular label could render
+  clipped or fail to route. The generic Home Screen fallback also allowed an
+  unsupported family to inherit a layout that does not fit the Lock Screen.
+- Decision: put `taplog://log` on each accessory content root, render the
+  rectangular prompt as one compact icon-and-text row, and give both offered
+  Lock Screen families `AccessoryWidgetBackground` through
+  `containerBackground(for: .widget)`. Keep `.accessoryInline` out of
+  `supportedFamilies`, but render it as one linked line if WidgetKit requests
+  it; unsupported families render no Home Screen content.
+- Consequence: both offered Lock Screen widgets route through the app's existing
+  capture deep link and use the system's accessory background treatment. Adding
+  another family later requires an explicit layout rather than silently
+  reusing the small Home Screen view.
 
 ## CSV export marks formula-leading text with an apostrophe
 
