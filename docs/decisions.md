@@ -1,5 +1,23 @@
 # Decisions
 
+## Lock Screen spend widgets use widget-level deep links and accessory backgrounds
+
+- Context: issue #61. The circular Lock Screen widget attached its URL to an
+  image, and the rectangular widget used `Link`; accessory widgets need a URL
+  on the widget's content, and a Link-based rectangular label could render
+  clipped or fail to route. The generic Home Screen fallback also allowed an
+  unsupported family to inherit a layout that does not fit the Lock Screen.
+- Decision: put `taplog://log` on each accessory content root, render the
+  rectangular prompt as one compact icon-and-text row, and give both offered
+  Lock Screen families `AccessoryWidgetBackground` through
+  `containerBackground(for: .widget)`. Keep `.accessoryInline` out of
+  `supportedFamilies`, but render it as one linked line if WidgetKit requests
+  it; unsupported families render no Home Screen content.
+- Consequence: both offered Lock Screen widgets route through the app's existing
+  capture deep link and use the system's accessory background treatment. Adding
+  another family later requires an explicit layout rather than silently
+  reusing the small Home Screen view.
+
 ## CSV export marks formula-leading text with an apostrophe
 
 - Context: issue #2. A note or category name can arrive from another app's share
