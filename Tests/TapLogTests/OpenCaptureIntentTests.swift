@@ -30,7 +30,7 @@ final class OpenCaptureIntentTests: XCTestCase {
         }
     }
 
-    func testPendingActivationIsVisibleToFirstRenderSplashDecision() {
+    func testLaunchTimePeekLeavesThePendingPayloadIntact() {
         OpenCaptureIntent.writePendingActivation(amount: "12", defaults: defaults)
 
         XCTAssertTrue(OpenCaptureIntent.hasPendingActivation(defaults: defaults))

@@ -185,8 +185,13 @@
 - Decision: initialize the splash decision from the durable pending intent
   flag, without consuming the payload. When a direct-capture URL arrives later,
   remove the opening and reveal capture without animating a partial dissolve.
-- Consequence: pending AppIntent activations skip the opening on the first
-  render, and ordinary launches retain their full animation. The existing
-  widget `Link` still sends only a URL, so a cold widget launch may show part of
-  the opening before `onOpenURL` arrives; this path remains unresolved without
-  an earlier lifecycle signal.
+- Consequence: ordinary launches keep their full animation. A pending activation
+  skips the opening on the first render only when the flag predates the launch —
+  a flag left by a previous process or written by another target. `OpenCaptureIntent`
+  runs in the app target and declares `openAppWhenRun`, so in the normal case
+  `perform()` writes the flag after the capture view exists; that late path
+  reveals capture instantly instead, with no partial dissolve. This AppIntent
+  ordering is not yet verified on a device. The existing widget `Link` still
+  sends only a URL, so a cold widget launch may show part of the opening before
+  `onOpenURL` arrives; this path remains unresolved without an earlier lifecycle
+  signal.
