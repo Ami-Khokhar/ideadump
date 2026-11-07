@@ -23,8 +23,6 @@ enum ShareParser {
         switch payload {
         case let value as String:
             text = value
-        case let value as NSString:
-            text = value as String
         case let value as NSAttributedString:
             text = value.string
         case let value as Data:
@@ -46,34 +44,19 @@ enum ShareParser {
     }
 
     /// Decodes at most enough UTF-8 bytes to supply the capped field plus one
-    /// complete character for boundary handling.
+    /// complete character for boundary handling. A truncated prefix can end
+    /// inside a multi-byte character, so it retries after dropping up to three
+    /// trailing bytes; invalid bytes that are not a truncation still yield nil.
     private static func decodeBoundedUTF8(_ data: Data) -> String? {
         let byteLimit = (maxFieldLength + 1) * 4
-        var bytes = Array(data.prefix(byteLimit))
-        if data.count > byteLimit, !bytes.isEmpty {
-            let end = bytes.count
-            var start = end - 1
-            while start > 0 && bytes[start] & 0xC0 == 0x80 {
-                start -= 1
-            }
-            let lead = bytes[start]
-            let expectedLength: Int
-            if lead & 0x80 == 0 {
-                expectedLength = 1
-            } else if lead & 0xE0 == 0xC0 {
-                expectedLength = 2
-            } else if lead & 0xF0 == 0xE0 {
-                expectedLength = 3
-            } else if lead & 0xF8 == 0xF0 {
-                expectedLength = 4
-            } else {
-                expectedLength = 0
-            }
-            if expectedLength > end - start {
-                bytes.removeSubrange(start..<end)
-            }
+        var bytes = data.prefix(byteLimit)
+        var attempts = data.count > byteLimit ? 4 : 1
+        while attempts > 0 {
+            if let text = String(bytes: bytes, encoding: .utf8) { return text }
+            bytes = bytes.dropLast()
+            attempts -= 1
         }
-        return String(bytes: bytes, encoding: .utf8)
+        return nil
     }
 
     /// Joins the pieces a share offered into the bounded text the parser sees.

@@ -97,32 +97,20 @@ final class ShareViewController: UIViewController {
     }
 
     /// Loads shared text asynchronously via completion handler instead of a blocking semaphore.
+    /// `ShareTextCollector` owns which pieces count and their order; this method
+    /// only turns the sheet's providers into loaded payloads.
     private func extractTextFromContext(completion: @escaping (String) -> Void) {
         guard let items = extensionContext?.inputItems as? [NSExtensionItem] else {
             completion("")
             return
         }
 
-        var textParts: [String?] = []
-        var pendingProviders: [(
-            index: Int,
-            provider: NSItemProvider,
-            typeIdentifier: String
-        )] = []
-        let accumulationQueue = DispatchQueue(label: "dev.amteshwar.taplog.share-text-accumulation")
-        let group = DispatchGroup()
-
-        // Another app chooses how many attachments to offer; stop at the cap
-        // instead of loading everything it names.
-        outer: for item in items {
-            if textParts.count >= ShareParser.maxAttachments { break }
-            if let attributedText = ShareParser.nonemptyText(from: item.attributedContentText) {
-                textParts.append(attributedText)
-                continue
-            }
-
+        // Another app chooses what it offers. Only text-conforming providers are
+        // candidates; the collector decides which of them still contribute.
+        var candidates: [(provider: NSItemProvider, typeIdentifier: String)] = []
+        let collectorItems = items.map { item -> ShareTextCollector.Item in
+            var ids: [Int] = []
             for provider in item.attachments ?? [] {
-                if textParts.count >= ShareParser.maxAttachments { break outer }
                 let typeIdentifier: String
                 if provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) {
                     typeIdentifier = UTType.plainText.identifier
@@ -131,19 +119,31 @@ final class ShareViewController: UIViewController {
                 } else {
                     continue
                 }
-                let index = textParts.count
-                textParts.append(nil)
-                pendingProviders.append((index, provider, typeIdentifier))
+                ids.append(candidates.count)
+                candidates.append((provider, typeIdentifier))
             }
+            return ShareTextCollector.Item(
+                body: ShareParser.nonemptyText(from: item.attributedContentText),
+                attachmentIDs: ids
+            )
         }
 
-        for pending in pendingProviders {
+        let places = ShareTextCollector.places(for: collectorItems)
+        let accumulationQueue = DispatchQueue(label: "dev.amteshwar.taplog.share-text-accumulation")
+        let group = DispatchGroup()
+        var loaded: [Int: Any] = [:]
+
+        for case let .attachment(id) in places {
+            guard id < candidates.count else { continue }
+            let candidate = candidates[id]
             group.enter()
-            pending.provider.loadItem(forTypeIdentifier: pending.typeIdentifier, options: nil) { result, _ in
-                if let string = ShareParser.nonemptyText(from: result) {
+            candidate.provider.loadItem(
+                forTypeIdentifier: candidate.typeIdentifier, options: nil
+            ) { result, _ in
+                if let result {
                     // Write to the reserved slot so callback order cannot reorder the share.
                     accumulationQueue.sync {
-                        textParts[pending.index] = string
+                        loaded[id] = result
                     }
                 }
                 group.leave()
@@ -151,7 +151,9 @@ final class ShareViewController: UIViewController {
         }
 
         group.notify(queue: accumulationQueue) {
-            let allText = ShareParser.boundedText(textParts.compactMap { $0 })
+            let allText = ShareParser.boundedText(
+                ShareTextCollector.pieces(from: places, loaded: loaded)
+            )
             DispatchQueue.main.async {
                 completion(allText)
             }
