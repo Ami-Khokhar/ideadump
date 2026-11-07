@@ -6,16 +6,42 @@
   amount the parser declines both reached the same message, while Messages may
   provide its body as `attributedContentText` and attachment providers may return
   `Data` or `NSAttributedString` instead of `String`.
-- Decision: use a nonempty attributed body as that item's text and consult
-  text-conforming attachments only when its body is empty. Convert supported
-  Foundation payloads to bounded strings, store attachment results in source
-  order, and retain whether the parser received meaningful text so the extension
-  can show a distinct message for an empty share and an unreadable amount. Do not
-  log shared content or its prefix because payment messages can include personal
-  and financial details.
+- Decision: prefer a nonempty attributed body as that item's text. When the body
+  carries no amount, the item's text attachments still contribute after it,
+  because a rich-link body can be a summary while the payment SMS sits in an
+  attachment. Convert supported Foundation payloads to bounded strings, reserve a
+  slot per attachment in source order so callback order cannot reorder the share,
+  and drop slots whose payload was unsupported or empty. The collection policy
+  lives in `ShareTextCollector` under `Sources/TapLog/Shared` so the test target
+  can exercise it, and the extension only drives `NSItemProvider`. Retain whether
+  the parser received meaningful text so the extension can show a distinct
+  message for an empty share and an unreadable amount. Do not log shared content
+  or its prefix because payment messages can include personal and financial
+  details.
 - Consequence: unsupported payloads and malformed UTF-8 still contribute no
   text; supported text remains subject to the existing per-piece, attachment
-  count and total text limits, applied once across the ordered pieces.
+  count and total text limits, applied once across the ordered pieces. Verified
+  at parser level only: the originally failing Messages share and a device run
+  have not been confirmed, so a body that carries no amount can still fail to
+  prefill.
+
+## Lock Screen spend widgets use widget-level deep links and accessory backgrounds
+
+- Context: issue #61. The circular Lock Screen widget attached its URL to an
+  image, and the rectangular widget used `Link`; accessory widgets need a URL
+  on the widget's content, and a Link-based rectangular label could render
+  clipped or fail to route. The generic Home Screen fallback also allowed an
+  unsupported family to inherit a layout that does not fit the Lock Screen.
+- Decision: put `taplog://log` on each accessory content root, render the
+  rectangular prompt as one compact icon-and-text row, and give both offered
+  Lock Screen families `AccessoryWidgetBackground` through
+  `containerBackground(for: .widget)`. Keep `.accessoryInline` out of
+  `supportedFamilies`, but render it as one linked line if WidgetKit requests
+  it; unsupported families render no Home Screen content.
+- Consequence: both offered Lock Screen widgets route through the app's existing
+  capture deep link and use the system's accessory background treatment. Adding
+  another family later requires an explicit layout rather than silently
+  reusing the small Home Screen view.
 
 ## CSV export marks formula-leading text with an apostrophe
 
