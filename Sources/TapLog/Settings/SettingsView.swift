@@ -32,7 +32,12 @@ struct SettingsView: View {
                         }
                     }
                     .onChange(of: currencyCode) { _, _ in
-                        WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
+                        // The widget renders every amount in this code. The gate
+                        // sees it differ from the last requested render and
+                        // records the new one.
+                        if WidgetReload.shouldRequest(WidgetReload.currentInputs()) {
+                            WidgetCenter.shared.reloadTimelines(ofKind: WidgetReload.kind)
+                        }
                     }
                 } header: {
                     Text("Currency")

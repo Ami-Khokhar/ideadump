@@ -202,7 +202,12 @@ struct ContentView: View {
         // Handle warm/background activation: the scene becomes active after the
         // intent wrote its payload while the app was suspended.
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-            WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
+            // WidgetKit budgets refreshes per widget. Every capture path already
+            // reloads where it writes, so a plain foregrounding asks for nothing;
+            // this repairs a reload that was deferred while the app was away.
+            if WidgetReload.shouldRequest(WidgetReload.currentInputs()) {
+                WidgetCenter.shared.reloadTimelines(ofKind: WidgetReload.kind)
+            }
             consumePendingIntent()
             offerWidgetUndo()
             reconcileOnboarding(with: confirmedEntries.count)

@@ -2,15 +2,6 @@ import WidgetKit
 import SwiftUI
 import SwiftData
 
-struct QuickButton: Identifiable {
-    let amount: Double
-    let categoryKey: String
-    let emoji: String
-    let label: String
-
-    var id: String { "\(categoryKey)-\(amount)" }
-}
-
 /// Shown before any history exists, and whenever the store cannot be read.
 /// Deliberately not main-actor isolated: `placeholder(in:)` is nonisolated.
 private var defaultQuickButtons: [QuickButton] {
@@ -19,13 +10,6 @@ private var defaultQuickButtons: [QuickButton] {
         QuickButton(amount: 40, categoryKey: "transport", emoji: "🚌", label: "🚌 \(Money.format(40))"),
         QuickButton(amount: 120, categoryKey: "food", emoji: "🍽️", label: "🍽️ \(Money.format(120))"),
     ]
-}
-
-struct SpendSnapshot: TimelineEntry {
-    var date: Date
-    var total: Decimal
-    var count: Int
-    let quickButtons: [QuickButton]
 }
 
 /// Fetches today's totals from the shared store. Lives outside the provider struct
@@ -142,20 +126,11 @@ struct SpendProvider: TimelineProvider {
     func getTimeline(in context: Context, completion: @escaping (Timeline<SpendSnapshot>) -> Void) {
         Task { @MainActor in
             let snapshot = loadTodaySnapshot()
-            let now = Date.now
-            let calendar = Calendar.current
-            let startOfTomorrow = calendar.date(
-                byAdding: .day,
-                value: 1,
-                to: calendar.startOfDay(for: now)
-            ) ?? now.addingTimeInterval(86_400)
-            // Preserve the snapshot's other state when advancing its totals.
-            var midnightReset = snapshot
-            midnightReset.date = startOfTomorrow
-            midnightReset.total = 0
-            midnightReset.count = 0
-            let rollingRefresh = calendar.date(byAdding: .minute, value: 30, to: now)
-                ?? now.addingTimeInterval(1_800)
+            let timeline = SpendTimeline.entries(
+                now: .now,
+                snapshot: snapshot,
+                calendar: .current
+            )
 
             // WidgetKit treats `.after` and app-triggered reloads as requests; its
             // per-widget budget can defer or drop them. Log saves, currency changes,
@@ -165,8 +140,8 @@ struct SpendProvider: TimelineProvider {
             // same-day logs after midnight; widgets cannot fetch a new total at the
             // boundary without a granted timeline refresh.
             completion(Timeline(
-                entries: [snapshot, midnightReset],
-                policy: .after(min(rollingRefresh, startOfTomorrow))
+                entries: timeline.entries,
+                policy: .after(timeline.refreshAfter)
             ))
         }
     }
@@ -326,7 +301,7 @@ struct SpendWidgetEntryView: View {
 }
 
 struct SpendWidget: Widget {
-    let kind = "SpendWidget"
+    let kind = WidgetReload.kind
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: SpendProvider()) { entry in
