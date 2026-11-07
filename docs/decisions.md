@@ -1,5 +1,31 @@
 # Decisions
 
+## Accessory widget routing is data, not inline literals
+
+- Context: issue #76, following #70. The circular widget's URL and
+  `.accessibilityLabel("Log expense")` sat on a single-child `ZStack`, a
+  container that is not an accessibility element, so VoiceOver likely read the
+  bare SF Symbol. The rectangular row's label was ignored by the same rule and
+  announced as "Add" plus "Log expense". The `.accessoryInline` branch was
+  unreachable because the family is absent from `supportedFamilies`, and
+  `taplog://log` was written at five sites in one file.
+- Decision: delete the single-child `ZStack` and keep `.widgetURL` and
+  `.accessibilityLabel` on the circular `Image`. Give the rectangular row
+  `.accessibilityElement(children: .ignore)` before its label, and use the same
+  "Log expense" copy as the visible text. Delete the unreachable
+  `.accessoryInline` case rather than offering a new family. Move each accessory
+  family's URL and label into `AccessoryWidgetRoute` in `Sources/TapLog/Shared`,
+  which also owns the single `captureURL` constant every widget link now uses.
+- Consequence: a Lock Screen route `CapturePrefill` rejects, or an accessory
+  branch that goes back to `Link`, now fails `AccessoryWidgetRouteTests`, which
+  asserts against the shared model and reads the widget source instead of
+  trusting inline literals. Verified here with `xcodegen generate` leaving the
+  project clean, the full `xcodebuild test` suite on the iPhone 18 Pro
+  simulator (`TEST SUCCEEDED`), and a deliberate break of one route to a link
+  `CapturePrefill` rejects, which failed the new test until the mapping was
+  restored. Not verified: VoiceOver, tap routing, clipping and the accessory
+  background on a real Lock Screen still need a device check.
+
 ## Lock Screen spend widgets use widget-level deep links and accessory backgrounds
 
 - Context: issue #61. The circular Lock Screen widget attached its URL to an
@@ -11,12 +37,14 @@
   rectangular prompt as one compact icon-and-text row, and give both offered
   Lock Screen families `AccessoryWidgetBackground` through
   `containerBackground(for: .widget)`. Keep `.accessoryInline` out of
-  `supportedFamilies`, but render it as one linked line if WidgetKit requests
-  it; unsupported families render no Home Screen content.
+  `supportedFamilies`; unsupported families render no Home Screen content.
 - Consequence: both offered Lock Screen widgets route through the app's existing
   capture deep link and use the system's accessory background treatment. Adding
   another family later requires an explicit layout rather than silently
-  reusing the small Home Screen view.
+  reusing the small Home Screen view. Verified by static review only at the time
+  of #70: no build, XCTest, simulator or device check of tap routing, clipping
+  or the accessory backgrounds was run then. Issue #76 added the test and the
+  simulator run and records what is still device-only.
 
 ## CSV export marks formula-leading text with an apostrophe
 
