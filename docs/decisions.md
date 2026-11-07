@@ -9,8 +9,13 @@
 - Decision: each widget snapshot creates a fresh `ModelContext` from the cached
   container and reads only when that container is the shared App Group store.
   A missing shared store or a failed fetch produces an unavailable widget state,
-  not a valid-looking zero. Diagnostics record shared-store read status and
-  entry count, without recording a total or store path.
+  not a valid-looking zero. The read-to-totals mapping lives in
+  `WidgetSnapshotTotals` so the failure state is covered by `TapLogTests`,
+  which does not link the widget target; the shared-store rule is the pure
+  `StoreLocator.isSharedStore`. A failed quick-button history read also renders
+  the unavailable state instead of the hard-coded defaults. Diagnostics record
+  shared-store read status and entry count, without recording a total or store
+  path.
 - Consequence: installations without a usable App Group can still use the app,
   while their widget says its data is unavailable instead of showing unrelated
   figures. WidgetKit refreshes remain best-effort, and the fresh-context behavior

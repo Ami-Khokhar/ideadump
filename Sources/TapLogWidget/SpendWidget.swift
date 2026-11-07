@@ -37,8 +37,14 @@ private func loadTodaySnapshot() -> SpendSnapshot {
     let context: ModelContext
     do {
         context = try StoreLocator.widgetReadContext()
+    } catch StoreLocator.StoreError.widgetRequiresSharedStore {
+        // The store opened, but at the app-only fallback location the widget
+        // cannot read. Naming an open failure here would send support looking
+        // for an error that never happened.
+        Log.store.warning("widget snapshot unavailable: store in use is not the shared App Group store")
+        return unavailableSnapshot()
     } catch {
-        Log.store.warning("widget snapshot unavailable: shared store could not be opened (\(Log.describe(error), privacy: .public))")
+        Log.store.error("widget snapshot unavailable: shared store could not be opened (\(Log.describe(error), privacy: .public))")
         return unavailableSnapshot()
     }
 
@@ -52,20 +58,25 @@ private func loadTodaySnapshot() -> SpendSnapshot {
             $0.date >= startOfDay && $0.date <= now && !$0.isArchived && !$0.isPending
         }
     )
-    let entries: [Entry]
+    let totals = WidgetSnapshotTotals.map { try context.fetch(descriptor) }
+    guard totals.isAvailable else { return unavailableSnapshot() }
+
+    let quickButtons: [QuickButton]
     do {
-        entries = try context.fetch(descriptor)
+        quickButtons = try makeQuickButtons(context: context)
     } catch {
-        Log.store.error("widget snapshot unavailable: shared store read failed (\(Log.describe(error), privacy: .public))")
+        // One consistent state: a history read that failed must not render the
+        // hard-coded default tiles as if they were learned from the user.
+        Log.store.error("widget snapshot unavailable: quick-button history read failed (\(Log.describe(error), privacy: .public))")
         return unavailableSnapshot()
     }
-    let total = entries.reduce(Decimal(0)) { $0 + $1.amount }
-    Log.store.notice("widget snapshot read shared store with \(entries.count, privacy: .public) entries")
+
+    Log.store.notice("widget snapshot read shared store with \(totals.count, privacy: .public) entries")
     return SpendSnapshot(
         date: .now,
-        total: total,
-        count: entries.count,
-        quickButtons: makeQuickButtons(context: context),
+        total: totals.total,
+        count: totals.count,
+        quickButtons: quickButtons,
         isAvailable: true
     )
 }
@@ -77,8 +88,9 @@ private func unavailableSnapshot() -> SpendSnapshot {
 /// Learns the user's top category+amount pairs from actual history.
 /// Groups all entries by (category, rounded amount), counts frequency,
 /// and returns the top 3 as one-tap buttons.
+/// Throws rather than swallowing: a failed read must not look like history.
 @MainActor
-private func makeQuickButtons(context: ModelContext) -> [QuickButton] {
+private func makeQuickButtons(context: ModelContext) throws -> [QuickButton] {
     // Fetch all non-archived entries (last 90 days is enough to learn patterns)
     let now = Date.now
     let ninetyDaysAgo = Calendar.current.date(byAdding: .day, value: -90, to: now) ?? now
@@ -89,10 +101,10 @@ private func makeQuickButtons(context: ModelContext) -> [QuickButton] {
             $0.date >= ninetyDaysAgo && $0.date <= now && !$0.isArchived && !$0.isPending
         }
     )
-    let entries: [Entry] = (try? context.fetch(descriptor)) ?? []
+    let entries = try context.fetch(descriptor)
 
     // Fetch categories for emoji/name lookup
-    let categories: [SpendCategory] = (try? context.fetch(FetchDescriptor<SpendCategory>())) ?? []
+    let categories = try context.fetch(FetchDescriptor<SpendCategory>())
     let lookup = Dictionary(uniqueKeysWithValues: categories.map { ($0.key, $0) })
 
     // Group by (category, rounded amount) and count
@@ -232,7 +244,7 @@ struct SpendWidgetEntryView: View {
                         .minimumScaleFactor(0.7)
                         .lineLimit(1)
                 } else {
-                    Text("Open TapLog to check storage")
+                    Text("Data unavailable")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
@@ -322,7 +334,7 @@ struct SpendWidgetEntryView: View {
                     }
                 } else {
                     Link(destination: URL(string: "taplog://log")!) {
-                        Label("Open TapLog to check storage", systemImage: "arrow.up.right")
+                        Label("Open TapLog", systemImage: "arrow.up.right")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.tint)
                     }

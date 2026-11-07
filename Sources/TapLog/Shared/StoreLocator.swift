@@ -96,14 +96,28 @@ enum StoreLocator {
     /// A new read context for each widget snapshot, backed by the one container
     /// cached for this process. The widget cannot use the app-only fallback: it
     /// would show a plausible but unrelated zero total instead of shared data.
-    static func widgetReadContext() throws -> ModelContext {
-        guard isUsingSharedStore else { throw StoreError.widgetRequiresSharedStore }
+    ///
+    /// `store` and `group` are injectable so the guard can be tested without
+    /// moving this process's real store onto the fallback location.
+    static func widgetReadContext(
+        store: URL = storeURL,
+        group: URL? = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID)
+    ) throws -> ModelContext {
+        guard isSharedStore(store, group: group) else { throw StoreError.widgetRequiresSharedStore }
         return makeFreshContext(for: try container())
     }
 
-    /// Creates a context without opening another container for the same store.
-    /// Kept as the single construction path so a reader can refresh its view of
-    /// writes made through another context or process.
+    /// Whether `store` lives inside the App Group container, i.e. whether another
+    /// process can see the same file. Pure and injectable so the widget's
+    /// shared-store rule can be tested without a provisioned App Group.
+    static func isSharedStore(_ store: URL, group: URL?) -> Bool {
+        guard let group else { return false }
+        return store.path.hasPrefix(group.path)
+    }
+
+    /// A new context over the cached container, so a reader sees writes made
+    /// through another context or process instead of `mainContext`'s
+    /// process-long view.
     static func makeFreshContext(for container: ModelContainer) -> ModelContext {
         ModelContext(container)
     }
@@ -517,12 +531,10 @@ enum StoreLocator {
     /// does. False means TapLog still works, but only inside the app.
     /// Resolved once: the store location is fixed for the life of the process,
     /// so re-deriving it on every SwiftUI body pass would be pure waste.
-    static let isUsingSharedStore: Bool = {
-        guard let groupURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: appGroupID
-        ) else { return false }
-        return storeURL.path.hasPrefix(groupURL.path)
-    }()
+    static let isUsingSharedStore: Bool = isSharedStore(
+        storeURL,
+        group: FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID)
+    )
 
     private static var applicationSupportStoreURL: URL {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!

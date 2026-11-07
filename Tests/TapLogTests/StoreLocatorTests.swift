@@ -284,6 +284,29 @@ final class StoreLocatorTests: XCTestCase {
         XCTAssertEqual(ordered([fallbackStore]), [fallbackStore])
     }
 
+    // MARK: - Widget read context
+
+    private let groupContainer = URL(fileURLWithPath: "/group")
+
+    /// The widget must refuse the app-only fallback rather than show its
+    /// unrelated totals. This is the guard that used to live untested inside
+    /// `widgetReadContext()`.
+    func testWidgetReadContextRefusesTheAppOnlyFallbackStore() {
+        XCTAssertThrowsError(
+            try StoreLocator.widgetReadContext(store: fallbackStore, group: groupContainer)
+        ) { error in
+            guard case StoreLocator.StoreError.widgetRequiresSharedStore = error else {
+                return XCTFail("expected widgetRequiresSharedStore, got \(error)")
+            }
+        }
+    }
+
+    @MainActor
+    func testWidgetReadContextAcceptsTheSharedStore() throws {
+        let store = groupContainer.appendingPathComponent(StoreLocator.storeFileName)
+        _ = try StoreLocator.widgetReadContext(store: store, group: groupContainer)
+    }
+
     // MARK: - Healing a split store
 
     private func makeStore() throws -> ModelContainer {
