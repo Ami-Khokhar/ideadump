@@ -35,11 +35,19 @@ struct CategoryEntity: AppEntity, Identifiable {
 /// for Shortcuts but not for voice.
 struct CategoryEntityQuery: EntityStringQuery {
 
+    /// Every category in the store. `container` and `fetch` are injectable so
+    /// the two failure branches can be driven in tests — the same seam style as
+    /// `StoreLocator.retireFallbackHistory(clear:)` and
+    /// `EntryPersistence.commit(save:)`. Neither branch runs outside production
+    /// otherwise: a real store refuses on no schedule a test can arrange.
     @MainActor
-    private func allCategories() throws -> [CategoryEntity] {
-        let container: ModelContainer
+    func allCategories(
+        container: () throws -> ModelContainer = StoreLocator.container,
+        fetch: (ModelContext, FetchDescriptor<SpendCategory>) throws -> [SpendCategory] = { try $0.fetch($1) }
+    ) throws -> [CategoryEntity] {
+        let opened: ModelContainer
         do {
-            container = try StoreLocator.container()
+            opened = try container()
         } catch {
             Log.intents.error("Failed to open store for category lookup: \(Log.describe(error), privacy: .public)")
             throw TapLogIntentError.categoriesUnavailable
@@ -49,7 +57,7 @@ struct CategoryEntityQuery: EntityStringQuery {
         )
         let categories: [SpendCategory]
         do {
-            categories = try container.mainContext.fetch(descriptor)
+            categories = try fetch(opened.mainContext, descriptor)
         } catch {
             Log.intents.error("Failed to fetch categories for Siri: \(Log.describe(error), privacy: .public)")
             throw TapLogIntentError.categoriesUnavailable

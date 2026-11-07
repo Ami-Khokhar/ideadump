@@ -66,22 +66,39 @@ struct LogExpenseIntent: AppIntent {
 
         let entry = Entry(amount: validatedAmount, category: categoryKey, note: cleanedNote)
         context.insert(entry)
-        do {
-            try context.save()
-        } catch {
-            // The shared main context survives this intent. Remove this failed
-            // insert so a later save cannot commit an expense Siri reported as
-            // failed.
-            context.delete(entry)
-            Log.intents.error("Failed to save entry from Siri: \(Log.describe(error), privacy: .public)")
-            throw TapLogIntentError.saveFailed
-        }
+        try Self.commitEntry(entry, in: context)
 
         // Same bookkeeping as the home screen: category learning, log totals, streaks.
         CaptureBookkeeping.apply(modelContext: context, categories: categories, categoryKey: categoryKey)
         OnboardingFlow.recordIntentUse(OnboardingFlow.logExpenseUsedKey)
         let categoryName = CategoryLookup(categories).name(for: categoryKey)
         return .result(dialog: "Logged \(Money.format(validatedAmount)) in \(categoryName).")
+    }
+
+    /// Saves the freshly inserted entry through `EntryPersistence.commit`, so a
+    /// refusal rolls the insert back out of the shared main context before Siri
+    /// reports failure. Otherwise a later save in the same process could commit
+    /// an expense the user was told did not land.
+    ///
+    /// `save` is a parameter for the same reason it is on the shared helper:
+    /// SwiftData cannot be made to refuse on demand, and a failure path that only
+    /// ever runs in production is the one that stays broken.
+    @MainActor
+    static func commitEntry(
+        _ entry: Entry,
+        in context: ModelContext,
+        save: (ModelContext) throws -> Void = { try $0.save() }
+    ) throws {
+        let committed = EntryPersistence.commit(
+            message: EntryPersistence.insertFailureMessage,
+            save: { try save(context) },
+            rollback: { context.delete(entry) },
+            report: { _ in }
+        )
+        guard committed else {
+            Log.intents.error("Siri could not save the expense; removed the inserted entry")
+            throw TapLogIntentError.saveFailed
+        }
     }
 
     /// Words that answer the note question with "no note". Siri transcribes a
