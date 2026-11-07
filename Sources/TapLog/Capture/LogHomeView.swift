@@ -166,38 +166,81 @@ struct LogHomeView: View {
 
     // MARK: - Main Content
 
-    /// The keypad and Log button are pinned as a bottom inset so the two controls
-    /// that finish the task are always under the thumb, whatever the screen height.
-    /// The content fills the viewport when it fits and becomes scrollable when
-    /// the keypad leaves too little room, as on a 4.7" device.
+    /// The keypad and Log button sit at the bottom of the screen so the two
+    /// controls that finish the task are always under the thumb, whatever the
+    /// screen height. The content fills the region above the bar when it fits
+    /// and becomes scrollable when the bar leaves too little room, as on a 4.7"
+    /// device.
+    ///
+    /// The bar used to live in a `.safeAreaInset`, and the fit height was taken
+    /// from the `GeometryReader` wrapped around it. Measured on an iPhone 17
+    /// simulator, that reader's frame was already the region above the bar
+    /// (398pt) while `safeAreaInsets.bottom` still reported the bar plus the
+    /// home indicator (360pt), so subtracting the insets a second time measured
+    /// 0 and the stack always scrolled. The bar is a plain sibling here and the
+    /// frame is already the safe region: the visible height is the container
+    /// less the bar, arithmetic that `CaptureFit` can be tested on.
     private var mainContent: some View {
-        GeometryReader { viewport in
-            ViewThatFits(in: .vertical) {
-                // This candidate sees a finite height, so the spacers divide
-                // the viewport. When content exceeds it, use the scrolling
-                // candidate below instead of compressing the category row.
-                captureContent
-                    .frame(minHeight: viewport.size.height, alignment: .top)
+        GeometryReader { container in
+            let visible = CaptureFit.visibleHeight(
+                containerHeight: container.size.height,
+                barHeight: CaptureBottomBar.height
+            )
 
-                ScrollView(.vertical, showsIndicators: false) {
-                    captureContent
-                }
-                .scrollBounceBehavior(.basedOnSize)
-            }
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 0) {
-                // Unconditional now. The keypad used to yield the bottom of the
-                // screen whenever the note field raised the system keyboard;
-                // with the note field gone from capture, nothing on this screen
-                // summons a keyboard, so the keypad is always the thing here.
-                keypad
-                logButton
-                    .padding(.bottom, CaptureBottomBar.logButtonBottomPadding)
-                    .padding(.top, CaptureBottomBar.logButtonLiftPadding)
+                Group {
+                    if CaptureFit.usesScroll(visibleHeight: visible, contentMinHeight: captureContentMinHeight) {
+                        scrollingCapture
+                    } else {
+                        ViewThatFits(in: .vertical) {
+                            // This candidate sees a finite height, so the
+                            // spacers divide the visible region. When the stack
+                            // really is taller, fall through to the scroll
+                            // rather than compressing or clipping the row.
+                            captureContent
+                                .frame(minHeight: visible, alignment: .top)
+
+                            scrollingCapture
+                        }
+                    }
+                }
+                .frame(height: visible, alignment: .top)
+
+                bottomBar
             }
-            .background(Theme.paper)
         }
+    }
+
+    /// The keypad and the Log pill. Pinned to `CaptureBottomBar.height` so the
+    /// height the fit check subtracts is the height that is actually drawn.
+    private var bottomBar: some View {
+        VStack(spacing: 0) {
+            // Unconditional now. The keypad used to yield the bottom of the
+            // screen whenever the note field raised the system keyboard;
+            // with the note field gone from capture, nothing on this screen
+            // summons a keyboard, so the keypad is always the thing here.
+            keypad
+            logButton
+                .padding(.bottom, CaptureBottomBar.logButtonBottomPadding)
+                .padding(.top, CaptureBottomBar.logButtonLiftPadding)
+        }
+        .frame(height: CaptureBottomBar.height)
+        .background(Theme.paper)
+    }
+
+    private var scrollingCapture: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            captureContent
+        }
+        .scrollBounceBehavior(.basedOnSize)
+    }
+
+    /// The capture stack's height when no spacer flexes, used only to skip the
+    /// fill attempt early. It is a lower bound for large Dynamic Type, which is
+    /// safe: `ViewThatFits` still measures the real stack before filling.
+    private var captureContentMinHeight: CGFloat {
+        let fontSize = AmountFont.focalFontSize(for: amountText, dynamicTypeSize: dynamicTypeSize)
+        return CaptureFit.contentMinHeight(amountHeroHeight: AmountLayout.focalHeroHeight(fontSize: fontSize))
     }
 
     private var captureContent: some View {
@@ -213,9 +256,9 @@ struct LogHomeView: View {
             // a background horizon were each tried and each gave the eye a
             // second place to land. What survives is the one 2pt rule under
             // each tile, which adds no object to the row.
-            Spacer(minLength: 48)
+            Spacer(minLength: CaptureFit.amountTopMinimum)
             amountArea
-            Spacer(minLength: 36)
+            Spacer(minLength: CaptureFit.amountBottomMinimum)
             categoryLine
             tileRow()
         }
