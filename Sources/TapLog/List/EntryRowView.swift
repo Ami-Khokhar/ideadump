@@ -65,6 +65,11 @@ struct EntryRowView: View {
             Text(Money.format(entry.amount))
                 .font(.body.weight(.semibold))
                 .monospacedDigit()
+                // The trailing controls (and, at accessibility sizes, the row
+                // below) take width this Text used to have. Keep the amount on
+                // one line and let it scale rather than clip or wrap.
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
         }
         .padding(.vertical, 2)
         .opacity(entry.isArchived ? 0.6 : 1)

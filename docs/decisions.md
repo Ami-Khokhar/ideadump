@@ -6,14 +6,19 @@
   offered archive and delete through swipe actions, but neither route was
   discoverable on screen. A full swipe executed the first swipe action, Archive,
   which silently removed the entry from totals and the active list.
-- Decision: show labelled pencil and trash controls on every active and
-  archived entry row, keep tapping the row as an edit shortcut, and disable
-  full-swipe execution for archive/restore actions. Keep deletion immediate and
-  undoable through the existing undo stack.
+- Decision: show a pencil and a trash control on every active and archived entry
+  row, each with an accessibility label, keep tapping the row as an edit
+  shortcut, and disable full-swipe execution for archive/restore actions. Keep
+  deletion immediate and undoable through the existing undo stack. At
+  accessibility Dynamic Type sizes the two controls sit below the row instead of
+  taking 108 points of its width.
 - Consequence: edit and delete are visible directly in History, while archive
   and restore still require a deliberate swipe action. Delete continues to use
   the established persistence and bookkeeping path, including restoring
-  counters on undo.
+  counters on undo. `EntryRowActions` is unit-tested for the affordances, the
+  full-swipe rule and the accessibility-size layout, but no UI test taps the
+  controls, so the sheet, the undo toast and the rendered layout still need a
+  simulator or device check.
 
 ## Lock Screen spend widgets use widget-level deep links and accessory backgrounds
 
