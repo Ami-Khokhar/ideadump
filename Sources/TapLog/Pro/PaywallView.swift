@@ -46,7 +46,7 @@ struct PaywallView: View {
             case .monthlyRecap:
                 "Your weekly recap is free forever. Pro adds the monthly one, for the patterns a week is too short to show."
             case .settings:
-                "TapLog Pro adds a target for every category and the monthly recap. One payment, yours for good."
+                "TapLog Pro adds a target for every category and the monthly recap. One-time purchase, no subscription."
             }
         }
     }

@@ -1,5 +1,9 @@
 # TapLog — where should the paywall go?
 
+> **Superseded (handoff note):** the policy decision this brief asked for is now
+> recorded in `docs/decisions.md`. Keep this only as the brief sent to an outside
+> reviewer; do not treat it as the current policy.
+
 You are deciding the free/paid line for a shipping iOS app. You have no access to
 the code and don't need it: everything the app does is below. Read the whole
 inventory before you form a view — the answer depends on which moment sells the
@@ -175,9 +179,10 @@ trigger reach, conversion, refunds, or complaints:
   and the **weekly** recap.
 - **Pro**: further budget trees and the **monthly** recap span, unlocked by one
   lifetime purchase.
-- **Triggers**: tapping add in Budgets with three budgets; saving a new budget in
-  the category editor at the same limit; tapping Month in Recap; or choosing
-  TapLog Pro in Settings.
+- **Triggers**: tapping add in Budgets with three budgets; the category editor's
+  "Grow a fourth tree" button, shown only when that category has no budget yet
+  and three budgets already exist; tapping Month in Recap; or choosing TapLog
+  Pro in Settings.
 - Deleting a budget returns the free slot; existing budgets and records remain
   usable.
 - `PaywallEvidence` only chooses between showing the user's record and the
@@ -201,8 +206,8 @@ records out of the app. The rationale and placement decision are recorded in
 - Capture is entirely free, including every front door and unlimited history.
   That is either precisely right — the habit must form before anything can be
   sold — or it gives away the whole product.
-- One tree is enough to understand the mechanic but not enough to feel it. Is the
-  free allowance a number problem rather than a feature problem?
+- Three trees are enough to understand the mechanic but not enough to feel it.
+  Is the free allowance a number problem rather than a feature problem?
 
 ## Format
 
