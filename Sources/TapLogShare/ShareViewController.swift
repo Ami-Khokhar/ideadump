@@ -38,23 +38,22 @@ final class ShareViewController: UIViewController {
             guard let self else { return }
             let parsed = ShareParser.parse(text)
 
-            guard let amount = parsed.amount, amount > 0 else {
+            guard let missing = ShareOutcome.of(parsed) else {
+                guard let amount = parsed.amount else { return }
+                let saved = self.savePendingEntry(amount: amount, note: parsed.note)
                 DispatchQueue.main.async {
-                    label.text = parsed.hasText
-                        ? "Shared text had no amount TapLog could read. Open TapLog to enter it manually."
-                        : "Nothing was shared with TapLog. Open TapLog to enter an expense manually."
+                    if saved {
+                        label.text = "Saved \(Money.format(amount)) to TapLog — confirm it in the app."
+                    } else {
+                        label.text = "Failed to save. Open TapLog and log \(Money.format(amount)) manually."
+                    }
                     doneButton.isHidden = false
                 }
                 return
             }
 
-            let saved = self.savePendingEntry(amount: amount, note: parsed.note)
             DispatchQueue.main.async {
-                if saved {
-                    label.text = "Saved \(Money.format(amount)) to TapLog — confirm it in the app."
-                } else {
-                    label.text = "Failed to save. Open TapLog and log \(Money.format(amount)) manually."
-                }
+                label.text = missing.message
                 doneButton.isHidden = false
             }
         }
