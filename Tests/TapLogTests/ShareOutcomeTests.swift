@@ -6,6 +6,50 @@ import XCTest
 /// used to produce one sentence, which is why the #65 report could not be
 /// diagnosed from the screen.
 final class ShareOutcomeTests: XCTestCase {
+    /// .../Tests/TapLogTests/ShareOutcomeTests.swift -> the repository root.
+    private var repoRoot: URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+    }
+
+    /// The extension has no test target, so the call site is asserted against
+    /// its source, the way `PaywallReasonTests` asserts the Settings sheet.
+    /// Without this, the value could exist and the extension could keep its own
+    /// ternary, which is the state the gate rejected.
+    /// The production call passes `item.attributedContentText`, which is
+    /// `NSAttributedString?`. Swift boxes that as `Any` holding an optional, and
+    /// the cast has to unwrap it or the body is ignored again — the original
+    /// #65 bug, arriving silently as empty text.
+    func testAnOptionalAttributedBodyIsReadThroughTheBoxedOptional() {
+        let body: NSAttributedString? = NSAttributedString(string: "Rs 250 debited")
+        XCTAssertEqual(
+            ShareParser.nonemptyText(from: body),
+            "Rs 250 debited",
+            "the optional body the extension actually passes must survive the Any? cast"
+        )
+        let absent: NSAttributedString? = nil
+        XCTAssertNil(
+            ShareParser.nonemptyText(from: absent),
+            "an absent body must stay absent rather than become an empty string"
+        )
+    }
+
+    func testTheExtensionShowsTheSharedOutcome() throws {
+        let extensionSource = try String(
+            contentsOf: repoRoot.appendingPathComponent("Sources/TapLogShare/ShareViewController.swift"),
+            encoding: .utf8
+        )
+        XCTAssertTrue(
+            extensionSource.contains("ShareOutcome.of(parsed)"),
+            "the share extension must ask ShareOutcome which sentence to show"
+        )
+        XCTAssertFalse(
+            extensionSource.contains("Shared text had no amount TapLog could read"),
+            "the sentence belongs to ShareOutcome, not to the extension"
+        )
+    }
 
     func testAnEmptyShareSaysNothingWasShared() {
         XCTAssertEqual(ShareOutcome.of(ShareParse(amount: nil, note: nil, hasText: false)), .nothingShared)
