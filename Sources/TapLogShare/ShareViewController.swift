@@ -37,23 +37,23 @@ final class ShareViewController: UIViewController {
         extractTextFromContext { [weak self] text in
             guard let self else { return }
             let parsed = ShareParser.parse(text)
+            let outcome = ShareOutcome.of(parsed)
 
-            guard let missing = ShareOutcome.of(parsed) else {
-                guard let amount = parsed.amount else { return }
-                let saved = self.savePendingEntry(amount: amount, note: parsed.note)
+            guard case let .saved(amount) = outcome else {
                 DispatchQueue.main.async {
-                    if saved {
-                        label.text = "Saved \(Money.format(amount)) to TapLog — confirm it in the app."
-                    } else {
-                        label.text = "Failed to save. Open TapLog and log \(Money.format(amount)) manually."
-                    }
+                    label.text = outcome.message
                     doneButton.isHidden = false
                 }
                 return
             }
 
+            let saved = self.savePendingEntry(amount: amount, note: parsed.note)
             DispatchQueue.main.async {
-                label.text = missing.message
+                if saved {
+                    label.text = "Saved \(Money.format(amount)) to TapLog — confirm it in the app."
+                } else {
+                    label.text = "Failed to save. Open TapLog and log \(Money.format(amount)) manually."
+                }
                 doneButton.isHidden = false
             }
         }

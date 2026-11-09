@@ -809,16 +809,6 @@ struct LogHomeView: View {
     }
 }
 
-/// Fixed geometry of the capture screen's pinned bottom bar — the keypad grid
-/// plus the Log pill.
-///
-/// These live outside the view because the undo toast has to float clear of the
-/// bar and cannot measure it: the toast is an overlay on the app root, outside
-/// the bottom bar that holds these controls. The toast used to
-/// carry its own hardcoded offset, which was correct when the Log pill was the
-/// only thing down here and silently wrong the moment the keypad arrived —
-/// "Undo" ended up sitting on the backspace key. Deriving both from the same
-/// numbers is what keeps them from drifting apart again.
 /// What the 2pt rule under a category tile can say.
 ///
 /// Three states, not six: the tile row answers "is this one fine?" at a glance
@@ -848,6 +838,16 @@ enum TileBudgetState {
     }
 }
 
+/// Fixed geometry of the capture screen's pinned bottom bar — the keypad grid
+/// plus the Log pill.
+///
+/// These live outside the view because the undo toast has to float clear of the
+/// bar and cannot measure it: the toast is an overlay on the app root, outside
+/// the bottom bar that holds these controls. The toast used to
+/// carry its own hardcoded offset, which was correct when the Log pill was the
+/// only thing down here and silently wrong the moment the keypad arrived —
+/// "Undo" ended up sitting on the backspace key. Deriving both from the same
+/// numbers is what keeps them from drifting apart again.
 enum CaptureBottomBar {
     static let keyHeight: CGFloat = 56
     static let keySpacing: CGFloat = 10

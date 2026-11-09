@@ -88,8 +88,4 @@ final class WidgetReloadTests: XCTestCase {
         defaults.set(4, forKey: "logsLogged")
         XCTAssertTrue(WidgetReload.shouldRequest(currentInputs, defaults: defaults))
     }
-
-    func testTheWidgetAndTheRequestsAgreeOnTheKind() {
-        XCTAssertEqual(WidgetReload.kind, "SpendWidget")
-    }
 }

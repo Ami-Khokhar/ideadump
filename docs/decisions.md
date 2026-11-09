@@ -97,7 +97,10 @@
   simulator (`TEST SUCCEEDED`), and a deliberate break of one route to a link
   `CapturePrefill` rejects, which failed the new test until the mapping was
   restored. Not verified: VoiceOver, tap routing, clipping and the accessory
-  background on a real Lock Screen still need a device check.
+  background on a real Lock Screen still need a device check. This supersedes
+  the `.accessoryInline` sentence in "Lock Screen spend widgets use widget-level
+  deep links and accessory backgrounds" (#61, merged in #70): no family renders
+  an inline branch.
 
 ## Siri category lookup errors are surfaced, and only supported shortcut phrases are promised
 
@@ -109,10 +112,11 @@
   only supports entity and enum phrase parameters; the removed numerical intent
   and entity are not part of the supported flow.
 - Decision: keep the two supported shortcuts and the amount prompt in
-  `LogExpenseIntent`. Category lookup returns an empty result only when a valid
-  store has no categories; store-open and fetch failures throw an actionable
-  localized error. The intent's category fetch also throws instead of silently
-  logging into a fallback category. If saving fails, remove the new unsaved
+  `LogExpenseIntent`. A store-open or fetch failure throws an actionable
+  localized error; an empty result just means no category matched, whether the
+  store has no categories or none of them match the spoken word. The intent's
+  category fetch also throws instead of silently logging into a fallback
+  category. If saving fails, remove the new unsaved
   entry from the shared context before returning the error. Document “Log an
   expense in TapLog” (or “Log chai in TapLog”) and then answering prompts as the
   supported route; state that “Log 50 in TapLog” is unsupported.
@@ -218,8 +222,10 @@
   rectangular prompt as one compact icon-and-text row, and give both offered
   Lock Screen families `AccessoryWidgetBackground` through
   `containerBackground(for: .widget)`. Keep `.accessoryInline` out of
-  `supportedFamilies`, but render it as one linked line if WidgetKit requests
-  it; unsupported families render no Home Screen content.
+  `supportedFamilies` and render no inline content at all; unsupported families
+  render no Home Screen content. #76 later deleted the inline branch and moved
+  each family's route into data, and the `AccessoryWidgetRoute` record above
+  supersedes the inline sentence this record first carried.
 - Consequence: both offered Lock Screen widgets route through the app's existing
   capture deep link and use the system's accessory background treatment. Adding
   another family later requires an explicit layout rather than silently

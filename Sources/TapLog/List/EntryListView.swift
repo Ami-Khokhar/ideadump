@@ -545,7 +545,7 @@ struct EntryListView: View {
         undoStack.clearAll()
         TemporaryExport.sweep()
         RecapNotifier.shared.cancelWeeklyRecap()
-        WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
+        WidgetCenter.shared.reloadTimelines(ofKind: WidgetReload.kind)
     }
 }
 
