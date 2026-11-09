@@ -21,6 +21,31 @@
   figures. WidgetKit refreshes remain best-effort, and the fresh-context behavior
   still needs physical-device verification across the app/widget process boundary.
 
+## Share parsing distinguishes missing text from unreadable text
+
+- Context: issue #65. A share with no extracted content and a nonempty share whose
+  amount the parser declines both reached the same message, while Messages may
+  provide its body as `attributedContentText` and attachment providers may return
+  `Data` or `NSAttributedString` instead of `String`.
+- Decision: prefer a nonempty attributed body as that item's text. When the body
+  carries no amount, the item's text attachments still contribute after it,
+  because a rich-link body can be a summary while the payment SMS sits in an
+  attachment. Convert supported Foundation payloads to bounded strings, reserve a
+  slot per attachment in source order so callback order cannot reorder the share,
+  and drop slots whose payload was unsupported or empty. The collection policy
+  lives in `ShareTextCollector` under `Sources/TapLog/Shared` so the test target
+  can exercise it, and the extension only drives `NSItemProvider`. Retain whether
+  the parser received meaningful text so the extension can show a distinct
+  message for an empty share and an unreadable amount. Do not log shared content
+  or its prefix because payment messages can include personal and financial
+  details.
+- Consequence: unsupported payloads and malformed UTF-8 still contribute no
+  text; supported text remains subject to the existing per-piece, attachment
+  count and total text limits, applied once across the ordered pieces. Verified
+  at parser level only: the originally failing Messages share and a device run
+  have not been confirmed, so a body that carries no amount can still fail to
+  prefill.
+
 ## Capture fills its viewport when content fits and scrolls when it does not
 
 - Context: issue #66. The capture content sat in a `ScrollView`, which proposes
