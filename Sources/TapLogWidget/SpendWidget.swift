@@ -248,7 +248,7 @@ struct SpendWidgetEntryView: View {
                         .lineLimit(2)
                 }
                 Spacer(minLength: 0)
-                Link(destination: AccessoryWidgetRoute.captureURL) {
+                captureButton(.smallFooter) {
                     Text(entry.isAvailable ? "Log expense →" : "Open TapLog →")
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(.tint)
@@ -316,7 +316,7 @@ struct SpendWidgetEntryView: View {
                         )
                     }
                     // Custom amount button — opens the app
-                    Link(destination: AccessoryWidgetRoute.captureURL) {
+                    captureButton(.mediumCustomAmount) {
                         VStack(spacing: 2) {
                             Image(systemName: "number")
                                 .font(.caption)
@@ -331,7 +331,7 @@ struct SpendWidgetEntryView: View {
                         .background(Color.accentColor.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
                     }
                 } else {
-                    Link(destination: AccessoryWidgetRoute.captureURL) {
+                    captureButton(.mediumUnavailable) {
                         Label("Open TapLog", systemImage: "arrow.up.right")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.tint)
@@ -340,6 +340,23 @@ struct SpendWidgetEntryView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    }
+
+    /// A home-screen capture tap. It runs `OpenCaptureIntent` in the widget's own
+    /// process instead of opening `taplog://log`, so the durable pending flag is
+    /// already written when the app reads it for the first render and the opening
+    /// plant never mounts — a URL would arrive at `onOpenURL` after that render
+    /// and flash part of the animation first. `WidgetCaptureTap` names every site
+    /// and the test pins them, so one cannot slide back to a URL unnoticed.
+    private func captureButton(
+        _ tap: WidgetCaptureTap,
+        @ViewBuilder label: () -> some View
+    ) -> some View {
+        Button(intent: OpenCaptureIntent()) {
+            label()
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(tap.rawValue)
     }
 
     private func quickLogButton(amount: Double, category: String, label: String) -> some View {

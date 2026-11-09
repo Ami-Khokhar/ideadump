@@ -27,7 +27,14 @@ struct OpenCaptureIntent: AppIntent {
         "Opens TapLog directly into the focused expense capture screen."
     )
     static var openAppWhenRun: Bool = true
+    #if TAPLOG_WIDGET_EXTENSION
+    // The widget target compiles this intent so a widget tap can write the
+    // durable pending activation before the app launches. Shortcuts already
+    // lists the action from the app, so the widget copy stays out of the list.
+    static var isDiscoverable: Bool = false
+    #else
     static var isDiscoverable: Bool = true
+    #endif
 
     @Parameter(title: "Amount")
     var amount: Double?
