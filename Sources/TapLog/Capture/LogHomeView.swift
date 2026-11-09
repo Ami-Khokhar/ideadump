@@ -43,8 +43,46 @@ struct LogHomeView: View {
     let prefill: CapturePrefill?
     let onLogged: (() -> Void)?
     let onPrefillConsumed: (() -> Void)?
-    /// When true the logo splash is skipped — used by OpenCaptureIntent.
+    /// When true the opening plant is skipped — set by a pending capture intent
+    /// or a direct-capture URL.
     let skipSplash: Bool
+
+    /// What the opening animation does when this screen first appears.
+    enum OpeningAction: Equatable {
+        /// Play the plant, then dissolve to capture when it settles.
+        case run
+        /// A direct-capture activation predates this launch: never mount the
+        /// plant, so nothing can be aborted partway through.
+        case skipOnMount
+        /// No plant for this person (Reduce Motion, or a guided onboarding
+        /// step): reveal capture as soon as the screen appears.
+        case skipImmediately
+    }
+
+    /// The first-render decision, kept out of the view so it can be tested.
+    ///
+    /// `hasPendingActivation` is read from the durable flag before the first
+    /// render, which is the only way the skip can apply on mount. A late
+    /// activation — the normal `OpenCaptureIntent` case, where `perform()`
+    /// writes the flag after this view exists — arrives through `onChange` and
+    /// reveals capture instantly.
+    static func openingAction(
+        hasPendingActivation: Bool,
+        reduceMotion: Bool,
+        isOnboarding: Bool
+    ) -> OpeningAction {
+        if hasPendingActivation { return .skipOnMount }
+        if reduceMotion || isOnboarding { return .skipImmediately }
+        return .run
+    }
+
+    private var openingAction: OpeningAction {
+        Self.openingAction(
+            hasPendingActivation: skipSplash,
+            reduceMotion: reduceMotion,
+            isOnboarding: isOnboarding
+        )
+    }
 
     private var lookup: CategoryLookup { CategoryLookup(categories) }
 
@@ -79,10 +117,14 @@ struct LogHomeView: View {
                 .opacity(openingPhase)
                 .ignoresSafeArea()
 
-            // The opening plant (fades out as content fades in)
-            openingView
-                .opacity(1 - openingPhase)
-                .ignoresSafeArea()
+            // The opening plant (fades out as content fades in). Not mounted at
+            // all when a pending activation predates the launch, so a later
+            // decision has nothing to abort.
+            if openingAction != .skipOnMount {
+                openingView
+                    .opacity(1 - openingPhase)
+                    .ignoresSafeArea()
+            }
 
             // Main content (fades in)
             mainContent
@@ -90,7 +132,8 @@ struct LogHomeView: View {
         }
         .onAppear {
             applyPrefill()
-            if skipSplash || reduceMotion || isOnboarding {
+            switch openingAction {
+            case .skipOnMount, .skipImmediately:
                 // Straight to capture, no opening. Reduce Motion is included
                 // because the plant is decoration: someone who asked for no
                 // motion gains nothing from a still of it standing in the way
@@ -98,12 +141,15 @@ struct LogHomeView: View {
                 // step skips it too — that is a step inside onboarding, not
                 // someone opening the app.
                 openingPhase = 1
+            case .run:
+                break
+                // Otherwise the opening runs, on this and every ordinary
+                // launch. Nothing to schedule here: the dissolve is triggered
+                // by the animation itself, through `revealCapture`, because
+                // only it knows when it started drawing. Measured from this
+                // point the plant grew behind the launch image and was over
+                // before anyone saw it.
             }
-            // Otherwise the opening runs, on this and every ordinary launch.
-            // Nothing to schedule here: the dissolve is triggered by the
-            // animation itself, through `revealCapture`, because only it knows
-            // when it started drawing. Measured from this point the plant grew
-            // behind the launch image and was over before anyone saw it.
 #if DEBUG
             // Test hook: `simctl launch ... -autolog 42` logs an expense without a
             // human at the keypad. Debug-only — a shipped build that logs money
@@ -120,11 +166,10 @@ struct LogHomeView: View {
         }
         .onChange(of: skipSplash) { _, newValue in
             // Handle intent activation received after onAppear — e.g. the app
-            // was already visible when OpenCaptureIntent fired.
+            // was already visible when OpenCaptureIntent fired. Remove the
+            // opening immediately so it cannot dissolve partway through.
             if newValue && openingPhase < 1 {
-                withAnimation(reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 1.0)) {
-                    openingPhase = 1
-                }
+                openingPhase = 1
             }
         }
         .onChange(of: prefill) { applyPrefill() }

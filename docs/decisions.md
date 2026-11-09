@@ -21,6 +21,32 @@
   figures. WidgetKit refreshes remain best-effort, and the fresh-context behavior
   still needs physical-device verification across the app/widget process boundary.
 
+## Accessory widget routing is data, not inline literals
+
+- Context: issue #76, following #70. The circular widget's URL and
+  `.accessibilityLabel("Log expense")` sat on a single-child `ZStack`, a
+  container that is not an accessibility element, so VoiceOver likely read the
+  bare SF Symbol. The rectangular row's label was ignored by the same rule and
+  announced as "Add" plus "Log expense". The `.accessoryInline` branch was
+  unreachable because the family is absent from `supportedFamilies`, and
+  `taplog://log` was written at five sites in one file.
+- Decision: delete the single-child `ZStack` and keep `.widgetURL` and
+  `.accessibilityLabel` on the circular `Image`. Give the rectangular row
+  `.accessibilityElement(children: .ignore)` before its label, and use the same
+  "Log expense" copy as the visible text. Delete the unreachable
+  `.accessoryInline` case rather than offering a new family. Move each accessory
+  family's URL and label into `AccessoryWidgetRoute` in `Sources/TapLog/Shared`,
+  which also owns the single `captureURL` constant every widget link now uses.
+- Consequence: a Lock Screen route `CapturePrefill` rejects, or an accessory
+  branch that goes back to `Link`, now fails `AccessoryWidgetRouteTests`, which
+  asserts against the shared model and reads the widget source instead of
+  trusting inline literals. Verified here with `xcodegen generate` leaving the
+  project clean, the full `xcodebuild test` suite on the iPhone 18 Pro
+  simulator (`TEST SUCCEEDED`), and a deliberate break of one route to a link
+  `CapturePrefill` rejects, which failed the new test until the mapping was
+  restored. Not verified: VoiceOver, tap routing, clipping and the accessory
+  background on a real Lock Screen still need a device check.
+
 ## Siri category lookup errors are surfaced, and only supported shortcut phrases are promised
 
 - Context: issue #64 reported Siri declining an expense phrase and a category
@@ -305,3 +331,22 @@
 - Consequence: `PrivacyViewTests` still fails if a placeholder URL, an invented
   contact or a blanket assurance is introduced, so the replacement cannot quietly
   weaken the screen.
+
+## Pending capture intents resolve before the opening animation
+
+- Context: issue #60. A cold widget deep link can reach `onOpenURL` after the
+  first capture view appears, so the opening plant may begin before the app
+  knows it should route directly to capture.
+- Decision: initialize the splash decision from the durable pending intent
+  flag, without consuming the payload. When a direct-capture URL arrives later,
+  remove the opening and reveal capture without animating a partial dissolve.
+- Consequence: ordinary launches keep their full animation. A pending activation
+  skips the opening on the first render only when the flag predates the launch —
+  a flag left by a previous process or written by another target. `OpenCaptureIntent`
+  runs in the app target and declares `openAppWhenRun`, so in the normal case
+  `perform()` writes the flag after the capture view exists; that late path
+  reveals capture instantly instead, with no partial dissolve. This AppIntent
+  ordering is not yet verified on a device. The existing widget `Link` still
+  sends only a URL, so a cold widget launch may show part of the opening before
+  `onOpenURL` arrives; this path remains unresolved without an earlier lifecycle
+  signal.

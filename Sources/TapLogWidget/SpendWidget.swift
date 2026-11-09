@@ -183,28 +183,29 @@ struct SpendWidgetEntryView: View {
         case .systemMedium:
             mediumView
         case .accessoryCircular:
-            ZStack {
-                Image(systemName: "plus")
-                    .font(.title3.weight(.semibold))
-            }
-            .widgetURL(URL(string: "taplog://log")!)
-            .accessibilityLabel("Log expense")
-            .containerBackground(for: .widget) { AccessoryWidgetBackground() }
+            // The URL and label belong on the Image itself: an accessibility
+            // label on a plain container is only applied when that container is
+            // made an element, so a wrapping ZStack lost it and VoiceOver read
+            // the bare SF Symbol.
+            Image(systemName: "plus")
+                .font(.title3.weight(.semibold))
+                .widgetURL(AccessoryWidgetRoute.circular.url)
+                .accessibilityLabel(AccessoryWidgetRoute.circular.label)
+                .containerBackground(for: .widget) { AccessoryWidgetBackground() }
         case .accessoryRectangular:
+            // One element for the icon and text, so VoiceOver reads the label
+            // instead of announcing "Add" and "Log expense" separately.
             HStack(spacing: 5) {
                 Image(systemName: "plus.circle.fill")
-                Text("Log expense")
+                Text(AccessoryWidgetRoute.rectangular.label)
             }
             .font(.caption.weight(.semibold))
             .lineLimit(1)
             .minimumScaleFactor(0.8)
-            .widgetURL(URL(string: "taplog://log")!)
-            .accessibilityLabel("Open TapLog expense capture")
+            .widgetURL(AccessoryWidgetRoute.rectangular.url)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(AccessoryWidgetRoute.rectangular.label)
             .containerBackground(for: .widget) { AccessoryWidgetBackground() }
-        case .accessoryInline:
-            (Text(Image(systemName: "plus.circle.fill")) + Text(" Log expense"))
-                .widgetURL(URL(string: "taplog://log")!)
-                .accessibilityLabel("Log expense")
         default:
             EmptyView()
         }
@@ -247,7 +248,7 @@ struct SpendWidgetEntryView: View {
                         .lineLimit(2)
                 }
                 Spacer(minLength: 0)
-                Link(destination: URL(string: "taplog://log")!) {
+                Link(destination: AccessoryWidgetRoute.captureURL) {
                     Text(entry.isAvailable ? "Log expense →" : "Open TapLog →")
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(.tint)
@@ -315,7 +316,7 @@ struct SpendWidgetEntryView: View {
                         )
                     }
                     // Custom amount button — opens the app
-                    Link(destination: URL(string: "taplog://log")!) {
+                    Link(destination: AccessoryWidgetRoute.captureURL) {
                         VStack(spacing: 2) {
                             Image(systemName: "number")
                                 .font(.caption)
@@ -330,10 +331,12 @@ struct SpendWidgetEntryView: View {
                         .background(Color.accentColor.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
                     }
                 } else {
-                    Link(destination: URL(string: "taplog://log")!) {
+                    Link(destination: AccessoryWidgetRoute.captureURL) {
                         Label("Open TapLog", systemImage: "arrow.up.right")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.tint)
+                    }
+                }
                     }
                 }
             }
