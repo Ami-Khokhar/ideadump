@@ -35,6 +35,7 @@ column names who must produce the artifact.
 | S9 | Screenshots and accessibility | The App Store screenshots; a VoiceOver pass over capture, history, budgets, recap, settings and the privacy screen; Dynamic Type at the largest size | owner | not tested |
 | S10 | Current privacy disclosures | App Privacy label, the hosted privacy-policy page, the in-app Privacy screen, and the support page all agree with `PrivacyInfo.xcprivacy` | owner; counsel for the policy text | partly checked (in-app screen exists and its content test passes), hosting pending |
 | S11 | Export compliance | `ITSAppUsesNonExemptEncryption` in the built `Info.plist`, and the matching App Store Connect answer | owner | partly checked (source), built value not tested |
+| S12 | App Shortcut metadata matches the supported provider | After a macOS build, inspect `TapLog.app/Metadata.appintents/root.ssu.yaml`: it must register `LogExpenseIntent` and `OpenCaptureIntent`. These are the only two shortcuts in `TapLogShortcutsProvider`; a direct numeric phrase such as “Log 50 in TapLog” is unsupported. The supported headless route is “Log an expense in TapLog”, then answer the amount and category prompts. | owner | not tested |
 
 ## Legal and account gates (owner or qualified adviser only)
 
