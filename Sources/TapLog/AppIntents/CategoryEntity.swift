@@ -35,13 +35,33 @@ struct CategoryEntity: AppEntity, Identifiable {
 /// for Shortcuts but not for voice.
 struct CategoryEntityQuery: EntityStringQuery {
 
+    /// Every category in the store. `container` and `fetch` are injectable so
+    /// the two failure branches can be driven in tests — the same seam style as
+    /// `StoreLocator.retireFallbackHistory(clear:)` and
+    /// `EntryPersistence.commit(save:)`. Neither branch runs outside production
+    /// otherwise: a real store refuses on no schedule a test can arrange.
     @MainActor
-    private func allCategories() -> [CategoryEntity] {
-        guard let container = try? StoreLocator.container() else { return [] }
+    func allCategories(
+        container: () throws -> ModelContainer = StoreLocator.container,
+        fetch: (ModelContext, FetchDescriptor<SpendCategory>) throws -> [SpendCategory] = { try $0.fetch($1) }
+    ) throws -> [CategoryEntity] {
+        let opened: ModelContainer
+        do {
+            opened = try container()
+        } catch {
+            Log.intents.error("Failed to open store for category lookup: \(Log.describe(error), privacy: .public)")
+            throw TapLogIntentError.categoriesUnavailable
+        }
         let descriptor = FetchDescriptor<SpendCategory>(
             sortBy: [SortDescriptor(\.logCount, order: .reverse), SortDescriptor(\.sortOrder)]
         )
-        let categories = (try? container.mainContext.fetch(descriptor)) ?? []
+        let categories: [SpendCategory]
+        do {
+            categories = try fetch(opened.mainContext, descriptor)
+        } catch {
+            Log.intents.error("Failed to fetch categories for Siri: \(Log.describe(error), privacy: .public)")
+            throw TapLogIntentError.categoriesUnavailable
+        }
         return categories.map {
             CategoryEntity(id: $0.key, name: $0.name, emoji: $0.emoji)
         }
@@ -50,7 +70,7 @@ struct CategoryEntityQuery: EntityStringQuery {
     @MainActor
     func entities(for identifiers: [String]) async throws -> [CategoryEntity] {
         let wanted = Set(identifiers)
-        return allCategories().filter { wanted.contains($0.id) }
+        return try allCategories().filter { wanted.contains($0.id) }
     }
 
     /// Voice matching. Siri hands over roughly what it heard, so this accepts an
@@ -60,7 +80,7 @@ struct CategoryEntityQuery: EntityStringQuery {
     func entities(matching string: String) async throws -> [CategoryEntity] {
         let needle = string.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !needle.isEmpty else { return [] }
-        let all = allCategories()
+        let all = try allCategories()
         let exact = all.filter { $0.id.lowercased() == needle || $0.name.lowercased() == needle }
         guard exact.isEmpty else { return exact }
         return all.filter { $0.name.lowercased().contains(needle) }
@@ -71,6 +91,6 @@ struct CategoryEntityQuery: EntityStringQuery {
     /// orders its tiles — a capped list left the rest unpickable.
     @MainActor
     func suggestedEntities() async throws -> [CategoryEntity] {
-        allCategories()
+        try allCategories()
     }
 }
