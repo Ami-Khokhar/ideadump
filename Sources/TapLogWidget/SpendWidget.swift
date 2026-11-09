@@ -337,8 +337,6 @@ struct SpendWidgetEntryView: View {
                             .foregroundStyle(.tint)
                     }
                 }
-                    }
-                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
