@@ -81,6 +81,10 @@
       <p>A ChatGPT side needs an OpenAI Platform organisation before a single expense is read, and a
       hosted one is months of work plus the privacy promise we currently sell against. The Apple path
       needs no account, no endpoint and no change to the policy, and it works with just the phone.</p>
+      <p class="addendum">A phone cannot be the connector. The assistant's client is OpenAI's, so a
+      plugin has to be reached over the network; the directory's local-execution route is desktop-only.
+      The four read-only tools that were asked for in review belong in App Intents, where they cost
+      nothing and need no server, and the same four schemas are what a server would expose later.</p>
     </div>
   </div>
 </header>
@@ -208,7 +212,7 @@
           <p>The same question answered on the phone, with no account.</p>
           <dl>
             <dt>The person</dt><dd>Asks Siri, or uses an in-app question screen.</dd>
-            <dt>We build</dt><dd>Expense and budget entities, a totals intent, then a Foundation Models query behind an iOS 26 availability check.</dd>
+            <dt>We build</dt><dd>The four read-only tools as App Intents and entities, then a Foundation Models query behind an iOS 26 availability check.</dd>
             <dt>Gated by</dt><dd>Nothing for the intent. iOS 26 for the on-device model.</dd>
             <dt>Reach</dt><dd>Everyone on a supported iOS version, with no setup at all.</dd>
           </dl>
@@ -261,10 +265,80 @@
     three stay readable.</p>
   </section>
 
+  <section id="tools">
+    <div class="sechead">
+      <div>
+        <div class="num">03 — The contract</div>
+        <h2>The four read-only tools</h2>
+      </div>
+      <div class="say">Raised in review: give an assistant four narrow reads over the local store. The
+      list is right. What changes is where the code runs.</div>
+    </div>
+
+    <div class="ledger">
+      <div class="scroll">
+        <table class="led">
+          <thead><tr><th>Tool</th><th>Arguments</th><th>Returns</th><th>Bound</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="k">read_transactions</td>
+              <td>date range, min and max amount, category, note query</td>
+              <td>date, amount, category, note, archived flag</td>
+              <td class="n">200 rows, newest first</td>
+            </tr>
+            <tr>
+              <td class="k">read_category_spend</td>
+              <td>date range, optional category list</td>
+              <td>amount and share per category, with the entry count it was computed from</td>
+              <td class="n">all categories, one page</td>
+            </tr>
+            <tr>
+              <td class="k">read_budgets</td>
+              <td>none</td>
+              <td>per category: target, period, spent this period, percent used</td>
+              <td class="n">all categories, one page</td>
+            </tr>
+            <tr>
+              <td class="k">read_timerange</td>
+              <td>date range, bucket of day, week or month</td>
+              <td>total and entry count per bucket</td>
+              <td class="n">366 buckets</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="twocol">
+      <div class="box">
+        <h3>Where it runs</h3>
+        <ul>
+          <li>App Intents on the phone: Siri, Shortcuts and Apple Intelligence can call all four with
+          no account and no server, and the app answers from its own store.</li>
+          <li>The same four names and schemas become an MCP server if TapLog ever has an endpoint, so
+          the contract is written once. That is Shape B or C, later.</li>
+          <li>What cannot exist today is a plugin that reaches into the phone: the assistant's client
+          is not on the phone.</li>
+        </ul>
+      </div>
+      <div class="box">
+        <h3>Two changes to the list</h3>
+        <ul>
+          <li>Regex over notes becomes a plain text query. A model-supplied pattern can backtrack
+          catastrophically, and nobody types regex to find "milk". A case-insensitive substring plus an
+          optional prefix match answers the same questions at no risk.</li>
+          <li>Every reply carries the base it was computed from, so a share of spending is never stated
+          without the number of entries behind it. Archived and pending entries stay excluded exactly
+          as the app's own screens exclude them.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
   <section id="idea">
     <div class="sechead">
       <div>
-        <div class="num">03 — The idea</div>
+        <div class="num">04 — The idea</div>
         <h2>One file, six questions</h2>
       </div>
       <div class="say">Shape A is a second export beside the CSV: the same data in a shape a model reads
@@ -313,7 +387,7 @@ milk, parcel, auto, coffee
   <section id="privacy">
     <div class="sechead">
       <div>
-        <div class="num">04 — What it promises</div>
+        <div class="num">05 — What it promises</div>
         <h2>Each shape, priced in promises</h2>
       </div>
       <div class="say">The product page sells one line: your records never leave your device. Only one
@@ -363,7 +437,7 @@ milk, parcel, auto, coffee
   <section id="test">
     <div class="sechead">
       <div>
-        <div class="num">05 — The test</div>
+        <div class="num">06 — The test</div>
         <h2>How we learn whether it is wanted</h2>
       </div>
       <div class="say">There is no signal in either direction today, and no analytics in the app. The
@@ -391,7 +465,7 @@ milk, parcel, auto, coffee
   <section id="settle">
     <div class="sechead">
       <div>
-        <div class="num">06 — Yours</div>
+        <div class="num">07 — Yours</div>
         <h2>Four things to settle</h2>
       </div>
       <div class="say">Each answer changes what I build next. Pin a comment on the one you disagree
@@ -409,6 +483,9 @@ milk, parcel, auto, coffee
       it down as "possible, not distributed" rather than leave it out.</p>
       <p><b>Who writes the prompts?</b> I can draft all six against a real export from the simulator.
       They read better if you use them first, then tell me which ones you actually reached for.</p>
+      <p><b>Are those four tools the whole surface?</b> They cover reading, and reading only. A write
+      would have to open the app for confirmation, which is a different design and I would keep it out
+      of the first version.</p>
     </div>
   </section>
 
@@ -424,8 +501,9 @@ milk, parcel, auto, coffee
         the recap screen, and the intents and entities the app already ships.</p></div>
       <div><b>Numbers</b><p>The rupee figures are a sample of the proposed export, and they add up.
         The effort figures are estimates, and the bar says so.</p></div>
-      <div><b>Status</b><p>Research only. Nothing in the decision log, no production code, nothing
-        measured on a device.</p></div>
+      <div><b>Status</b><p>Research only, plus one platform limit found in review: a phone cannot
+        serve a connector. Nothing in the decision log, no production code, nothing measured on a
+        device.</p></div>
     </div>
     <div class="wordmark">TapLog</div>
     <div class="legal">

@@ -128,8 +128,10 @@
               opacity:.66}
   .verdict p{margin:0 0 14px;font-family:var(--serif);font-size:var(--step-lead);line-height:1.2;
              letter-spacing:-.018em;max-width:44ch}
-  .verdict p:last-child{margin:0;font-family:var(--sans);font-size:var(--step-body);line-height:1.62;
-             max-width:74ch;opacity:.9}
+  .verdict p:nth-last-child(2){margin:0 0 14px;font-family:var(--sans);font-size:var(--step-body);
+             line-height:1.62;max-width:74ch;opacity:.9}
+  .verdict p.addendum{margin:0;font-family:var(--sans);font-size:var(--step-small);line-height:1.6;
+             max-width:80ch;opacity:.74;border-top:1px solid rgba(244,241,233,.22);padding-top:14px}
 
   /* ================= sections ================= */
   section{padding-top:clamp(48px,6.5vw,92px)}
