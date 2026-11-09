@@ -1,18 +1,20 @@
 import Foundation
 
-/// The capture taps a widget offers, and whether each one can record the
-/// activation before the app makes its opening-animation decision.
+/// The capture taps the home-screen widget offers.
 ///
-/// Kept as data rather than written inline in the widget for the same reason as
-/// `AccessoryWidgetRoute`: a tap that opens a URL reaches the app through
-/// `onOpenURL`, which can arrive after the first capture view appears — the
-/// widget then flashes part of the opening plant. Home-screen taps therefore run
-/// `OpenCaptureIntent` in the widget's own process, which writes the durable
-/// pending flag that `ContentView` reads on its first render. Only the accessory
-/// families keep a URL, because WidgetKit gives them one whole-widget tap.
+/// Each one runs `OpenCaptureIntent` in the widget's own process instead of
+/// opening `taplog://log`. A URL reaches the app through `onOpenURL`, which can
+/// arrive after the first capture view renders, so the widget tap would flash
+/// part of the opening plant first; the intent writes the durable pending flag
+/// before the system launches the app, so `ContentView` already knows on its
+/// first render.
 ///
-/// A test pins both halves of that rule, so a tap cannot quietly go back to a
-/// URL and reintroduce the flash.
+/// Named here rather than written inline in the widget so a test can hold every
+/// site to that rule: `WidgetCaptureTapTests` reads `SpendWidget.swift` and fails
+/// if a tap goes back to a `Link`, if a tap site is missing, or if a tap site
+/// exists that this enum does not name. The Lock Screen accessories are not
+/// cases: WidgetKit gives an accessory one whole-widget tap, so they keep
+/// `.widgetURL` and `AccessoryWidgetRoute` owns their route.
 enum WidgetCaptureTap: String, CaseIterable {
     /// Small home-screen widget, the footer line.
     case smallFooter
@@ -21,18 +23,7 @@ enum WidgetCaptureTap: String, CaseIterable {
     /// Medium home-screen widget, the "Open TapLog" button shown when the store
     /// cannot be read.
     case mediumUnavailable
-    /// Lock Screen circular and rectangular accessories, one whole-widget tap.
-    case accessory
 
-    /// `true` when this tap runs `OpenCaptureIntent` in-process, so the durable
-    /// pending activation exists before the app's first render.
-    var recordsActivationBeforeLaunch: Bool {
-        self != .accessory
-    }
-
-    /// The URL this tap opens when it cannot run an intent, `nil` when it runs
-    /// one.
-    var url: URL? {
-        recordsActivationBeforeLaunch ? nil : AccessoryWidgetRoute.captureURL
-    }
+    /// The argument the widget passes to `captureButton` for this tap.
+    var callSite: String { "captureButton(.\(rawValue))" }
 }

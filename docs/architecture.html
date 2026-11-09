@@ -1103,7 +1103,7 @@ const pathData = {
           <li>Defaults: ☕️ ₹10, 🚌 ₹40, 🍽️ ₹120</li>
         </ul>
       </div>
-      <div class="detail-section"><h4>₹? Button</h4><p>Deep-links via <code>taplog://log</code> — opens app with amount field focused.</p></div>
+      <div class="detail-section"><h4>₹? Button</h4><p>Runs <code>OpenCaptureIntent</code> inside the widget, which writes the pending activation to the App Group defaults and then opens the app straight into capture with the amount field focused. A <code>taplog://log</code> link would reach the app through <code>onOpenURL</code> after the first capture render and flash part of the opening animation first, so the home-screen taps no longer use one. The Lock Screen accessories keep <code>.widgetURL</code>: WidgetKit gives an accessory one whole-widget tap.</p></div>
     `
   },
   share: {
