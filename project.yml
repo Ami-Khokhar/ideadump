@@ -64,6 +64,13 @@ targets:
       # Only the extension-safe quick-log intent belongs in the widget target.
       # Foreground intents and AppShortcutsProvider are app-only metadata.
       - path: Sources/TapLog/AppIntents/QuickLogIntent.swift
+      # A widget capture tap runs OpenCaptureIntent in the widget's own process
+      # so the durable pending activation is already written when the app makes
+      # its opening-animation decision. OnboardingFlow is its only other
+      # dependency (a usage counter over shared defaults); both are
+      # Foundation-only.
+      - path: Sources/TapLog/AppIntents/OpenCaptureIntent.swift
+      - path: Sources/TapLog/Onboarding/OnboardingFlow.swift
       # Just enough of the botanical tree art to render one decorative glyph on
       # the widget. TreeMark.swift needs BudgetCalculator.swift for its
       # TreeHealthMark(_:) extension; TreeStateGlyph.swift is the small
@@ -79,6 +86,10 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.amteshwar.taplog.widget
         SKIP_INSTALL: YES
+        # OpenCaptureIntent is compiled into both the app and the widget so
+        # either can write the pending activation. Shortcuts already lists it
+        # from the app, so the widget copy stays out of the shortcut list.
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) TAPLOG_WIDGET_EXTENSION"
     entitlements:
       path: Configs/TapLogWidget.entitlements
       properties:

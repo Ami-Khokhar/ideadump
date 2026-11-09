@@ -404,7 +404,30 @@
   runs in the app target and declares `openAppWhenRun`, so in the normal case
   `perform()` writes the flag after the capture view exists; that late path
   reveals capture instantly instead, with no partial dissolve. This AppIntent
-  ordering is not yet verified on a device. The existing widget `Link` still
-  sends only a URL, so a cold widget launch may show part of the opening before
-  `onOpenURL` arrives; this path remains unresolved without an earlier lifecycle
-  signal.
+  ordering is not yet verified on a device.
+
+## A widget capture tap runs the intent instead of opening a URL
+
+- Context: issue #84, following #60. The widget's capture taps used `Link` to
+  `taplog://log`. A URL reaches the app through `onOpenURL`, which can arrive
+  after the first capture view renders, so a cold widget launch could still show
+  part of the opening plant before the app learned it should go straight to
+  capture. Nothing earlier in the launch carries that intent.
+- Decision: every home-screen capture tap (small footer, medium custom-amount,
+  medium "Open TapLog") is a `Button(intent: OpenCaptureIntent())`, so
+  `perform()` runs in the widget's own process and writes the durable pending
+  flag to the App Group defaults before the system launches the app. The widget
+  target therefore compiles `OpenCaptureIntent` and its Foundation-only
+  dependency `OnboardingFlow`; the intent's `isDiscoverable` is `false` there so
+  Shortcuts keeps listing the action once, from the app. The three tap sites are
+  named in `WidgetCaptureTap`, and a test fails if any of them goes back to a
+  URL. The Lock Screen accessories keep `.widgetURL`: WidgetKit gives an
+  accessory one whole-widget tap, and a button there cannot coexist with it.
+- Consequence: a cold widget tap no longer depends on a lifecycle signal
+  arriving in time — the flag is already written when `ContentView` reads it for
+  the first render. The cost is that the tap now waits for a widget-process
+  intent before the app opens, and an accessory tap still sends only a URL, so a
+  cold launch from the Lock Screen can still show part of the opening. Device
+  confirmation of both paths is outstanding: a simulator build proves the intent
+  compiles into the widget and the tests prove the tap routing, but only a
+  device run shows the launch actually skipping the plant.
