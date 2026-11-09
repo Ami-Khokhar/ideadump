@@ -2,6 +2,7 @@ import WidgetKit
 import SwiftUI
 import SwiftData
 
+<<<<<<< HEAD
 struct QuickButton: Identifiable {
     let amount: Double
     let categoryKey: String
@@ -12,6 +13,9 @@ struct QuickButton: Identifiable {
 }
 
 /// Sensible quick-log defaults before the user has enough history.
+=======
+/// Shown before any history exists, and whenever the store cannot be read.
+>>>>>>> origin/budget-trees-redesign
 /// Deliberately not main-actor isolated: `placeholder(in:)` is nonisolated.
 private var defaultQuickButtons: [QuickButton] {
     [
@@ -21,6 +25,7 @@ private var defaultQuickButtons: [QuickButton] {
     ]
 }
 
+<<<<<<< HEAD
 struct SpendSnapshot: TimelineEntry {
     let date: Date
     let total: Decimal
@@ -29,6 +34,8 @@ struct SpendSnapshot: TimelineEntry {
     var isAvailable: Bool = true
 }
 
+=======
+>>>>>>> origin/budget-trees-redesign
 /// Fetches today's totals from the shared store. Lives outside the provider struct
 /// because WidgetKit's `TimelineProvider` declares an associated type named `Entry`,
 /// which shadows the SwiftData model of the same name.
@@ -168,9 +175,23 @@ struct SpendProvider: TimelineProvider {
     func getTimeline(in context: Context, completion: @escaping (Timeline<SpendSnapshot>) -> Void) {
         Task { @MainActor in
             let snapshot = loadTodaySnapshot()
-            let nextRefresh = Calendar.current.date(byAdding: .minute, value: 15, to: .now)
-                ?? .now.addingTimeInterval(900)
-            completion(Timeline(entries: [snapshot], policy: .after(nextRefresh)))
+            let timeline = SpendTimeline.entries(
+                now: .now,
+                snapshot: snapshot,
+                calendar: .current
+            )
+
+            // WidgetKit treats `.after` and app-triggered reloads as requests; its
+            // per-widget budget can defer or drop them. Log saves, currency changes,
+            // and foregrounding request immediate reloads, but no cadence is exact.
+            // A log rebuilds this timeline (including the pending midnight entry).
+            // If WidgetKit defers that reload, the old zero reset can briefly hide
+            // same-day logs after midnight; widgets cannot fetch a new total at the
+            // boundary without a granted timeline refresh.
+            completion(Timeline(
+                entries: timeline.entries,
+                policy: .after(timeline.refreshAfter)
+            ))
         }
     }
 }
@@ -358,7 +379,7 @@ struct SpendWidgetEntryView: View {
 }
 
 struct SpendWidget: Widget {
-    let kind = "SpendWidget"
+    let kind = WidgetReload.kind
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: SpendProvider()) { entry in
