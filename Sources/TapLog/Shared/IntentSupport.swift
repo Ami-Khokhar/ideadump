@@ -4,6 +4,7 @@ import Foundation
 enum TapLogIntentError: LocalizedError, Equatable {
     case invalidAmount
     case invalidOptionalAmount
+    case categoriesUnavailable
     case saveFailed
 
     var errorDescription: String? {
@@ -12,6 +13,8 @@ enum TapLogIntentError: LocalizedError, Equatable {
             return "Enter an amount greater than zero and no more than 999,999,999.99."
         case .invalidOptionalAmount:
             return "The optional amount must be greater than zero and no more than 999,999,999.99."
+        case .categoriesUnavailable:
+            return "TapLog couldn't load your categories. Open TapLog to check the data store, then try again."
         case .saveFailed:
             return "TapLog could not save that expense. Please try again."
         }

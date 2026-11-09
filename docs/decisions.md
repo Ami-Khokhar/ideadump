@@ -32,6 +32,30 @@
   surface should first define a user-respecting success measure and obtain
   evidence, without adding unauthorized metrics collection.
 
+## Siri category lookup errors are surfaced, and only supported shortcut phrases are promised
+
+- Context: issue #64 reported Siri declining an expense phrase and a category
+  entity query that converted any store or fetch failure into an empty list.
+  The current shortcut provider exposes two shortcuts: `LogExpenseIntent` for
+  headless logging and `OpenCaptureIntent` for the keypad. A numeric value such
+  as `50` cannot be interpolated into an App Shortcut phrase because App Intents
+  only supports entity and enum phrase parameters; the removed numerical intent
+  and entity are not part of the supported flow.
+- Decision: keep the two supported shortcuts and the amount prompt in
+  `LogExpenseIntent`. Category lookup returns an empty result only when a valid
+  store has no categories; store-open and fetch failures throw an actionable
+  localized error. The intent's category fetch also throws instead of silently
+  logging into a fallback category. If saving fails, remove the new unsaved
+  entry from the shared context before returning the error. Document “Log an
+  expense in TapLog” (or “Log chai in TapLog”) and then answering prompts as the
+  supported route; state that “Log 50 in TapLog” is unsupported.
+- Consequence: users get an actionable failure when the category store cannot
+  be read, and failed inserts cannot be committed by a later save in the shared
+  context. The issue's old three-shortcut acceptance criteria do not match the
+  current product. Release verification must inspect the built
+  `Metadata.appintents/root.ssu.yaml` for the two supported intents; no automated
+  SSU checker is added until its generated schema is available to validate.
+
 ## Share parsing distinguishes missing text from unreadable text
 
 - Context: issue #65. A share with no extracted content and a nonempty share whose
