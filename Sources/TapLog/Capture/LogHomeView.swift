@@ -211,44 +211,103 @@ struct LogHomeView: View {
 
     // MARK: - Main Content
 
-    /// The keypad and Log button are pinned as a bottom inset so the two controls
-    /// that finish the task are always under the thumb, whatever the screen height.
-    /// Everything above them scrolls, which is what keeps this usable on a 4.7"
-    /// device where the keypad alone claims most of the viewport.
+    /// The keypad and Log button sit at the bottom of the screen so the two
+    /// controls that finish the task are always under the thumb, whatever the
+    /// screen height. The content fills the region above the bar when it fits
+    /// and becomes scrollable when the bar leaves too little room, as on a 4.7"
+    /// device.
+    ///
+    /// The bar used to live in a `.safeAreaInset`, and the fit height was taken
+    /// from the `GeometryReader` wrapped around it. Measured on an iPhone 17
+    /// simulator, that reader's frame was already the region above the bar
+    /// (398pt) while `safeAreaInsets.bottom` still reported the bar plus the
+    /// home indicator (360pt), so subtracting the insets a second time measured
+    /// 0 and the stack always scrolled. The bar is a plain sibling here and the
+    /// frame is already the safe region: the visible height is the container
+    /// less the bar, arithmetic that `CaptureFit` can be tested on.
     private var mainContent: some View {
-        ScrollView(.vertical, showsIndicators: false) {
+        GeometryReader { container in
+            let visible = CaptureFit.visibleHeight(
+                containerHeight: container.size.height,
+                barHeight: CaptureBottomBar.height
+            )
+
             VStack(spacing: 0) {
-                // Deliberately empty above the amount. This screen used to open
-                // with a streak wreath, today's total and a "Use the keypad"
-                // hint stacked over the number they were competing with. All
-                // three are gone: the streak has its own screen, today's total
-                // is on History, and the hint taught a keypad that is already
-                // the only thing on the lower half of the screen.
-                //
-                // No trees either, in any form — a grove strip, tile badges and
-                // a background horizon were each tried and each gave the eye a
-                // second place to land. What survives is the one 2pt rule under
-                // each tile, which adds no object to the row.
-                Spacer(minLength: 48)
-                amountArea
-                Spacer(minLength: 36)
-                categoryLine
-                tileRow()
+                Group {
+                    if CaptureFit.usesScroll(visibleHeight: visible, contentMinHeight: captureContentMinHeight) {
+                        scrollingCapture
+                    } else {
+                        ViewThatFits(in: .vertical) {
+                            // This candidate sees a finite height, so the
+                            // spacers divide the visible region. When the stack
+                            // really is taller, fall through to the scroll
+                            // rather than compressing or clipping the row.
+                            captureContent
+                                .frame(minHeight: visible, alignment: .top)
+
+                            scrollingCapture
+                        }
+                    }
+                }
+                .frame(height: visible, alignment: .top)
+
+                bottomBar
             }
         }
+    }
+
+    /// The keypad and the Log pill. Pinned to `CaptureBottomBar.height` so the
+    /// height the fit check subtracts is the height that is actually drawn.
+    private var bottomBar: some View {
+        VStack(spacing: 0) {
+            // Unconditional now. The keypad used to yield the bottom of the
+            // screen whenever the note field raised the system keyboard;
+            // with the note field gone from capture, nothing on this screen
+            // summons a keyboard, so the keypad is always the thing here.
+            keypad
+            logButton
+                .padding(.bottom, CaptureBottomBar.logButtonBottomPadding)
+                .padding(.top, CaptureBottomBar.logButtonLiftPadding)
+        }
+        .frame(height: CaptureBottomBar.height)
+        .background(Theme.paper)
+    }
+
+    private var scrollingCapture: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            captureContent
+        }
         .scrollBounceBehavior(.basedOnSize)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            VStack(spacing: 0) {
-                // Unconditional now. The keypad used to yield the bottom of the
-                // screen whenever the note field raised the system keyboard;
-                // with the note field gone from capture, nothing on this screen
-                // summons a keyboard, so the keypad is always the thing here.
-                keypad
-                logButton
-                    .padding(.bottom, CaptureBottomBar.logButtonBottomPadding)
-                    .padding(.top, CaptureBottomBar.logButtonLiftPadding)
-            }
-            .background(Theme.paper)
+    }
+
+    /// The capture stack's height when no spacer flexes, used only to skip the
+    /// fill attempt early. It is an estimate of the default-size geometry, and
+    /// its error is absorbed by the `ViewThatFits` fallback that follows: a
+    /// small overestimate costs a few points of scroll range, never a clipped
+    /// row.
+    private var captureContentMinHeight: CGFloat {
+        let fontSize = AmountFont.focalFontSize(for: amountText, dynamicTypeSize: dynamicTypeSize)
+        return CaptureFit.contentMinHeight(amountHeroHeight: AmountLayout.focalHeroHeight(fontSize: fontSize))
+    }
+
+    private var captureContent: some View {
+        VStack(spacing: 0) {
+            // Deliberately empty above the amount. This screen used to open
+            // with a streak wreath, today's total and a "Use the keypad"
+            // hint stacked over the number they were competing with. All
+            // three are gone: the streak has its own screen, today's total
+            // is on History, and the hint taught a keypad that is already
+            // the only thing on the lower half of the screen.
+            //
+            // No trees either, in any form — a grove strip, tile badges and
+            // a background horizon were each tried and each gave the eye a
+            // second place to land. What survives is the one 2pt rule under
+            // each tile, which adds no object to the row.
+            Spacer(minLength: CaptureFit.amountTopMinimum)
+            amountArea
+            Spacer(minLength: CaptureFit.amountBottomMinimum)
+            categoryLine
+            tileRow()
         }
     }
 
@@ -754,8 +813,8 @@ struct LogHomeView: View {
 /// plus the Log pill.
 ///
 /// These live outside the view because the undo toast has to float clear of the
-/// bar and cannot measure it: the toast is an overlay on the app root, so it
-/// sits outside the safe-area inset that holds these controls. The toast used to
+/// bar and cannot measure it: the toast is an overlay on the app root, outside
+/// the bottom bar that holds these controls. The toast used to
 /// carry its own hardcoded offset, which was correct when the Log pill was the
 /// only thing down here and silently wrong the moment the keypad arrived —
 /// "Undo" ended up sitting on the backspace key. Deriving both from the same
@@ -796,7 +855,7 @@ enum CaptureBottomBar {
     static let logButtonHeight: CGFloat = 52
     /// Gap between the keypad and the Log pill.
     static let logButtonTopPadding: CGFloat = 8
-    /// Extra lift applied to the pill inside the inset stack.
+    /// Extra lift applied to the pill inside the pinned bottom bar.
     static let logButtonLiftPadding: CGFloat = 4
     /// Gap between the Log pill and the bottom safe-area edge.
     static let logButtonBottomPadding: CGFloat = 8
