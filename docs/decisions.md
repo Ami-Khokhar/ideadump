@@ -21,6 +21,40 @@
   figures. WidgetKit refreshes remain best-effort, and the fresh-context behavior
   still needs physical-device verification across the app/widget process boundary.
 
+## Capture fills its viewport when content fits and scrolls when it does not
+
+- Context: issue #66. The capture content sat in a `ScrollView`, which proposes
+  an unbounded height to its content. The amount spacers therefore stayed at
+  their minimum lengths, leaving unused space after the category tiles on tall
+  screens.
+- Decision: lay the keypad and Log bar out as a sibling below the content and
+  size a `ViewThatFits` against the height that is left — the container the
+  system has already reduced by the status-bar and home-indicator insets, minus
+  the 326pt `CaptureBottomBar.height`. The fit height may never be the screen
+  height and may never be read from a `GeometryReader` wrapped around a
+  `.safeAreaInset`. Measured on an iPhone 17 simulator, that reader reported a
+  398pt frame while `safeAreaInsets.bottom` still carried the bar and the home
+  indicator (360pt), so subtracting the insets again measured 0 and every screen
+  scrolled. The pure `CaptureFit.visibleHeight`, `CaptureFit.contentMinHeight`
+  and `CaptureFit.usesScroll` helpers hold the arithmetic and the decision, so it
+  is unit-tested. The first candidate is the capture stack with a minimum height
+  equal to the visible height, letting its spacers divide the leftover room; the
+  fallback is a scroll view containing the same stack when its content does not
+  fit. `ViewThatFits` re-measures the real stack, so an underestimated content
+  minimum can only fall through to the scroll, never clip.
+- Consequence: the tiles stay connected to the keypad on tall screens, while
+  short screens and larger text retain access to the full category row by
+  scrolling. A regression here — measuring the screen, or letting the bar's
+  height drift from `CaptureBottomBar.height` — clips the tile row behind the
+  opaque keypad with no scrolling available to reach it. The keypad and Log bar
+  keep their dimensions and their own safe-area placement.
+- Verification: `CaptureFitTests` pins the fit decision, the bar subtraction and
+  the content minimum; the full test suite passed, and the screen was checked in
+  a portrait iPhone 17 simulator (`scroll=false`, visible 398pt, tiles ending at
+  the bar's top edge). Not verified: a physical device, the 4.7" scrolling path
+  and accessibility Dynamic Type sizes — no such hardware or size was available
+  in this environment.
+
 ## The spend widget rolls over at midnight and refreshes on likely opportunities
 
 - Context: issue #62. The spend widget had one snapshot and requested a refresh
