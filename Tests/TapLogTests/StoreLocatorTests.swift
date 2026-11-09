@@ -66,6 +66,25 @@ final class StoreLocatorTests: XCTestCase {
     }
 
     @MainActor
+    func testFreshContextReadsChangesSavedThroughAnotherContext() throws {
+        let container = try makeStore()
+        let initialReader = StoreLocator.makeFreshContext(for: container)
+        XCTAssertTrue(try initialReader.fetch(FetchDescriptor<Entry>()).isEmpty)
+
+        let writer = ModelContext(container)
+        writer.insert(Entry(amount: Decimal(string: "21.50")!, category: "chai"))
+        try writer.save()
+
+        // A context already used for a read can keep its registered models and
+        // fetch state. The widget creates a new context from its cached container
+        // for each timeline read, so it sees the saved write.
+        let widgetReader = StoreLocator.makeFreshContext(for: container)
+        let entries = try widgetReader.fetch(FetchDescriptor<Entry>())
+        XCTAssertEqual(entries.count, 1)
+        XCTAssertEqual(entries.first?.amount, Decimal(string: "21.50"))
+    }
+
+    @MainActor
     func testMakeContainerSucceeds() {
         // fatalError inside makeContainer means reaching this line is the assertion:
         // both the App Group path and its fallback produce a usable container.
@@ -263,6 +282,29 @@ final class StoreLocatorTests: XCTestCase {
     func testSingleCandidateIsReturnedUnchanged() {
         XCTAssertEqual(ordered([fallbackStore], marked: [fallbackStore]), [fallbackStore])
         XCTAssertEqual(ordered([fallbackStore]), [fallbackStore])
+    }
+
+    // MARK: - Widget read context
+
+    private let groupContainer = URL(fileURLWithPath: "/group")
+
+    /// The widget must refuse the app-only fallback rather than show its
+    /// unrelated totals. This is the guard that used to live untested inside
+    /// `widgetReadContext()`.
+    func testWidgetReadContextRefusesTheAppOnlyFallbackStore() {
+        XCTAssertThrowsError(
+            try StoreLocator.widgetReadContext(store: fallbackStore, group: groupContainer)
+        ) { error in
+            guard case StoreLocator.StoreError.widgetRequiresSharedStore = error else {
+                return XCTFail("expected widgetRequiresSharedStore, got \(error)")
+            }
+        }
+    }
+
+    @MainActor
+    func testWidgetReadContextAcceptsTheSharedStore() throws {
+        let store = groupContainer.appendingPathComponent(StoreLocator.storeFileName)
+        _ = try StoreLocator.widgetReadContext(store: store, group: groupContainer)
     }
 
     // MARK: - Healing a split store

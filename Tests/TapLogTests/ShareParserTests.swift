@@ -42,6 +42,9 @@ final class ShareParserTests: XCTestCase {
     }
 
     func testEmptyAndJunkInputYieldNoAmount() {
+        XCTAssertFalse(ShareParser.parse("").hasText)
+        XCTAssertFalse(ShareParser.parse(" \n ").hasText)
+        XCTAssertTrue(ShareParser.parse("no numbers here").hasText)
         XCTAssertNil(ShareParser.parse("").amount)
         XCTAssertNil(ShareParser.parse("no numbers here").amount)
         // Pasted phone numbers exceed maxAmount and must not become expenses.
@@ -110,6 +113,78 @@ final class ShareParserTests: XCTestCase {
         XCTAssertTrue(ShareParser.mentionsSpending("Rs 40 debited"))
         XCTAssertTrue(ShareParser.mentionsSpending("You spent 12.50"))
         XCTAssertTrue(ShareParser.mentionsSpending("₹40"))
+    }
+}
+
+extension ShareParserTests {
+    func testSharePayloadConversionAcceptsStringDataAndAttributedText() {
+        let text = "Rs 40 debited at BigBasket"
+        XCTAssertEqual(ShareParser.text(from: text), text)
+        XCTAssertEqual(ShareParser.text(from: Data(text.utf8)), text)
+        XCTAssertEqual(ShareParser.text(from: NSAttributedString(string: text)), text)
+    }
+
+    func testSharePayloadConversionDeclinesUnsupportedOrInvalidData() {
+        XCTAssertNil(ShareParser.text(from: 42))
+        XCTAssertNil(ShareParser.text(from: Data([0xFF])))
+    }
+
+    func testSharePayloadConversionAppliesTheFieldLimit() {
+        let text = "Rs 40 " + String(repeating: "x", count: ShareParser.maxFieldLength)
+        XCTAssertLessThanOrEqual(ShareParser.text(from: Data(text.utf8))?.count ?? .max, ShareParser.maxFieldLength)
+    }
+
+    func testSharePayloadConversionBoundsLargeDataWithoutLosingAnEarlierAmount() {
+        let text = "Rs 42 debited " + String(repeating: "x", count: ShareParser.maxFieldLength * 6)
+        let bounded = ShareParser.text(from: Data(text.utf8))
+        XCTAssertEqual(bounded?.count, ShareParser.maxFieldLength)
+        XCTAssertEqual(bounded.flatMap { ShareParser.parse($0).amount }, 42)
+    }
+
+    /// The byte cap lands wherever it lands: in text of three-byte characters it
+    /// falls inside a character, and a decoder that gave up there would drop a
+    /// share the user meant to log. This is the case the retry exists for — with
+    /// the retry removed, the decode returns nil.
+    func testAByteCapInsideACharacterStillDecodes() {
+        let text = "a" + String(repeating: "₹", count: ShareParser.maxFieldLength * 2)
+        let data = Data(text.utf8)
+        XCTAssertGreaterThan(data.count, (ShareParser.maxFieldLength + 1) * 4, "the cap must fall inside the string")
+
+        let bounded = ShareParser.text(from: data)
+
+        XCTAssertNotNil(bounded, "a truncated multi-byte tail is a cut, not corrupt data")
+        XCTAssertEqual(bounded?.count, ShareParser.maxFieldLength, "the cut still applies the field limit")
+        XCTAssertFalse(
+            bounded?.contains("\u{FFFD}") ?? true,
+            "a character the cap split must be dropped, never replaced"
+        )
+    }
+
+    /// A byte that is invalid rather than truncated is corrupt input, and the
+    /// retry must not paper over it by dropping enough bytes to hide the fault.
+    func testInvalidBytesInsideALargePayloadStillYieldNoText() {
+        var data = Data(repeating: 0x41, count: 9_000)
+        data[5_000] = 0xFF
+
+        XCTAssertNil(ShareParser.text(from: data))
+    }
+
+    func testNonemptyAttributedBodyIsPreservedForExtraction() {
+        let body = "You spent $12.50 at Starbucks"
+        XCTAssertEqual(
+            ShareParser.nonemptyText(from: NSAttributedString(string: body)),
+            body
+        )
+    }
+
+    func testEmptyAttributedShareBodyAllowsAttachmentFallback() {
+        XCTAssertNil(ShareParser.nonemptyText(from: NSAttributedString(string: " \n")))
+    }
+
+    func testTextPartsKeepLaterAttachmentAmountsWithinTheTotalCap() {
+        let firstAttachment = String(repeating: "x", count: ShareParser.maxFieldLength)
+        let text = ShareParser.boundedText([firstAttachment, "Rs 50 debited"])
+        XCTAssertEqual(ShareParser.parse(text).amount, 50)
     }
 }
 

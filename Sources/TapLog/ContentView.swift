@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import Combine
+import WidgetKit
 
 /// App root: a single capture-first home screen. History, Budgets and Recap sit on
 /// the navigation bar beside it; Settings (and the front doors it holds) stay behind
@@ -26,8 +27,8 @@ struct ContentView: View {
     @State private var prefill: CapturePrefill?
     @State private var route: Route?
     /// When true the logo splash is skipped and the capture screen is revealed
-    /// immediately. Set by a pending intent activation.
-    @State private var intentDirectCapture = false
+    /// immediately. Set by a pending intent or direct-capture URL activation.
+    @State private var intentDirectCapture = OpenCaptureIntent.hasPendingActivation()
     /// Tracks that the current launch handled a direct-capture activation, so the
     /// delayed onboarding flow cannot override it.
     @State private var handledActivation = false
@@ -201,6 +202,12 @@ struct ContentView: View {
         // Handle warm/background activation: the scene becomes active after the
         // intent wrote its payload while the app was suspended.
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            // WidgetKit budgets refreshes per widget. Every capture path already
+            // reloads where it writes, so a plain foregrounding asks for nothing;
+            // this repairs a reload that was deferred while the app was away.
+            if WidgetReload.shouldRequest(WidgetReload.currentInputs()) {
+                WidgetCenter.shared.reloadTimelines(ofKind: WidgetReload.kind)
+            }
             consumePendingIntent()
             offerWidgetUndo()
             reconcileOnboarding(with: confirmedEntries.count)

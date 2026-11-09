@@ -2,15 +2,6 @@ import WidgetKit
 import SwiftUI
 import SwiftData
 
-struct QuickButton: Identifiable {
-    let amount: Double
-    let categoryKey: String
-    let emoji: String
-    let label: String
-
-    var id: String { "\(categoryKey)-\(amount)" }
-}
-
 /// Shown before any history exists, and whenever the store cannot be read.
 /// Deliberately not main-actor isolated: `placeholder(in:)` is nonisolated.
 private var defaultQuickButtons: [QuickButton] {
@@ -21,26 +12,25 @@ private var defaultQuickButtons: [QuickButton] {
     ]
 }
 
-struct SpendSnapshot: TimelineEntry {
-    let date: Date
-    let total: Decimal
-    let count: Int
-    let quickButtons: [QuickButton]
-}
-
 /// Fetches today's totals from the shared store. Lives outside the provider struct
 /// because WidgetKit's `TimelineProvider` declares an associated type named `Entry`,
 /// which shadows the SwiftData model of the same name.
 @MainActor
 private func loadTodaySnapshot() -> SpendSnapshot {
-    // `makeContainer()` traps when no candidate store opens. A trap here kills the
-    // widget process and leaves the user staring at "Unable to Load", so the
-    // timeline degrades to an empty snapshot instead — the same choice the share
-    // extension makes.
-    guard let container = try? StoreLocator.container() else {
-        return SpendSnapshot(date: .now, total: 0, count: 0, quickButtons: defaultQuickButtons)
+    let context: ModelContext
+    do {
+        context = try StoreLocator.widgetReadContext()
+    } catch StoreLocator.StoreError.widgetRequiresSharedStore {
+        // The store opened, but at the app-only fallback location the widget
+        // cannot read. Naming an open failure here would send support looking
+        // for an error that never happened.
+        Log.store.warning("widget snapshot unavailable: store in use is not the shared App Group store")
+        return unavailableSnapshot()
+    } catch {
+        Log.store.error("widget snapshot unavailable: shared store could not be opened (\(Log.describe(error), privacy: .public))")
+        return unavailableSnapshot()
     }
-    let context = container.mainContext
+
     let now = Date.now
     let startOfDay = Calendar.current.startOfDay(for: now)
     // Upper bound as well as lower: an entry dated later today hasn't been spent
@@ -51,21 +41,39 @@ private func loadTodaySnapshot() -> SpendSnapshot {
             $0.date >= startOfDay && $0.date <= now && !$0.isArchived && !$0.isPending
         }
     )
-    let entries: [Entry] = (try? context.fetch(descriptor)) ?? []
-    let total = entries.reduce(Decimal(0)) { $0 + $1.amount }
+    let totals = WidgetSnapshotTotals.map { try context.fetch(descriptor) }
+    guard totals.isAvailable else { return unavailableSnapshot() }
+
+    let quickButtons: [QuickButton]
+    do {
+        quickButtons = try makeQuickButtons(context: context)
+    } catch {
+        // One consistent state: a history read that failed must not render the
+        // hard-coded default tiles as if they were learned from the user.
+        Log.store.error("widget snapshot unavailable: quick-button history read failed (\(Log.describe(error), privacy: .public))")
+        return unavailableSnapshot()
+    }
+
+    Log.store.notice("widget snapshot read shared store with \(totals.count, privacy: .public) entries")
     return SpendSnapshot(
         date: .now,
-        total: total,
-        count: entries.count,
-        quickButtons: makeQuickButtons(context: context)
+        total: totals.total,
+        count: totals.count,
+        quickButtons: quickButtons,
+        isAvailable: true
     )
+}
+
+private func unavailableSnapshot() -> SpendSnapshot {
+    SpendSnapshot(date: .now, total: 0, count: 0, quickButtons: defaultQuickButtons, isAvailable: false)
 }
 
 /// Learns the user's top category+amount pairs from actual history.
 /// Groups all entries by (category, rounded amount), counts frequency,
 /// and returns the top 3 as one-tap buttons.
+/// Throws rather than swallowing: a failed read must not look like history.
 @MainActor
-private func makeQuickButtons(context: ModelContext) -> [QuickButton] {
+private func makeQuickButtons(context: ModelContext) throws -> [QuickButton] {
     // Fetch all non-archived entries (last 90 days is enough to learn patterns)
     let now = Date.now
     let ninetyDaysAgo = Calendar.current.date(byAdding: .day, value: -90, to: now) ?? now
@@ -76,10 +84,10 @@ private func makeQuickButtons(context: ModelContext) -> [QuickButton] {
             $0.date >= ninetyDaysAgo && $0.date <= now && !$0.isArchived && !$0.isPending
         }
     )
-    let entries: [Entry] = (try? context.fetch(descriptor)) ?? []
+    let entries = try context.fetch(descriptor)
 
     // Fetch categories for emoji/name lookup
-    let categories: [SpendCategory] = (try? context.fetch(FetchDescriptor<SpendCategory>())) ?? []
+    let categories = try context.fetch(FetchDescriptor<SpendCategory>())
     let lookup = Dictionary(uniqueKeysWithValues: categories.map { ($0.key, $0) })
 
     // Group by (category, rounded amount) and count
@@ -129,7 +137,8 @@ struct SpendProvider: TimelineProvider {
             date: .now,
             total: 0,
             count: 0,
-            quickButtons: defaultQuickButtons
+            quickButtons: defaultQuickButtons,
+            isAvailable: true
         )
     }
 
@@ -142,9 +151,23 @@ struct SpendProvider: TimelineProvider {
     func getTimeline(in context: Context, completion: @escaping (Timeline<SpendSnapshot>) -> Void) {
         Task { @MainActor in
             let snapshot = loadTodaySnapshot()
-            let nextRefresh = Calendar.current.date(byAdding: .minute, value: 15, to: .now)
-                ?? .now.addingTimeInterval(900)
-            completion(Timeline(entries: [snapshot], policy: .after(nextRefresh)))
+            let timeline = SpendTimeline.entries(
+                now: .now,
+                snapshot: snapshot,
+                calendar: .current
+            )
+
+            // WidgetKit treats `.after` and app-triggered reloads as requests; its
+            // per-widget budget can defer or drop them. Log saves, currency changes,
+            // and foregrounding request immediate reloads, but no cadence is exact.
+            // A log rebuilds this timeline (including the pending midnight entry).
+            // If WidgetKit defers that reload, the old zero reset can briefly hide
+            // same-day logs after midnight; widgets cannot fetch a new total at the
+            // boundary without a granted timeline refresh.
+            completion(Timeline(
+                entries: timeline.entries,
+                policy: .after(timeline.refreshAfter)
+            ))
         }
     }
 }
@@ -160,28 +183,29 @@ struct SpendWidgetEntryView: View {
         case .systemMedium:
             mediumView
         case .accessoryCircular:
-            ZStack {
-                Image(systemName: "plus")
-                    .font(.title3.weight(.semibold))
-            }
-            .widgetURL(URL(string: "taplog://log")!)
-            .accessibilityLabel("Log expense")
-            .containerBackground(for: .widget) { AccessoryWidgetBackground() }
+            // The URL and label belong on the Image itself: an accessibility
+            // label on a plain container is only applied when that container is
+            // made an element, so a wrapping ZStack lost it and VoiceOver read
+            // the bare SF Symbol.
+            Image(systemName: "plus")
+                .font(.title3.weight(.semibold))
+                .widgetURL(AccessoryWidgetRoute.circular.url)
+                .accessibilityLabel(AccessoryWidgetRoute.circular.label)
+                .containerBackground(for: .widget) { AccessoryWidgetBackground() }
         case .accessoryRectangular:
+            // One element for the icon and text, so VoiceOver reads the label
+            // instead of announcing "Add" and "Log expense" separately.
             HStack(spacing: 5) {
                 Image(systemName: "plus.circle.fill")
-                Text("Log expense")
+                Text(AccessoryWidgetRoute.rectangular.label)
             }
             .font(.caption.weight(.semibold))
             .lineLimit(1)
             .minimumScaleFactor(0.8)
-            .widgetURL(URL(string: "taplog://log")!)
-            .accessibilityLabel("Open TapLog expense capture")
+            .widgetURL(AccessoryWidgetRoute.rectangular.url)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(AccessoryWidgetRoute.rectangular.label)
             .containerBackground(for: .widget) { AccessoryWidgetBackground() }
-        case .accessoryInline:
-            (Text(Image(systemName: "plus.circle.fill")) + Text(" Log expense"))
-                .widgetURL(URL(string: "taplog://log")!)
-                .accessibilityLabel("Log expense")
         default:
             EmptyView()
         }
@@ -203,19 +227,29 @@ struct SpendWidgetEntryView: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .firstTextBaseline) {
-                    Label("Today", systemImage: "creditcard")
+                    Label(
+                        entry.isAvailable ? "Today" : "Unavailable",
+                        systemImage: entry.isAvailable ? "creditcard" : "exclamationmark.triangle"
+                    )
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                     Spacer()
                 }
-                Text(Money.format(entry.total))
-                    .font(.title2.bold())
-                    .monospacedDigit()
-                    .minimumScaleFactor(0.7)
-                    .lineLimit(1)
+                if entry.isAvailable {
+                    Text(Money.format(entry.total))
+                        .font(.title2.bold())
+                        .monospacedDigit()
+                        .minimumScaleFactor(0.7)
+                        .lineLimit(1)
+                } else {
+                    Text("Data unavailable")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
                 Spacer(minLength: 0)
-                Link(destination: URL(string: "taplog://log")!) {
-                    Text("Log expense →")
+                Link(destination: AccessoryWidgetRoute.captureURL) {
+                    Text(entry.isAvailable ? "Log expense →" : "Open TapLog →")
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(.tint)
                 }
@@ -247,42 +281,61 @@ struct SpendWidgetEntryView: View {
     private var mediumContent: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
-                Label("Today", systemImage: "creditcard")
+                Label(
+                    entry.isAvailable ? "Today" : "Unavailable",
+                    systemImage: entry.isAvailable ? "creditcard" : "exclamationmark.triangle"
+                )
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text("\(entry.count) logged")
-                    .font(.caption2)
+                if entry.isAvailable {
+                    Text("\(entry.count) logged")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            if entry.isAvailable {
+                Text(Money.format(entry.total))
+                    .font(.title2.bold())
+                    .monospacedDigit()
+                    .minimumScaleFactor(0.7)
+                    .lineLimit(1)
+            } else {
+                Text("Widget data unavailable")
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Text(Money.format(entry.total))
-                .font(.title2.bold())
-                .monospacedDigit()
-                .minimumScaleFactor(0.7)
-                .lineLimit(1)
             Spacer(minLength: 0)
             HStack(spacing: 6) {
-                ForEach(entry.quickButtons) { button in
-                    quickLogButton(
-                        amount: button.amount,
-                        category: button.categoryKey,
-                        label: button.label
-                    )
-                }
-                // Custom amount button — opens the app
-                Link(destination: URL(string: "taplog://log")!) {
-                    VStack(spacing: 2) {
-                        Image(systemName: "number")
-                            .font(.caption)
-                        // The user's currency, not a hardcoded rupee — this
-                        // button read "₹?" for someone logging in dollars.
-                        Text("\(Money.currencySymbol)?")
-                            .font(.caption2.weight(.semibold))
+                if entry.isAvailable {
+                    ForEach(entry.quickButtons) { button in
+                        quickLogButton(
+                            amount: button.amount,
+                            category: button.categoryKey,
+                            label: button.label
+                        )
                     }
-                    .foregroundStyle(.tint)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 6)
-                    .background(Color.accentColor.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
+                    // Custom amount button — opens the app
+                    Link(destination: AccessoryWidgetRoute.captureURL) {
+                        VStack(spacing: 2) {
+                            Image(systemName: "number")
+                                .font(.caption)
+                            // The user's currency, not a hardcoded rupee — this
+                            // button read "₹?" for someone logging in dollars.
+                            Text("\(Money.currencySymbol)?")
+                                .font(.caption2.weight(.semibold))
+                        }
+                        .foregroundStyle(.tint)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                        .background(Color.accentColor.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
+                    }
+                } else {
+                    Link(destination: AccessoryWidgetRoute.captureURL) {
+                        Label("Open TapLog", systemImage: "arrow.up.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tint)
+                    }
                 }
             }
         }
@@ -303,7 +356,7 @@ struct SpendWidgetEntryView: View {
 }
 
 struct SpendWidget: Widget {
-    let kind = "SpendWidget"
+    let kind = WidgetReload.kind
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: SpendProvider()) { entry in

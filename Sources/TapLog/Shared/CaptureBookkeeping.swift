@@ -38,7 +38,7 @@ enum CaptureBookkeeping {
         // Streaks, weekly mask, streak-freeze awards.
         RetentionManager(defaults: defaults).recordLogDay(on: entryDate)
 
-        WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
+        WidgetCenter.shared.reloadTimelines(ofKind: WidgetReload.kind)
     }
 
     /// Inverse of `apply` — call from undo closures after the entry has been
@@ -80,7 +80,7 @@ enum CaptureBookkeeping {
             removingActiveDayFor: otherLogsRemainThatDay ? nil : entryDate
         )
 
-        WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
+        WidgetCenter.shared.reloadTimelines(ofKind: WidgetReload.kind)
     }
 
     /// Deletes a logged entry and takes its bookkeeping back with it.

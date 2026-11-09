@@ -37,10 +37,11 @@ final class ShareViewController: UIViewController {
         extractTextFromContext { [weak self] text in
             guard let self else { return }
             let parsed = ShareParser.parse(text)
+            let outcome = ShareOutcome.of(parsed)
 
-            guard let amount = parsed.amount, amount > 0 else {
+            guard case let .saved(amount) = outcome else {
                 DispatchQueue.main.async {
-                    label.text = "Couldn't find an amount to log. Open TapLog to enter it manually."
+                    label.text = outcome.message
                     doneButton.isHidden = false
                 }
                 return
@@ -95,43 +96,63 @@ final class ShareViewController: UIViewController {
     }
 
     /// Loads shared text asynchronously via completion handler instead of a blocking semaphore.
+    /// `ShareTextCollector` owns which pieces count and their order; this method
+    /// only turns the sheet's providers into loaded payloads.
     private func extractTextFromContext(completion: @escaping (String) -> Void) {
         guard let items = extensionContext?.inputItems as? [NSExtensionItem] else {
             completion("")
             return
         }
 
-        var textParts: [String] = []
+        // Another app chooses what it offers. Only text-conforming providers are
+        // candidates; the collector decides which of them still contribute.
+        var candidates: [(provider: NSItemProvider, typeIdentifier: String)] = []
+        let collectorItems = items.map { item -> ShareTextCollector.Item in
+            var ids: [Int] = []
+            for provider in item.attachments ?? [] {
+                let typeIdentifier: String
+                if provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) {
+                    typeIdentifier = UTType.plainText.identifier
+                } else if provider.hasItemConformingToTypeIdentifier(UTType.text.identifier) {
+                    typeIdentifier = UTType.text.identifier
+                } else {
+                    continue
+                }
+                ids.append(candidates.count)
+                candidates.append((provider, typeIdentifier))
+            }
+            return ShareTextCollector.Item(
+                body: ShareParser.nonemptyText(from: item.attributedContentText),
+                attachmentIDs: ids
+            )
+        }
+
+        let places = ShareTextCollector.places(for: collectorItems)
         let accumulationQueue = DispatchQueue(label: "dev.amteshwar.taplog.share-text-accumulation")
         let group = DispatchGroup()
+        var loaded: [Int: Any] = [:]
 
-        var providers = 0
-        // Another app chooses how many attachments to offer; stop at the cap
-        // instead of loading everything it names.
-        outer: for item in items {
-            guard let attachments = item.attachments else { continue }
-            for provider in attachments {
-                if providers >= ShareParser.maxAttachments { break outer }
-                guard provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) else { continue }
-                providers += 1
-                group.enter()
-                provider.loadItem(forTypeIdentifier: UTType.plainText.identifier, options: nil) { result, _ in
-                    if let string = result as? String {
-                        // The shared string itself can be huge, and a raw cut
-                        // could leave a fragment of a number behind — cap through
-                        // `boundedPiece`, never a raw `prefix(...)`.
-                        let piece = ShareParser.boundedPiece(string)
-                        accumulationQueue.sync {
-                            textParts.append(piece)
-                        }
+        for case let .attachment(id) in places {
+            guard id < candidates.count else { continue }
+            let candidate = candidates[id]
+            group.enter()
+            candidate.provider.loadItem(
+                forTypeIdentifier: candidate.typeIdentifier, options: nil
+            ) { result, _ in
+                if let result {
+                    // Write to the reserved slot so callback order cannot reorder the share.
+                    accumulationQueue.sync {
+                        loaded[id] = result
                     }
-                    group.leave()
                 }
+                group.leave()
             }
         }
 
         group.notify(queue: accumulationQueue) {
-            let allText = ShareParser.boundedText(textParts)
+            let allText = ShareParser.boundedText(
+                ShareTextCollector.pieces(from: places, loaded: loaded)
+            )
             DispatchQueue.main.async {
                 completion(allText)
             }

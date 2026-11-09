@@ -116,6 +116,6 @@ enum DebugSeeder {
         let retention = RetentionManager()
         _ = retention.daysLoggedThisWeek
 
-        WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
+        WidgetCenter.shared.reloadTimelines(ofKind: WidgetReload.kind)
     }
 }

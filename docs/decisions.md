@@ -1,5 +1,216 @@
 # Decisions
 
+## Widget snapshots use fresh contexts from the cached shared-store container
+
+- Context: issue #63. A widget process can be asked for a new timeline while its
+  existing `ModelContext` still carries a stale view of data saved by the app.
+  `StoreLocator`'s one-container cache is load-bearing because opening the same
+  store again in the app process can crash Siri logging.
+- Decision: each widget snapshot creates a fresh `ModelContext` from the cached
+  container and reads only when that container is the shared App Group store.
+  A missing shared store or a failed fetch produces an unavailable widget state,
+  not a valid-looking zero. The read-to-totals mapping lives in
+  `WidgetSnapshotTotals` so the failure state is covered by `TapLogTests`,
+  which does not link the widget target; the shared-store rule is the pure
+  `StoreLocator.isSharedStore`. A failed quick-button history read also renders
+  the unavailable state instead of the hard-coded defaults. Diagnostics record
+  shared-store read status and entry count, without recording a total or store
+  path.
+- Consequence: installations without a usable App Group can still use the app,
+  while their widget says its data is unavailable instead of showing unrelated
+  figures. WidgetKit refreshes remain best-effort, and the fresh-context behavior
+  still needs physical-device verification across the app/widget process boundary.
+
+## History rows expose edit and delete, and a full swipe does not archive
+
+- Context: issue #58. History already opened editing when a row was tapped and
+  offered archive and delete through swipe actions, but neither route was
+  discoverable on screen. A full swipe executed the first swipe action, Archive,
+  which silently removed the entry from totals and the active list.
+- Decision: show a pencil and a trash control on every active and archived entry
+  row, each with an accessibility label, keep tapping the row as an edit
+  shortcut, and disable full-swipe execution for archive/restore actions. Keep
+  deletion immediate and undoable through the existing undo stack. At
+  accessibility Dynamic Type sizes the two controls sit below the row instead of
+  taking 108 points of its width.
+- Consequence: edit and delete are visible directly in History, while archive
+  and restore still require a deliberate swipe action. Delete continues to use
+  the established persistence and bookkeeping path, including restoring
+  counters on undo. `EntryRowActions` is unit-tested for the affordances, the
+  full-swipe rule and the accessibility-size layout, but no UI test taps the
+  controls, so the sheet, the undo toast and the rendered layout still need a
+  simulator or device check.
+
+## Keep the current Pro gates and let users choose when to see the offer
+
+- Context: issue #59 asked whether the fourth budget, the first monthly recap
+  request, and the Settings entry are the right criteria and placements for the
+  lifetime Pro offer. The repository has no reliable measurement of how many
+  users reach any trigger, how often they convert, or whether they refund or
+  complain. The paywall's `PaywallEvidence` only selects record-specific copy;
+  it does not decide whether the offer appears.
+- Decision: keep the existing product criteria: the first three budgets are
+  free and Pro unlocks further budgets; weekly recaps stay free and Pro unlocks
+  the monthly span; CSV export stays free because it is the user's only way to
+  take local-only records out of the app. Each gate applies to an attempted new
+  action, so existing budgets and records remain usable. Do not add a time-based
+  gate or delay the monthly gate without evidence that users find the current
+  moment disruptive. Keep each ask at the action that reached the gate, and
+  retain the Pro row in Settings as a clearly labeled, optional entry point.
+  That row uses general Pro copy describing both paid benefits instead of
+  pretending the user's grove is full. The ask is never shown on launch or
+  repeated for the same tap.
+- Placement: Budgets shows the offer when the user taps add with three existing
+  budgets; the category editor shows it from its "Grow a fourth tree" button,
+  and only when the category has no budget yet and three budgets already
+  exist; the recap shows it when the user taps Month; Settings shows it only
+  when the user taps TapLog Pro. `PaywallEvidence` controls whether the offer
+  displays the user's record or decorative grove, not whether the ask fires.
+- Consequence: the product remains useful without budgets, and users who do
+  not reach a gated action can use the app indefinitely without an unsolicited
+  ask. We cannot claim these placements maximize conversion or minimize refunds
+  without measurement. Any future change to thresholds, timing, or a post-recap
+  surface should first define a user-respecting success measure and obtain
+  evidence, without adding unauthorized metrics collection.
+
+## Accessory widget routing is data, not inline literals
+
+- Context: issue #76, following #70. The circular widget's URL and
+  `.accessibilityLabel("Log expense")` sat on a single-child `ZStack`, a
+  container that is not an accessibility element, so VoiceOver likely read the
+  bare SF Symbol. The rectangular row's label was ignored by the same rule and
+  announced as "Add" plus "Log expense". The `.accessoryInline` branch was
+  unreachable because the family is absent from `supportedFamilies`, and
+  `taplog://log` was written at five sites in one file.
+- Decision: delete the single-child `ZStack` and keep `.widgetURL` and
+  `.accessibilityLabel` on the circular `Image`. Give the rectangular row
+  `.accessibilityElement(children: .ignore)` before its label, and use the same
+  "Log expense" copy as the visible text. Delete the unreachable
+  `.accessoryInline` case rather than offering a new family. Move each accessory
+  family's URL and label into `AccessoryWidgetRoute` in `Sources/TapLog/Shared`,
+  which also owns the single `captureURL` constant every widget link now uses.
+- Consequence: a Lock Screen route `CapturePrefill` rejects, or an accessory
+  branch that goes back to `Link`, now fails `AccessoryWidgetRouteTests`, which
+  asserts against the shared model and reads the widget source instead of
+  trusting inline literals. Verified here with `xcodegen generate` leaving the
+  project clean, the full `xcodebuild test` suite on the iPhone 18 Pro
+  simulator (`TEST SUCCEEDED`), and a deliberate break of one route to a link
+  `CapturePrefill` rejects, which failed the new test until the mapping was
+  restored. Not verified: VoiceOver, tap routing, clipping and the accessory
+  background on a real Lock Screen still need a device check. This supersedes
+  the `.accessoryInline` sentence in "Lock Screen spend widgets use widget-level
+  deep links and accessory backgrounds" (#61, merged in #70): no family renders
+  an inline branch.
+
+## Siri category lookup errors are surfaced, and only supported shortcut phrases are promised
+
+- Context: issue #64 reported Siri declining an expense phrase and a category
+  entity query that converted any store or fetch failure into an empty list.
+  The current shortcut provider exposes two shortcuts: `LogExpenseIntent` for
+  headless logging and `OpenCaptureIntent` for the keypad. A numeric value such
+  as `50` cannot be interpolated into an App Shortcut phrase because App Intents
+  only supports entity and enum phrase parameters; the removed numerical intent
+  and entity are not part of the supported flow.
+- Decision: keep the two supported shortcuts and the amount prompt in
+  `LogExpenseIntent`. A store-open or fetch failure throws an actionable
+  localized error; an empty result just means no category matched, whether the
+  store has no categories or none of them match the spoken word. The intent's
+  category fetch also throws instead of silently logging into a fallback
+  category. If saving fails, remove the new unsaved
+  entry from the shared context before returning the error. Document “Log an
+  expense in TapLog” (or “Log chai in TapLog”) and then answering prompts as the
+  supported route; state that “Log 50 in TapLog” is unsupported.
+- Consequence: users get an actionable failure when the category store cannot
+  be read, and failed inserts cannot be committed by a later save in the shared
+  context. The issue's old three-shortcut acceptance criteria do not match the
+  current product. Release verification must inspect the built
+  `Metadata.appintents/root.ssu.yaml` for the two supported intents; no automated
+  SSU checker is added until its generated schema is available to validate.
+
+## Share parsing distinguishes missing text from unreadable text
+
+- Context: issue #65. A share with no extracted content and a nonempty share whose
+  amount the parser declines both reached the same message, while Messages may
+  provide its body as `attributedContentText` and attachment providers may return
+  `Data` or `NSAttributedString` instead of `String`.
+- Decision: prefer a nonempty attributed body as that item's text. When the body
+  carries no amount, the item's text attachments still contribute after it,
+  because a rich-link body can be a summary while the payment SMS sits in an
+  attachment. Convert supported Foundation payloads to bounded strings, reserve a
+  slot per attachment in source order so callback order cannot reorder the share,
+  and drop slots whose payload was unsupported or empty. The collection policy
+  lives in `ShareTextCollector` under `Sources/TapLog/Shared` so the test target
+  can exercise it, and the extension only drives `NSItemProvider`. Retain whether
+  the parser received meaningful text so the extension can show a distinct
+  message for an empty share and an unreadable amount. Do not log shared content
+  or its prefix because payment messages can include personal and financial
+  details.
+- Consequence: unsupported payloads and malformed UTF-8 still contribute no
+  text; supported text remains subject to the existing per-piece, attachment
+  count and total text limits, applied once across the ordered pieces. Verified
+  at parser level only: the originally failing Messages share and a device run
+  have not been confirmed, so a body that carries no amount can still fail to
+  prefill.
+
+## Capture fills its viewport when content fits and scrolls when it does not
+
+- Context: issue #66. The capture content sat in a `ScrollView`, which proposes
+  an unbounded height to its content. The amount spacers therefore stayed at
+  their minimum lengths, leaving unused space after the category tiles on tall
+  screens.
+- Decision: lay the keypad and Log bar out as a sibling below the content and
+  size a `ViewThatFits` against the height that is left — the container the
+  system has already reduced by the status-bar and home-indicator insets, minus
+  the 326pt `CaptureBottomBar.height`. The fit height may never be the screen
+  height and may never be read from a `GeometryReader` wrapped around a
+  `.safeAreaInset`. Measured on an iPhone 17 simulator, that reader reported a
+  398pt frame while `safeAreaInsets.bottom` still carried the bar and the home
+  indicator (360pt), so subtracting the insets again measured 0 and every screen
+  scrolled. The pure `CaptureFit.visibleHeight`, `CaptureFit.contentMinHeight`
+  and `CaptureFit.usesScroll` helpers hold the arithmetic and the decision, so it
+  is unit-tested. The first candidate is the capture stack with a minimum height
+  equal to the visible height, letting its spacers divide the leftover room; the
+  fallback is a scroll view containing the same stack when its content does not
+  fit. `ViewThatFits` re-measures the real stack, so an underestimated content
+  minimum can only fall through to the scroll, never clip.
+- Consequence: the tiles stay connected to the keypad on tall screens, while
+  short screens and larger text retain access to the full category row by
+  scrolling. A regression here — measuring the screen, or letting the bar's
+  height drift from `CaptureBottomBar.height` — clips the tile row behind the
+  opaque keypad with no scrolling available to reach it. The keypad and Log bar
+  keep their dimensions and their own safe-area placement.
+- Verification: `CaptureFitTests` pins the fit decision, the bar subtraction and
+  the content minimum; the full test suite passed, and the screen was checked in
+  a portrait iPhone 17 simulator (`scroll=false`, visible 398pt, tiles ending at
+  the bar's top edge). Not verified: a physical device, the 4.7" scrolling path
+  and accessibility Dynamic Type sizes — no such hardware or size was available
+  in this environment.
+
+## The spend widget rolls over at midnight and refreshes on likely opportunities
+
+- Context: issue #62. The spend widget had one snapshot and requested a refresh
+  every 15 minutes. That request exceeds a reasonable WidgetKit budget and does
+  not guarantee a fixed cadence; the single snapshot also kept yesterday's total
+  under the "Today" label after midnight. Currency changes and app foregrounding
+  did not request a reload.
+- Decision: each timeline contains the current day's snapshot and a zero-total,
+  zero-count entry at the next calendar midnight. It requests another timeline
+  after 30 minutes, or at midnight when that comes first. The app requests a
+  widget reload when the currency changes and when it enters the foreground,
+  but the foreground request is gated: `WidgetReload` records the log counter and
+  currency the widget was last asked to render, and an activation asks again only
+  when one of them has moved since. A plain foregrounding therefore spends no
+  budget. Existing log, undo, edit and delete reloads remain in place.
+- Consequence: WidgetKit can defer or drop both scheduled and explicit reloads,
+  so neither the rolling cadence nor a log's appearance has a one-second or exact
+  midnight guarantee. A log reload rebuilds the pending midnight entry. If that
+  reload is deferred, an older zero-total reset can briefly hide logs recorded
+  later that day after midnight. The app cannot read a new total at the boundary
+  unless WidgetKit grants a timeline refresh. The activation gate compares two
+  cheap values rather than the rendered total, so an edit that changes an amount
+  without changing the log counter is caught by its own reload path, not by this
+  one; if that reload was dropped, the activation gate will not notice.
+
 ## Lock Screen spend widgets use widget-level deep links and accessory backgrounds
 
 - Context: issue #61. The circular Lock Screen widget attached its URL to an
@@ -11,8 +222,10 @@
   rectangular prompt as one compact icon-and-text row, and give both offered
   Lock Screen families `AccessoryWidgetBackground` through
   `containerBackground(for: .widget)`. Keep `.accessoryInline` out of
-  `supportedFamilies`, but render it as one linked line if WidgetKit requests
-  it; unsupported families render no Home Screen content.
+  `supportedFamilies` and render no inline content at all; unsupported families
+  render no Home Screen content. #76 later deleted the inline branch and moved
+  each family's route into data, and the `AccessoryWidgetRoute` record above
+  supersedes the inline sentence this record first carried.
 - Consequence: both offered Lock Screen widgets route through the app's existing
   capture deep link and use the system's accessory background treatment. Adding
   another family later requires an explicit layout rather than silently
@@ -176,3 +389,22 @@
 - Consequence: `PrivacyViewTests` still fails if a placeholder URL, an invented
   contact or a blanket assurance is introduced, so the replacement cannot quietly
   weaken the screen.
+
+## Pending capture intents resolve before the opening animation
+
+- Context: issue #60. A cold widget deep link can reach `onOpenURL` after the
+  first capture view appears, so the opening plant may begin before the app
+  knows it should route directly to capture.
+- Decision: initialize the splash decision from the durable pending intent
+  flag, without consuming the payload. When a direct-capture URL arrives later,
+  remove the opening and reveal capture without animating a partial dissolve.
+- Consequence: ordinary launches keep their full animation. A pending activation
+  skips the opening on the first render only when the flag predates the launch —
+  a flag left by a previous process or written by another target. `OpenCaptureIntent`
+  runs in the app target and declares `openAppWhenRun`, so in the normal case
+  `perform()` writes the flag after the capture view exists; that late path
+  reveals capture instantly instead, with no partial dissolve. This AppIntent
+  ordering is not yet verified on a device. The existing widget `Link` still
+  sends only a URL, so a cold widget launch may show part of the opening before
+  `onOpenURL` arrives; this path remains unresolved without an earlier lifecycle
+  signal.

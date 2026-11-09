@@ -43,8 +43,46 @@ struct LogHomeView: View {
     let prefill: CapturePrefill?
     let onLogged: (() -> Void)?
     let onPrefillConsumed: (() -> Void)?
-    /// When true the logo splash is skipped — used by OpenCaptureIntent.
+    /// When true the opening plant is skipped — set by a pending capture intent
+    /// or a direct-capture URL.
     let skipSplash: Bool
+
+    /// What the opening animation does when this screen first appears.
+    enum OpeningAction: Equatable {
+        /// Play the plant, then dissolve to capture when it settles.
+        case run
+        /// A direct-capture activation predates this launch: never mount the
+        /// plant, so nothing can be aborted partway through.
+        case skipOnMount
+        /// No plant for this person (Reduce Motion, or a guided onboarding
+        /// step): reveal capture as soon as the screen appears.
+        case skipImmediately
+    }
+
+    /// The first-render decision, kept out of the view so it can be tested.
+    ///
+    /// `hasPendingActivation` is read from the durable flag before the first
+    /// render, which is the only way the skip can apply on mount. A late
+    /// activation — the normal `OpenCaptureIntent` case, where `perform()`
+    /// writes the flag after this view exists — arrives through `onChange` and
+    /// reveals capture instantly.
+    static func openingAction(
+        hasPendingActivation: Bool,
+        reduceMotion: Bool,
+        isOnboarding: Bool
+    ) -> OpeningAction {
+        if hasPendingActivation { return .skipOnMount }
+        if reduceMotion || isOnboarding { return .skipImmediately }
+        return .run
+    }
+
+    private var openingAction: OpeningAction {
+        Self.openingAction(
+            hasPendingActivation: skipSplash,
+            reduceMotion: reduceMotion,
+            isOnboarding: isOnboarding
+        )
+    }
 
     private var lookup: CategoryLookup { CategoryLookup(categories) }
 
@@ -79,10 +117,14 @@ struct LogHomeView: View {
                 .opacity(openingPhase)
                 .ignoresSafeArea()
 
-            // The opening plant (fades out as content fades in)
-            openingView
-                .opacity(1 - openingPhase)
-                .ignoresSafeArea()
+            // The opening plant (fades out as content fades in). Not mounted at
+            // all when a pending activation predates the launch, so a later
+            // decision has nothing to abort.
+            if openingAction != .skipOnMount {
+                openingView
+                    .opacity(1 - openingPhase)
+                    .ignoresSafeArea()
+            }
 
             // Main content (fades in)
             mainContent
@@ -90,7 +132,8 @@ struct LogHomeView: View {
         }
         .onAppear {
             applyPrefill()
-            if skipSplash || reduceMotion || isOnboarding {
+            switch openingAction {
+            case .skipOnMount, .skipImmediately:
                 // Straight to capture, no opening. Reduce Motion is included
                 // because the plant is decoration: someone who asked for no
                 // motion gains nothing from a still of it standing in the way
@@ -98,12 +141,15 @@ struct LogHomeView: View {
                 // step skips it too — that is a step inside onboarding, not
                 // someone opening the app.
                 openingPhase = 1
+            case .run:
+                break
+                // Otherwise the opening runs, on this and every ordinary
+                // launch. Nothing to schedule here: the dissolve is triggered
+                // by the animation itself, through `revealCapture`, because
+                // only it knows when it started drawing. Measured from this
+                // point the plant grew behind the launch image and was over
+                // before anyone saw it.
             }
-            // Otherwise the opening runs, on this and every ordinary launch.
-            // Nothing to schedule here: the dissolve is triggered by the
-            // animation itself, through `revealCapture`, because only it knows
-            // when it started drawing. Measured from this point the plant grew
-            // behind the launch image and was over before anyone saw it.
 #if DEBUG
             // Test hook: `simctl launch ... -autolog 42` logs an expense without a
             // human at the keypad. Debug-only — a shipped build that logs money
@@ -120,11 +166,10 @@ struct LogHomeView: View {
         }
         .onChange(of: skipSplash) { _, newValue in
             // Handle intent activation received after onAppear — e.g. the app
-            // was already visible when OpenCaptureIntent fired.
+            // was already visible when OpenCaptureIntent fired. Remove the
+            // opening immediately so it cannot dissolve partway through.
             if newValue && openingPhase < 1 {
-                withAnimation(reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 1.0)) {
-                    openingPhase = 1
-                }
+                openingPhase = 1
             }
         }
         .onChange(of: prefill) { applyPrefill() }
@@ -166,44 +211,103 @@ struct LogHomeView: View {
 
     // MARK: - Main Content
 
-    /// The keypad and Log button are pinned as a bottom inset so the two controls
-    /// that finish the task are always under the thumb, whatever the screen height.
-    /// Everything above them scrolls, which is what keeps this usable on a 4.7"
-    /// device where the keypad alone claims most of the viewport.
+    /// The keypad and Log button sit at the bottom of the screen so the two
+    /// controls that finish the task are always under the thumb, whatever the
+    /// screen height. The content fills the region above the bar when it fits
+    /// and becomes scrollable when the bar leaves too little room, as on a 4.7"
+    /// device.
+    ///
+    /// The bar used to live in a `.safeAreaInset`, and the fit height was taken
+    /// from the `GeometryReader` wrapped around it. Measured on an iPhone 17
+    /// simulator, that reader's frame was already the region above the bar
+    /// (398pt) while `safeAreaInsets.bottom` still reported the bar plus the
+    /// home indicator (360pt), so subtracting the insets a second time measured
+    /// 0 and the stack always scrolled. The bar is a plain sibling here and the
+    /// frame is already the safe region: the visible height is the container
+    /// less the bar, arithmetic that `CaptureFit` can be tested on.
     private var mainContent: some View {
-        ScrollView(.vertical, showsIndicators: false) {
+        GeometryReader { container in
+            let visible = CaptureFit.visibleHeight(
+                containerHeight: container.size.height,
+                barHeight: CaptureBottomBar.height
+            )
+
             VStack(spacing: 0) {
-                // Deliberately empty above the amount. This screen used to open
-                // with a streak wreath, today's total and a "Use the keypad"
-                // hint stacked over the number they were competing with. All
-                // three are gone: the streak has its own screen, today's total
-                // is on History, and the hint taught a keypad that is already
-                // the only thing on the lower half of the screen.
-                //
-                // No trees either, in any form — a grove strip, tile badges and
-                // a background horizon were each tried and each gave the eye a
-                // second place to land. What survives is the one 2pt rule under
-                // each tile, which adds no object to the row.
-                Spacer(minLength: 48)
-                amountArea
-                Spacer(minLength: 36)
-                categoryLine
-                tileRow()
+                Group {
+                    if CaptureFit.usesScroll(visibleHeight: visible, contentMinHeight: captureContentMinHeight) {
+                        scrollingCapture
+                    } else {
+                        ViewThatFits(in: .vertical) {
+                            // This candidate sees a finite height, so the
+                            // spacers divide the visible region. When the stack
+                            // really is taller, fall through to the scroll
+                            // rather than compressing or clipping the row.
+                            captureContent
+                                .frame(minHeight: visible, alignment: .top)
+
+                            scrollingCapture
+                        }
+                    }
+                }
+                .frame(height: visible, alignment: .top)
+
+                bottomBar
             }
         }
+    }
+
+    /// The keypad and the Log pill. Pinned to `CaptureBottomBar.height` so the
+    /// height the fit check subtracts is the height that is actually drawn.
+    private var bottomBar: some View {
+        VStack(spacing: 0) {
+            // Unconditional now. The keypad used to yield the bottom of the
+            // screen whenever the note field raised the system keyboard;
+            // with the note field gone from capture, nothing on this screen
+            // summons a keyboard, so the keypad is always the thing here.
+            keypad
+            logButton
+                .padding(.bottom, CaptureBottomBar.logButtonBottomPadding)
+                .padding(.top, CaptureBottomBar.logButtonLiftPadding)
+        }
+        .frame(height: CaptureBottomBar.height)
+        .background(Theme.paper)
+    }
+
+    private var scrollingCapture: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            captureContent
+        }
         .scrollBounceBehavior(.basedOnSize)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            VStack(spacing: 0) {
-                // Unconditional now. The keypad used to yield the bottom of the
-                // screen whenever the note field raised the system keyboard;
-                // with the note field gone from capture, nothing on this screen
-                // summons a keyboard, so the keypad is always the thing here.
-                keypad
-                logButton
-                    .padding(.bottom, CaptureBottomBar.logButtonBottomPadding)
-                    .padding(.top, CaptureBottomBar.logButtonLiftPadding)
-            }
-            .background(Theme.paper)
+    }
+
+    /// The capture stack's height when no spacer flexes, used only to skip the
+    /// fill attempt early. It is an estimate of the default-size geometry, and
+    /// its error is absorbed by the `ViewThatFits` fallback that follows: a
+    /// small overestimate costs a few points of scroll range, never a clipped
+    /// row.
+    private var captureContentMinHeight: CGFloat {
+        let fontSize = AmountFont.focalFontSize(for: amountText, dynamicTypeSize: dynamicTypeSize)
+        return CaptureFit.contentMinHeight(amountHeroHeight: AmountLayout.focalHeroHeight(fontSize: fontSize))
+    }
+
+    private var captureContent: some View {
+        VStack(spacing: 0) {
+            // Deliberately empty above the amount. This screen used to open
+            // with a streak wreath, today's total and a "Use the keypad"
+            // hint stacked over the number they were competing with. All
+            // three are gone: the streak has its own screen, today's total
+            // is on History, and the hint taught a keypad that is already
+            // the only thing on the lower half of the screen.
+            //
+            // No trees either, in any form — a grove strip, tile badges and
+            // a background horizon were each tried and each gave the eye a
+            // second place to land. What survives is the one 2pt rule under
+            // each tile, which adds no object to the row.
+            Spacer(minLength: CaptureFit.amountTopMinimum)
+            amountArea
+            Spacer(minLength: CaptureFit.amountBottomMinimum)
+            categoryLine
+            tileRow()
         }
     }
 
@@ -705,16 +809,6 @@ struct LogHomeView: View {
     }
 }
 
-/// Fixed geometry of the capture screen's pinned bottom bar — the keypad grid
-/// plus the Log pill.
-///
-/// These live outside the view because the undo toast has to float clear of the
-/// bar and cannot measure it: the toast is an overlay on the app root, so it
-/// sits outside the safe-area inset that holds these controls. The toast used to
-/// carry its own hardcoded offset, which was correct when the Log pill was the
-/// only thing down here and silently wrong the moment the keypad arrived —
-/// "Undo" ended up sitting on the backspace key. Deriving both from the same
-/// numbers is what keeps them from drifting apart again.
 /// What the 2pt rule under a category tile can say.
 ///
 /// Three states, not six: the tile row answers "is this one fine?" at a glance
@@ -744,6 +838,16 @@ enum TileBudgetState {
     }
 }
 
+/// Fixed geometry of the capture screen's pinned bottom bar — the keypad grid
+/// plus the Log pill.
+///
+/// These live outside the view because the undo toast has to float clear of the
+/// bar and cannot measure it: the toast is an overlay on the app root, outside
+/// the bottom bar that holds these controls. The toast used to
+/// carry its own hardcoded offset, which was correct when the Log pill was the
+/// only thing down here and silently wrong the moment the keypad arrived —
+/// "Undo" ended up sitting on the backspace key. Deriving both from the same
+/// numbers is what keeps them from drifting apart again.
 enum CaptureBottomBar {
     static let keyHeight: CGFloat = 56
     static let keySpacing: CGFloat = 10
@@ -751,7 +855,7 @@ enum CaptureBottomBar {
     static let logButtonHeight: CGFloat = 52
     /// Gap between the keypad and the Log pill.
     static let logButtonTopPadding: CGFloat = 8
-    /// Extra lift applied to the pill inside the inset stack.
+    /// Extra lift applied to the pill inside the pinned bottom bar.
     static let logButtonLiftPadding: CGFloat = 4
     /// Gap between the Log pill and the bottom safe-area edge.
     static let logButtonBottomPadding: CGFloat = 8

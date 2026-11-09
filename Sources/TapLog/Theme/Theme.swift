@@ -362,3 +362,41 @@ enum AmountLayout {
         return max(longValueFontFloor, min(AmountFont.minFontSize, fitted))
     }
 }
+
+/// Whether the capture stack fills its viewport or has to scroll.
+///
+/// The decision is pure so the constraint that matters — the fit height is the
+/// height the user can see above the pinned keypad, not the whole screen — can
+/// be tested without a simulator.
+enum CaptureFit {
+    /// Minimum heights of the parts of the capture stack that do not flex.
+    /// They only need to be a lower bound: `ViewThatFits` re-checks the real
+    /// measured stack, so an underestimate costs a scroll only when the stack
+    /// genuinely does not fit, never a clipped tile row.
+    static let amountTopMinimum: CGFloat = 48
+    static let amountBottomMinimum: CGFloat = 36
+    static let categoryLineMinimum: CGFloat = 28
+    static let tileRowMinimum: CGFloat = 84
+
+    /// Height of the region the user can actually see above the bottom bar: the
+    /// container, which the system has already reduced by the status-bar and
+    /// home-indicator insets, less the bar itself. Leaving the bar in this
+    /// height is what let the fill candidate always "fit" and the tile row end
+    /// up behind the opaque keypad.
+    static func visibleHeight(containerHeight: CGFloat, barHeight: CGFloat) -> CGFloat {
+        max(0, containerHeight - max(0, barHeight))
+    }
+
+    /// `true` when the stack is taller than the region the user can see, so it
+    /// must scroll. Exactly fitting counts as fitting: a one-point scroll range
+    /// is worse than a tile row that touches the bar.
+    static func usesScroll(visibleHeight: CGFloat, contentMinHeight: CGFloat) -> Bool {
+        contentMinHeight > visibleHeight
+    }
+
+    /// The stack's height when no spacer flexes: the amount row plus the fixed
+    /// rows below it.
+    static func contentMinHeight(amountHeroHeight: CGFloat) -> CGFloat {
+        amountTopMinimum + amountHeroHeight + amountBottomMinimum + categoryLineMinimum + tileRowMinimum
+    }
+}
