@@ -14,13 +14,14 @@ enum OnboardingStep: Int, Identifiable {
 }
 
 /// The History tab — a browse surface for past entries. Logging happens on the
-/// home (Log) tab, so this screen has no "+"; entries are edited on tap and
-/// archived/deleted by swipe.
+/// home (Log) tab, so this screen has no "+"; entries are edited or deleted
+/// directly from their row, and archive/restore remains a deliberate swipe.
 struct EntryListView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var undoStack: UndoStack
     @Environment(\.dismiss) private var dismiss
     @Environment(RetentionManager.self) private var retention
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
 
     @Query(filter: #Predicate<Entry> { !$0.isArchived && !$0.isPending }, sort: \Entry.date, order: .reverse)
@@ -235,21 +236,71 @@ struct EntryListView: View {
     }
 
     private func entryRow(_ entry: Entry) -> some View {
+        let actions = EntryRowActions(
+            showingArchived: showingArchived,
+            dynamicTypeSize: dynamicTypeSize
+        )
+        return Group {
+            if actions.stacksControlsBelowRow {
+                VStack(alignment: .leading, spacing: 2) {
+                    rowContent(entry)
+                    rowControls(entry, actions: actions)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                }
+            } else {
+                HStack(spacing: 10) {
+                    rowContent(entry)
+                    rowControls(entry, actions: actions)
+                }
+            }
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: actions.allowsFullSwipe) {
+            switch actions.swipe {
+            case .archive:
+                Button("Archive") { archive(entry) }
+                    .tint(Theme.accent)
+            case .unarchive:
+                Button("Unarchive") { unarchive(entry) }
+                    .tint(Theme.accent)
+            }
+            Button(role: .destructive) { delete(entry) } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+    }
+
+    private func rowContent(_ entry: Entry) -> some View {
         EntryRowView(entry: entry, lookup: lookup)
             .contentShape(Rectangle())
             .onTapGesture { editingEntry = entry }
-            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                if showingArchived {
-                    Button("Unarchive") { unarchive(entry) }
-                        .tint(Theme.accent)
-                } else {
-                    Button("Archive") { archive(entry) }
-                        .tint(Theme.accent)
+    }
+
+    @ViewBuilder
+    private func rowControls(_ entry: Entry, actions: EntryRowActions) -> some View {
+        HStack(spacing: 10) {
+            if actions.showsEdit {
+                Button {
+                    editingEntry = entry
+                } label: {
+                    Image(systemName: "pencil")
+                        .foregroundStyle(Theme.textSecondary)
+                        .frame(width: 44, height: 44)
                 }
-                Button(role: .destructive) { delete(entry) } label: {
-                    Label("Delete", systemImage: "trash")
-                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Edit entry")
             }
+
+            if actions.showsDelete {
+                Button(role: .destructive) {
+                    delete(entry)
+                } label: {
+                    Image(systemName: "trash")
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Delete entry")
+            }
+        }
     }
 
     // MARK: - Pending (share sheet) actions

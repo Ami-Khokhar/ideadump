@@ -21,6 +21,26 @@
   figures. WidgetKit refreshes remain best-effort, and the fresh-context behavior
   still needs physical-device verification across the app/widget process boundary.
 
+## History rows expose edit and delete, and a full swipe does not archive
+
+- Context: issue #58. History already opened editing when a row was tapped and
+  offered archive and delete through swipe actions, but neither route was
+  discoverable on screen. A full swipe executed the first swipe action, Archive,
+  which silently removed the entry from totals and the active list.
+- Decision: show a pencil and a trash control on every active and archived entry
+  row, each with an accessibility label, keep tapping the row as an edit
+  shortcut, and disable full-swipe execution for archive/restore actions. Keep
+  deletion immediate and undoable through the existing undo stack. At
+  accessibility Dynamic Type sizes the two controls sit below the row instead of
+  taking 108 points of its width.
+- Consequence: edit and delete are visible directly in History, while archive
+  and restore still require a deliberate swipe action. Delete continues to use
+  the established persistence and bookkeeping path, including restoring
+  counters on undo. `EntryRowActions` is unit-tested for the affordances, the
+  full-swipe rule and the accessibility-size layout, but no UI test taps the
+  controls, so the sheet, the undo toast and the rendered layout still need a
+  simulator or device check.
+
 ## Keep the current Pro gates and let users choose when to see the offer
 
 - Context: issue #59 asked whether the fourth budget, the first monthly recap
