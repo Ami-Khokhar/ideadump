@@ -218,7 +218,10 @@ hangs off "≤5 seconds, from anywhere."
 - `TapLog/AppIntents/LogExpenseIntent.swift` — an `AppIntent` named "Log Expense" with
   parameters: amount (required, `Double`), note (optional, `String`), category
   (optional). It inserts an `Entry` and returns a success result describing what was
-  logged. This is what Siri ("Log twelve on coffee") and Shortcuts call.
+  logged. This is what Siri and Shortcuts call: say "Log an expense in TapLog" and
+  answer the amount and category prompts. Numeric phrases such as "Log twelve on
+  coffee" are not supported — the phrase can only interpolate entities (see
+  `docs/decisions.md`).
 - Info.plist entries (via `project.yml` build settings): `CFBundleURLTypes` for the
   `taplog` scheme.
 
