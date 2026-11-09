@@ -15,6 +15,9 @@ struct SpendSnapshot: TimelineEntry {
     var total: Decimal
     var count: Int
     let quickButtons: [QuickButton]
+    /// False when the widget could not read the shared store, so it can say so
+    /// instead of showing a plausible empty day.
+    var isAvailable: Bool = true
 }
 
 /// The pure part of the spend widget's timeline: today's entry, the entry that
