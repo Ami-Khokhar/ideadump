@@ -10,7 +10,7 @@ struct TapLogControlWidget: ControlWidget {
 
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(kind: Self.kind) {
-            ControlWidgetButton(action: OpenURLIntent(URL(string: "taplog://log")!)) {
+            ControlWidgetButton(action: OpenURLIntent(AccessoryWidgetRoute.captureURL)) {
                 Label("Log expense", systemImage: "plus.circle.fill")
             }
         }

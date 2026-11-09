@@ -19,6 +19,7 @@
 		0DEA6701A81887424A915C7B /* PrivacyManifestTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A12B9E8555D01CE140C8948D /* PrivacyManifestTests.swift */; };
 		10D68A923A8E2E9C9AD3B4D2 /* ShareParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D80F4F776E0564FC7F8201 /* ShareParser.swift */; };
 		10FC99EA0CD361A92052B43D /* OpenCaptureIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81FFDEB986BB922DED4CE884 /* OpenCaptureIntent.swift */; };
+		13D68C3A822D3D765CE94E8C /* AccessoryWidgetRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8FC7B93DE016888D4E3D2FE /* AccessoryWidgetRoute.swift */; };
 		16E73425085637DCCF43CD1C /* OnboardingCategoriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FCAFA2601272F61B499A280 /* OnboardingCategoriesView.swift */; };
 		180E4F5A9E9A6198B68012E2 /* TemporaryExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E8077CFBE8547D5946FA19B /* TemporaryExportTests.swift */; };
 		1932E41B91F45E46AA7B947E /* TapLogWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE6D869DDDC20393088C7D57 /* TapLogWidgetBundle.swift */; };
@@ -87,6 +88,7 @@
 		81E2753C030895E72AB06B0B /* FeatureExplainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB38DB67D7BAE0F3254A4436 /* FeatureExplainer.swift */; };
 		83C7F019A54E2EDB2A44BFD4 /* WidgetReloadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BABD0939A299FDD867C85CD /* WidgetReloadTests.swift */; };
 		8AC166DDA6F9CE741D364B7A /* QuickButtonRanking.swift in Sources */ = {isa = PBXBuildFile; fileRef = A496395D787F5EFB6A65610E /* QuickButtonRanking.swift */; };
+		8C66813C76420D2A6B8E5B04 /* AccessoryWidgetRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8FC7B93DE016888D4E3D2FE /* AccessoryWidgetRoute.swift */; };
 		8CE70B98B9C3944E1BF4634D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991D5BACEE57C2FC20B39564 /* ContentView.swift */; };
 		8CEDFE125F57EF2D49C58BAB /* SpendWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AFDA712F13988B761C89CF1 /* SpendWidget.swift */; };
 		8FD6B5B53E4E7526850DD72D /* LogExpenseIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D624420DCFD82FB945A607A /* LogExpenseIntent.swift */; };
@@ -159,12 +161,14 @@
 		EE9090262BD2A5781EEAFEBF /* CategorySuggestions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7394D0DD38548F9FF448AB53 /* CategorySuggestions.swift */; };
 		EF1BFBF97F6335E1AC0423E5 /* RecapMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C56A65200B9807EE40FEC45 /* RecapMath.swift */; };
 		F050097AF5EEECD6B7266F2B /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FC516F728D48F203896905E /* Theme.swift */; };
+		F350AC6A5D72799FBAC9BF97 /* AccessoryWidgetRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8FC7B93DE016888D4E3D2FE /* AccessoryWidgetRoute.swift */; };
 		F3CCA6BC2DACB7FBAAA1A68D /* Money.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E288AE6E7A4297523866942 /* Money.swift */; };
 		F6BBAC724D5CC86BACFA991C /* WidgetReload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 780E95C933CE371EBBE1B6E7 /* WidgetReload.swift */; };
 		F6D70063B090847322B9B814 /* OrganicSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BEA93E76C0102587862FDDF /* OrganicSurface.swift */; };
 		F7B7C2E00E1547FC08B5AF78 /* BudgetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F01CDE21A570CB1DA2BCCC31 /* BudgetsView.swift */; };
 		F9C52A04273FB9D98609ED8C /* SpendTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4652034E7547330505FF79 /* SpendTimeline.swift */; };
 		FE0C41BD1EA95880437984EB /* ShareParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13A258162CA563136B4721E8 /* ShareParserTests.swift */; };
+		FFF0D8234917AF306FCFF8A2 /* AccessoryWidgetRouteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59A5FE655BD07D5242C63817 /* AccessoryWidgetRouteTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -250,6 +254,7 @@
 		52F262C9AE91426858ADB810 /* UndoStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoStack.swift; sourceTree = "<group>"; };
 		549B39D3541189E897AF5D32 /* TapLog.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TapLog.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		56A45A72CD2C5623C806428D /* FrontDoorInventory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrontDoorInventory.swift; sourceTree = "<group>"; };
+		59A5FE655BD07D5242C63817 /* AccessoryWidgetRouteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessoryWidgetRouteTests.swift; sourceTree = "<group>"; };
 		5B454363C9AF47F9F64BE104 /* BudgetCalculatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetCalculatorTests.swift; sourceTree = "<group>"; };
 		5D4DC133623B008967545263 /* TreeSpeciesArt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TreeSpeciesArt.swift; sourceTree = "<group>"; };
 		5E06859D8DD2DC20B4D96A32 /* Entry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Entry.swift; sourceTree = "<group>"; };
@@ -316,6 +321,7 @@
 		DE26898A296300C98D396FFB /* TapLogTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = TapLogTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E47FDDD9D72A53C355B60DEF /* LogHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogHomeView.swift; sourceTree = "<group>"; };
 		E61E6D1F80EEF58F89B322BC /* AmountTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmountTextField.swift; sourceTree = "<group>"; };
+		E8FC7B93DE016888D4E3D2FE /* AccessoryWidgetRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessoryWidgetRoute.swift; sourceTree = "<group>"; };
 		EB2DBF9ED98312E10D8C678D /* GroveStrip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroveStrip.swift; sourceTree = "<group>"; };
 		EE5755275B1B7EDCCE0DC33B /* UndoStackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoStackTests.swift; sourceTree = "<group>"; };
 		F01CDE21A570CB1DA2BCCC31 /* BudgetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetsView.swift; sourceTree = "<group>"; };
@@ -369,6 +375,7 @@
 		377B4091CE0E241D73106BF9 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				E8FC7B93DE016888D4E3D2FE /* AccessoryWidgetRoute.swift */,
 				37EBEBC7026B1A2D05767961 /* AmountInputFilter.swift */,
 				C3F7C64942F6820DBC00A43F /* CaptureBookkeeping.swift */,
 				7394D0DD38548F9FF448AB53 /* CategorySuggestions.swift */,
@@ -412,6 +419,7 @@
 		4654B39150AE735AA50E660C /* TapLogTests */ = {
 			isa = PBXGroup;
 			children = (
+				59A5FE655BD07D5242C63817 /* AccessoryWidgetRouteTests.swift */,
 				0E6D105128814FF5976611B2 /* AmountInputFilterTests.swift */,
 				5B454363C9AF47F9F64BE104 /* BudgetCalculatorTests.swift */,
 				61FEEF255C865D34F51F7B91 /* CaptureBookkeepingTests.swift */,
@@ -808,6 +816,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F350AC6A5D72799FBAC9BF97 /* AccessoryWidgetRoute.swift in Sources */,
 				A9F4C4A2646DC185EAB4F8B2 /* AmountInputFilter.swift in Sources */,
 				4AF040C455CC9F3F424076FC /* AmountTextField.swift in Sources */,
 				CBF5F0F043F2A356DB81D6B2 /* BotanicalStamp.swift in Sources */,
@@ -889,6 +898,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				13D68C3A822D3D765CE94E8C /* AccessoryWidgetRoute.swift in Sources */,
 				EAB42C3D2592A69E61F4D393 /* AmountInputFilter.swift in Sources */,
 				C79C140FCA5E77AA633344BF /* BudgetCalculator.swift in Sources */,
 				9C7CF920476DCA622A0ADAD0 /* CaptureBookkeeping.swift in Sources */,
@@ -922,6 +932,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FFF0D8234917AF306FCFF8A2 /* AccessoryWidgetRouteTests.swift in Sources */,
 				DAB5FB1B828F5A7F628C6DC9 /* AmountInputFilterTests.swift in Sources */,
 				B5927A0A110705F9BD5C42A9 /* BudgetCalculatorTests.swift in Sources */,
 				6EAE93A9D17930A34279BBA0 /* CSVExporterTests.swift in Sources */,
@@ -963,6 +974,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8C66813C76420D2A6B8E5B04 /* AccessoryWidgetRoute.swift in Sources */,
 				7CF118853A08588EC1E210DD /* AmountInputFilter.swift in Sources */,
 				5B92ECAC89AD9816F7A5A444 /* CaptureBookkeeping.swift in Sources */,
 				DB5A07BAB9D8D11A9ED5009E /* CategorySuggestions.swift in Sources */,
