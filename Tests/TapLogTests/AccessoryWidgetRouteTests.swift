@@ -16,14 +16,19 @@ final class AccessoryWidgetRouteTests: XCTestCase {
         }
     }
 
-    func testEveryAccessoryLabelMatchesTheVisiblePrompt() {
-        for route in AccessoryWidgetRoute.allCases {
-            XCTAssertEqual(
-                route.label,
-                "Log expense",
-                "\(route) must announce the same words the rectangular widget shows"
-            )
-        }
+    /// The visible text and the spoken label must come from the same place. A
+    /// hardcoded "Log expense" in the widget would drift from the route, so the
+    /// rectangular row is asserted to render the route's label rather than a
+    /// literal, which is the only way the two can stay equal.
+    func testTheRectangularRowRendersTheRouteLabel() throws {
+        let rectangular = try accessoryCase(
+            from: "case .accessoryRectangular:",
+            to: "default:"
+        )
+        XCTAssertTrue(
+            rectangular.contains("Text(AccessoryWidgetRoute.rectangular.label)"),
+            "the visible prompt must come from the route, not a second literal"
+        )
     }
 
     /// Accessory widgets route through the widget-level URL. A `Link` inside one
@@ -76,15 +81,36 @@ final class AccessoryWidgetRouteTests: XCTestCase {
 
     /// One capture route, one owner. The widget used to spell `taplog://log` out
     /// at five sites, each free to drift.
-    func testTheWidgetBuildsNoCaptureURLOwnItsOwn() throws {
-        let source = try String(contentsOf: widgetSourceURL, encoding: .utf8)
-        XCTAssertFalse(
-            source.contains(#"URL(string: "taplog://log")"#),
-            "the capture route must come from AccessoryWidgetRoute.captureURL"
+    func testNoWidgetBuildsTheCaptureURLOwnItsOwn() throws {
+        for file in ["SpendWidget.swift", "TapLogControlWidget.swift"] {
+            let source = try String(
+                contentsOf: repoRoot.appendingPathComponent("Sources/TapLogWidget/\(file)"),
+                encoding: .utf8
+            )
+            XCTAssertFalse(
+                source.contains(#"URL(string: "taplog://log")"#),
+                "\(file) must take the capture route from AccessoryWidgetRoute.captureURL"
+            )
+        }
+        let control = try String(
+            contentsOf: repoRoot.appendingPathComponent("Sources/TapLogWidget/TapLogControlWidget.swift"),
+            encoding: .utf8
+        )
+        XCTAssertTrue(
+            control.contains("AccessoryWidgetRoute.captureURL"),
+            "the Control Center button must share the one capture route"
         )
     }
 
     // MARK: - Reading the widget source
+
+    /// .../Tests/TapLogTests/AccessoryWidgetRouteTests.swift -> the repository root.
+    private var repoRoot: URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+    }
 
     private var widgetSourceURL: URL {
         URL(fileURLWithPath: #filePath)
