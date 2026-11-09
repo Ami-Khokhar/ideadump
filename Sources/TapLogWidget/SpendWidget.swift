@@ -2,20 +2,7 @@ import WidgetKit
 import SwiftUI
 import SwiftData
 
-<<<<<<< HEAD
-struct QuickButton: Identifiable {
-    let amount: Double
-    let categoryKey: String
-    let emoji: String
-    let label: String
-
-    var id: String { "\(categoryKey)-\(amount)" }
-}
-
-/// Sensible quick-log defaults before the user has enough history.
-=======
 /// Shown before any history exists, and whenever the store cannot be read.
->>>>>>> origin/budget-trees-redesign
 /// Deliberately not main-actor isolated: `placeholder(in:)` is nonisolated.
 private var defaultQuickButtons: [QuickButton] {
     [
@@ -25,17 +12,6 @@ private var defaultQuickButtons: [QuickButton] {
     ]
 }
 
-<<<<<<< HEAD
-struct SpendSnapshot: TimelineEntry {
-    let date: Date
-    let total: Decimal
-    let count: Int
-    let quickButtons: [QuickButton]
-    var isAvailable: Bool = true
-}
-
-=======
->>>>>>> origin/budget-trees-redesign
 /// Fetches today's totals from the shared store. Lives outside the provider struct
 /// because WidgetKit's `TimelineProvider` declares an associated type named `Entry`,
 /// which shadows the SwiftData model of the same name.
