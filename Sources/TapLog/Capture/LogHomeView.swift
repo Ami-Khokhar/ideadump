@@ -236,8 +236,10 @@ struct LogHomeView: View {
     }
 
     /// The capture stack's height when no spacer flexes, used only to skip the
-    /// fill attempt early. It is a lower bound for large Dynamic Type, which is
-    /// safe: `ViewThatFits` still measures the real stack before filling.
+    /// fill attempt early. It is an estimate of the default-size geometry, and
+    /// its error is absorbed by the `ViewThatFits` fallback that follows: a
+    /// small overestimate costs a few points of scroll range, never a clipped
+    /// row.
     private var captureContentMinHeight: CGFloat {
         let fontSize = AmountFont.focalFontSize(for: amountText, dynamicTypeSize: dynamicTypeSize)
         return CaptureFit.contentMinHeight(amountHeroHeight: AmountLayout.focalHeroHeight(fontSize: fontSize))
@@ -766,8 +768,8 @@ struct LogHomeView: View {
 /// plus the Log pill.
 ///
 /// These live outside the view because the undo toast has to float clear of the
-/// bar and cannot measure it: the toast is an overlay on the app root, so it
-/// sits outside the safe-area inset that holds these controls. The toast used to
+/// bar and cannot measure it: the toast is an overlay on the app root, outside
+/// the bottom bar that holds these controls. The toast used to
 /// carry its own hardcoded offset, which was correct when the Log pill was the
 /// only thing down here and silently wrong the moment the keypad arrived —
 /// "Undo" ended up sitting on the backspace key. Deriving both from the same
@@ -808,7 +810,7 @@ enum CaptureBottomBar {
     static let logButtonHeight: CGFloat = 52
     /// Gap between the keypad and the Log pill.
     static let logButtonTopPadding: CGFloat = 8
-    /// Extra lift applied to the pill inside the inset stack.
+    /// Extra lift applied to the pill inside the pinned bottom bar.
     static let logButtonLiftPadding: CGFloat = 4
     /// Gap between the Log pill and the bottom safe-area edge.
     static let logButtonBottomPadding: CGFloat = 8
