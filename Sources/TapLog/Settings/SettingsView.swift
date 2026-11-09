@@ -31,6 +31,14 @@ struct SettingsView: View {
                             Text("\(currency.symbol)  \(currency.name)").tag(currency.code)
                         }
                     }
+                    .onChange(of: currencyCode) { _, _ in
+                        // The widget renders every amount in this code. The gate
+                        // sees it differ from the last requested render and
+                        // records the new one.
+                        if WidgetReload.shouldRequest(WidgetReload.currentInputs()) {
+                            WidgetCenter.shared.reloadTimelines(ofKind: WidgetReload.kind)
+                        }
+                    }
                 } header: {
                     Text("Currency")
                 } footer: {
