@@ -1,5 +1,9 @@
 # TapLog — where should the paywall go?
 
+> **Superseded (handoff note):** the policy decision this brief asked for is now
+> recorded in `docs/decisions.md`. Keep this only as the brief sent to an outside
+> reviewer; do not treat it as the current policy.
+
 You are deciding the free/paid line for a shipping iOS app. You have no access to
 the code and don't need it: everything the app does is below. Read the whole
 inventory before you form a view — the answer depends on which moment sells the
@@ -165,23 +169,31 @@ willingness-to-pay judgement.
 If any are blank, state the assumption you're using and flag how much it moves
 your answer. Do not invent them.
 
-## What is currently built
+## Current product policy and triggers
 
-Shipping today, so you know what you'd be overturning:
+Issue #59 reviewed the shipped line and kept it pending evidence about actual
+trigger reach, conversion, refunds, or complaints:
 
-- **Free**: all capture, every front door, unlimited entries, unlimited history,
-  categories, habit mechanics and notification, CSV export, **one budget tree**,
+- **Free**: capture, every front door, unlimited entries and history, categories,
+  habit mechanics and notification, CSV export, the first **three budget trees**,
   and the **weekly** recap.
-- **Paid**: a target for every category (unlimited grove) and the **monthly**
-  recap span.
-- **Two triggers**: trying to create a second budget, and tapping the month
-  toggle on the recap.
-- Deleting a budget returns the free slot; existing budgets are never taken away
-  from someone who doesn't pay.
+- **Pro**: further budget trees and the **monthly** recap span, unlocked by one
+  lifetime purchase.
+- **Triggers**: tapping add in Budgets with three budgets; the category editor's
+  "Grow a fourth tree" button, shown only when that category has no budget yet
+  and three budgets already exist; tapping Month in Recap; or choosing TapLog
+  Pro in Settings.
+- Deleting a budget returns the free slot; existing budgets and records remain
+  usable.
+- `PaywallEvidence` only chooses between showing the user's record and the
+  decorative grove. It does not decide whether the paywall appears.
+- There is no launch paywall or time-based ask. Settings remains an optional,
+  user-initiated offer with copy that names both paid benefits.
 
-This line was drawn to satisfy a constraint of "don't gate anything already
-shipped," which is a constraint about upgrade fairness, not about what converts.
-It has never been tested against a user.
+No user behavior data is available to justify changing the gates or adding an
+extra prompt. CSV remains free because it is the only way to take local-only
+records out of the app. The rationale and placement decision are recorded in
+[`docs/decisions.md`](docs/decisions.md).
 
 ## Tensions I already see — engage with these, don't just restate them
 
@@ -194,8 +206,8 @@ It has never been tested against a user.
 - Capture is entirely free, including every front door and unlimited history.
   That is either precisely right — the habit must form before anything can be
   sold — or it gives away the whole product.
-- One tree is enough to understand the mechanic but not enough to feel it. Is the
-  free allowance a number problem rather than a feature problem?
+- Three trees are enough to understand the mechanic but not enough to feel it.
+  Is the free allowance a number problem rather than a feature problem?
 
 ## Format
 

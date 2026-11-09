@@ -20,6 +20,38 @@
   controls, so the sheet, the undo toast and the rendered layout still need a
   simulator or device check.
 
+## Keep the current Pro gates and let users choose when to see the offer
+
+- Context: issue #59 asked whether the fourth budget, the first monthly recap
+  request, and the Settings entry are the right criteria and placements for the
+  lifetime Pro offer. The repository has no reliable measurement of how many
+  users reach any trigger, how often they convert, or whether they refund or
+  complain. The paywall's `PaywallEvidence` only selects record-specific copy;
+  it does not decide whether the offer appears.
+- Decision: keep the existing product criteria: the first three budgets are
+  free and Pro unlocks further budgets; weekly recaps stay free and Pro unlocks
+  the monthly span; CSV export stays free because it is the user's only way to
+  take local-only records out of the app. Each gate applies to an attempted new
+  action, so existing budgets and records remain usable. Do not add a time-based
+  gate or delay the monthly gate without evidence that users find the current
+  moment disruptive. Keep each ask at the action that reached the gate, and
+  retain the Pro row in Settings as a clearly labeled, optional entry point.
+  That row uses general Pro copy describing both paid benefits instead of
+  pretending the user's grove is full. The ask is never shown on launch or
+  repeated for the same tap.
+- Placement: Budgets shows the offer when the user taps add with three existing
+  budgets; the category editor shows it from its "Grow a fourth tree" button,
+  and only when the category has no budget yet and three budgets already
+  exist; the recap shows it when the user taps Month; Settings shows it only
+  when the user taps TapLog Pro. `PaywallEvidence` controls whether the offer
+  displays the user's record or decorative grove, not whether the ask fires.
+- Consequence: the product remains useful without budgets, and users who do
+  not reach a gated action can use the app indefinitely without an unsolicited
+  ask. We cannot claim these placements maximize conversion or minimize refunds
+  without measurement. Any future change to thresholds, timing, or a post-recap
+  surface should first define a user-respecting success measure and obtain
+  evidence, without adding unauthorized metrics collection.
+
 ## Accessory widget routing is data, not inline literals
 
 - Context: issue #76, following #70. The circular widget's URL and
@@ -330,3 +362,22 @@
 - Consequence: `PrivacyViewTests` still fails if a placeholder URL, an invented
   contact or a blanket assurance is introduced, so the replacement cannot quietly
   weaken the screen.
+
+## Pending capture intents resolve before the opening animation
+
+- Context: issue #60. A cold widget deep link can reach `onOpenURL` after the
+  first capture view appears, so the opening plant may begin before the app
+  knows it should route directly to capture.
+- Decision: initialize the splash decision from the durable pending intent
+  flag, without consuming the payload. When a direct-capture URL arrives later,
+  remove the opening and reveal capture without animating a partial dissolve.
+- Consequence: ordinary launches keep their full animation. A pending activation
+  skips the opening on the first render only when the flag predates the launch —
+  a flag left by a previous process or written by another target. `OpenCaptureIntent`
+  runs in the app target and declares `openAppWhenRun`, so in the normal case
+  `perform()` writes the flag after the capture view exists; that late path
+  reveals capture instantly instead, with no partial dissolve. This AppIntent
+  ordering is not yet verified on a device. The existing widget `Link` still
+  sends only a URL, so a cold widget launch may show part of the opening before
+  `onOpenURL` arrives; this path remains unresolved without an earlier lifecycle
+  signal.
