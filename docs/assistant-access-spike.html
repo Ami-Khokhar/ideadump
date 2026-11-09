@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Assistant access to TapLog data — spike #79</title>
+<style>
+  :root{
+    --ink:#14181b; --ink-soft:#4a545c; --line:#dfe3e7; --bg:#fbfbfa; --card:#ffffff;
+    --accent:#1f6f4a; --accent-soft:#e7f1eb; --warn:#8a4b12; --warn-soft:#fbf0e4;
+    --chip:#eef1f3;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --ink:#e9eced; --ink-soft:#a6b0b7; --line:#2b3339; --bg:#12171a; --card:#171d21;
+      --accent:#67c79a; --accent-soft:#16281f; --warn:#e0a86a; --warn-soft:#2a1f14;
+      --chip:#1e262b;
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink)}
+  body{font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+       -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 16px 96px}
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:30px}
+  .kicker{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12.5px;letter-spacing:.06em;
+          text-transform:uppercase;color:var(--ink-soft)}
+  .pill{background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:3px 10px;font-weight:600;
+        letter-spacing:.04em}
+  .pill.warn{background:var(--warn-soft);color:var(--warn)}
+  h1{font-size:clamp(26px,3.4vw,40px);line-height:1.12;letter-spacing:-.02em;margin:14px 0 10px}
+  .sub{color:var(--ink-soft);max-width:70ch;margin:0}
+  h2{font-size:clamp(19px,2vw,23px);letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;
+     border-top:1px solid var(--line)}
+  h3{font-size:15.5px;margin:22px 0 6px}
+  p,li{max-width:70ch}
+  p{margin:0 0 12px}
+  .lede{font-size:18.5px}
+  .verdict{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);
+           border-radius:10px;padding:20px 22px;margin:24px 0 8px}
+  .verdict p{font-size:18px;margin:0 0 10px}
+  .verdict p:last-child{margin:0;color:var(--ink-soft);font-size:15.5px}
+  table{width:100%;border-collapse:collapse;font-size:14.5px;background:var(--card);
+        border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:14px 0 10px}
+  .scroller{overflow-x:auto}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);
+     background:var(--chip);font-weight:600}
+  tr:last-child td{border-bottom:0}
+  code{font:13.5px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--chip);
+       padding:1.5px 5px;border-radius:5px}
+  pre{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;
+       overflow-x:auto;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;margin:12px 0}
+  pre code{background:none;padding:0}
+  .grid{display:grid;gap:14px}
+  @media (min-width:820px){ .grid.two{grid-template-columns:1fr 1fr} }
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+  .card h3{margin-top:0}
+  .card p:last-child{margin-bottom:0}
+  .ask{counter-reset:q}
+  .ask li{margin-bottom:12px}
+  figure{margin:14px 0 6px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+  figcaption{font-size:13px;color:var(--ink-soft);margin-top:8px}
+  .note{font-size:13.5px;color:var(--ink-soft)}
+  .tag{font-size:12px;background:var(--chip);border-radius:999px;padding:2px 8px;color:var(--ink-soft)}
+  ul{padding-left:20px}
+  footer{margin-top:48px;border-top:1px solid var(--line);padding-top:14px;font-size:13.5px;color:var(--ink-soft)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">
+    <span class="pill warn">Decision needed</span>
+    <span>Spike #79</span>
+    <span>TapLog</span>
+    <span>2026-11-09, 23:05 IST</span>
+  </div>
+  <h1>Can an assistant read my expenses?</h1>
+  <p class="sub">Research and the proposed shape for #79. Research only: no production code, nothing
+  recorded in the decision log yet. Comment on any line you disagree with.</p>
+</header>
+
+<div class="verdict">
+  <p>Ship the export pack (Shape A). Put the real effort into Siri and Apple Intelligence, not a server.</p>
+  <p>A ChatGPT side needs an OpenAI Platform organisation before a single expense can be read, and a
+  hosted one is months plus a privacy promise we currently sell against. The Apple path needs no
+  account, no endpoint and no change to the privacy policy, and it works with just the phone.</p>
+</div>
+
+<h2>The four shapes, in one picture</h2>
+
+<figure>
+  <svg viewBox="0 0 720 300" width="100%" role="img" aria-label="Effort against reach for the four shapes: A export pack and D Apple path are low effort and reach every user, B self-hosted needs an OpenAI organisation, C hosted is months of work.">
+    <style>
+      .ax{stroke:var(--line);stroke-width:1}
+      .lbl{fill:var(--ink-soft);font:11px -apple-system,system-ui,sans-serif}
+      .pt{fill:var(--accent)}
+      .pt2{fill:var(--warn)}
+      .nm{fill:var(--ink);font:12.5px -apple-system,system-ui,sans-serif}
+    </style>
+    <line class="ax" x1="60" y1="250" x2="690" y2="250"/>
+    <line class="ax" x1="60" y1="30" x2="60" y2="250"/>
+    <text class="lbl" x="60" y="272">no work</text>
+    <text class="lbl" x="600" y="272">months</text>
+    <text class="lbl" x="18" y="40" transform="rotate(-90 18 40)">users reached</text>
+    <text class="lbl" x="18" y="150">every user</text>
+    <text class="lbl" x="18" y="245">technical only</text>
+
+    <circle class="pt" cx="130" cy="60" r="9"/><text class="nm" x="148" y="58">A. Export pack</text>
+    <text class="lbl" x="148" y="74">1 PR, no server, works on the phone</text>
+
+    <circle class="pt" cx="235" cy="86" r="9"/><text class="nm" x="253" y="84">D. Apple path</text>
+    <text class="lbl" x="253" y="100">App Intents now, Foundation Models on iOS 26</text>
+
+    <circle class="pt2" cx="430" cy="188" r="9"/><text class="nm" x="448" y="186">B. Self-hosted bridge</text>
+    <text class="lbl" x="448" y="202">needs a Mac, a Platform org, a tunnel, an API key</text>
+
+    <circle class="pt2" cx="612" cy="228" r="9"/><text class="nm" x="476" y="252">C. Hosted connector</text>
+    <text class="lbl" x="476" y="234">accounts, sync, review, new privacy surface</text>
+  </svg>
+  <figcaption>Positions are the estimate in this note, not measurements. D is drawn slightly right of A
+  because the entities and a totals intent are real work; it still reaches everyone.</figcaption>
+</figure>
+
+<h2>What changed since the issue was filed</h2>
+
+<p class="note">Read 2026-11-09, 22:20 to 22:35 IST, from the vendor documentation itself. The issue
+was written on the assumption that ChatGPT connectors are remote-only and that a local server cannot
+be reached. Both halves have moved.</p>
+
+<div class="scroller">
+<table>
+  <thead><tr><th>Fact</th><th>What it means here</th><th>Source</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>ChatGPT and Codex share one <strong>Plugins</strong> directory. A custom MCP server is added
+      by URL with OAuth, no auth, or both.</td>
+      <td>The connector path is a supported, documented feature, not a hack.</td>
+      <td>plugins/quickstart, api/docs/guides/custom-mcp-server</td>
+    </tr>
+    <tr>
+      <td><strong>Secure MCP Tunnel</strong> links a private stdio or HTTP server on the user's own
+      machine to ChatGPT with no inbound port. It needs a Platform organisation, a tunnel id and a
+      runtime API key. It cannot be distributed publicly.</td>
+      <td>Shape B is cheaper than the issue assumed, and still out of reach for a phone-only user.</td>
+      <td>api/docs/guides/secure-mcp-tunnels</td>
+    </tr>
+    <tr>
+      <td>Public distribution of an MCP-backed plugin needs a stable public HTTPS endpoint, verified
+      identity, a ZIP and review.</td>
+      <td>Shape C is a product and an operations job, not a feature.</td>
+      <td>plugins/deploy/submission</td>
+    </tr>
+    <tr>
+      <td>Local stdio MCP plugins exist for the desktop, but local submissions are limited to
+      <strong>approved partners, allowlisted</strong>.</td>
+      <td>We cannot publish "TapLog reads your phone through your Mac" to anyone.</td>
+      <td>plugins/deploy/desktop-only</td>
+    </tr>
+    <tr>
+      <td>Adding a custom MCP server happens <strong>on the web</strong>, and stays subject to workspace
+      policy and Lockdown.</td>
+      <td>The setup moment is a laptop and an admin, not the phone in a shop.</td>
+      <td>custom-mcp-server</td>
+    </tr>
+    <tr>
+      <td>Apple: App Intents make an app's "content and actions discoverable by Apple Intelligence", and
+      support Siri, Spotlight, Shortcuts and widgets. Foundation Models covers on-device and Private
+      Cloud Compute models with structured output and tool calling.</td>
+      <td>The same question, "what did I spend on food this month", is answerable with no account and
+      no server.</td>
+      <td>developer.apple.com, appintents and foundationmodels</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h2>The four shapes, costed</h2>
+
+<div class="scroller">
+<table>
+  <thead><tr><th>Shape</th><th>What the person does</th><th>What we build</th><th>What gates it</th><th>Estimate</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>A. Export pack</strong></td>
+      <td>Shares a summary into ChatGPT, Claude or Gemini, then asks.</td>
+      <td>A Markdown summariser beside the CSV exporter, one share entry point, six prompts.</td>
+      <td>Nothing. No network.</td>
+      <td>1 PR, 1 to 2 days</td>
+    </tr>
+    <tr>
+      <td><strong>B. Self-hosted bridge</strong></td>
+      <td>Runs a tunnel client and a local server on a Mac, then adds it in ChatGPT on the web.</td>
+      <td>Read-only MCP server over an exported file.</td>
+      <td>Their own Platform organisation, tunnel id, API key.</td>
+      <td>1 to 2 weeks, technical users only</td>
+    </tr>
+    <tr>
+      <td><strong>C. Hosted connector</strong></td>
+      <td>Signs in, links TapLog, asks ChatGPT.</td>
+      <td>Accounts, sync, hosting, OAuth, plugin submission.</td>
+      <td>OpenAI review and App Store consent for third-party AI.</td>
+      <td>Months, plus running cost</td>
+    </tr>
+    <tr>
+      <td><strong>D. Apple path</strong></td>
+      <td>Asks Siri, or uses an in-app question screen.</td>
+      <td>Expense and budget entities, a totals intent; a Foundation Models query behind an iOS 26 check.</td>
+      <td>Nothing for the intent. iOS 26 for the on-device model.</td>
+      <td>1 to 2 PRs, no server</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h2>The idea: Shape A, concretely</h2>
+
+<p>One new export next to the CSV. Same data rules, same free-export policy, a shape a model can read
+without a schema. It is a file the person shares, so nothing leaves the phone until they choose.</p>
+
+<pre><code># TapLog — November 2026
+
+Total: 12,34,567 INR across 214 entries
+Compared with October: 8% lower
+
+## By category
+| Category | Spend | Share | Budget |
+|---|---|---|---|
+| Food | 41,200 | 33% | 50,000 monthly, 82% used |
+| Transport | 18,900 | 15% | none |
+| Chai | 4,300 | 3% | 5,000 weekly, over by 300 |
+
+## Top merchants and notes
+parcel, auto, coffee, milk (4 of 6 recurring notes)
+
+## Largest five entries
+...date, amount, category, note
+
+## Recurring
+coffee 18 times, chai 41 times
+</code></pre>
+
+<p>Then a prompt pack, six prompts written against that file, tried on real exported data:</p>
+
+<div class="grid two">
+  <div class="card">
+    <h3>Prompts worth shipping</h3>
+    <ul>
+      <li>Where did last month's money actually go?</li>
+      <li>Which category is closest to its budget?</li>
+      <li>What did I repeat most often, and what does it cost a year?</li>
+      <li>Find entries that look like duplicates.</li>
+      <li>What changed most against the month before, and why might that be?</li>
+      <li>If I cut one category by a fifth, what does the month look like?</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Why this is not a throwaway</h3>
+    <p>It answers the question people actually ask of spending data, with no account, and it tells us
+    which questions are worth a server later. It also costs nothing to keep: the CSV exporter already
+    owns quoting, archived and pending rules, and the temporary file lifecycle.</p>
+    <p class="note">If Shape A is chosen, the same summariser becomes the payload a Shape B or C server
+    would return, so the work is not lost either way.</p>
+  </div>
+</div>
+
+<h2>The cheapest test of "is this a real request"</h2>
+
+<p>We have no user signal in either direction. Nothing in the repo measures it. So the first version
+counts, on the device only, how many people share the assistant summary against how many open the
+recap. A local counter, no network, no analytics service.</p>
+
+<div class="scroller">
+<table>
+  <thead><tr><th>Signal</th><th>Read after</th><th>Threshold to continue</th><th>Threshold to stop</th></tr></thead>
+  <tbody>
+    <tr><td>Assistant summary shares over recap opens</td><td>2 weeks from release</td>
+        <td>1 in 100 or better</td><td>x</td></tr>
+    <tr><td>Prompts people paste back in reviews or support mail</td><td>Ongoing</td>
+        <td>Any repeat of one question</td><td>None at all</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p class="note">The numbers above are thresholds to agree now, not measurements. I have no data: the
+app ships no analytics and there is no telemetry anywhere in the repo.</p>
+
+<h2>Privacy and App Store impact</h2>
+
+<div class="scroller">
+<table>
+  <thead><tr><th>Shape</th><th>Privacy policy</th><th>App Privacy answers</th><th>Product page line</th></tr></thead>
+  <tbody>
+    <tr><td>A</td><td>No change. The app sends nothing.</td><td>No change.</td><td>No change.</td></tr>
+    <tr><td>D</td><td>No change unless the Private Cloud Compute path is used, then one sentence
+        naming Apple as the processor.</td><td>At most a new processing note.</td><td>No change.</td></tr>
+    <tr><td>B</td><td>Documents a user-run server. We do not receive data.</td><td>No change.</td>
+        <td>No change.</td></tr>
+    <tr><td>C</td><td>New sections: what is collected, who processes it, how long it is kept.</td>
+        <td>Financial Info and Identifiers, linked to the person.</td>
+        <td>"never leaves your device" has to go.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>Questions I need you to settle</h2>
+
+<ol class="ask">
+  <li><strong>A or D first?</strong> My order is A, then D, because A is a day and D touches Siri's
+  surface. If you would rather D first, say so and I will re-plan.</li>
+  <li><strong>Is the 1-in-100 threshold fair</strong> for keeping the assistant export after two weeks?</li>
+  <li><strong>Does B belong in the docs at all</strong> as "possible for technical users, not
+  distributed", or is that noise in a decision record?</li>
+  <li><strong>Who writes the prompts?</strong> I can draft all six against a real export from the
+  simulator; they read better if you try them first and tell me the ones you actually used.</li>
+</ol>
+
+<h2>Not verified</h2>
+
+<ul>
+  <li>No user signal on demand. Every priority claim here is inference from the product's own
+  constraints, not from people.</li>
+  <li>The vendor pages were read as documentation, not exercised: I did not add a custom MCP server,
+  run a tunnel client, or submit a plugin.</li>
+  <li>Foundation Models availability was read from the framework's page, not tested against TapLog's
+  iOS 17 deployment target or on a device.</li>
+  <li>No simulator or device run was needed for this note: it is research, and the artifact is the
+  deliverable.</li>
+</ul>
+
+<footer>
+  Spike #79, TapLog. Sources are the vendor documentation pages named in the second table, read
+  2026-11-09 between 22:20 and 22:35 IST. TapLog facts come from this repository: the free-export
+  policy in <code>ProGate.canExportCSV</code>, the share entry point in the recap screen, and the
+  existing intents and entities. Comment on any line; I will answer each one and republish.
+</footer>
+
+</div>
+</body>
+</html>
