@@ -1,6 +1,7 @@
 import Foundation
 
-/// What the share extension tells the user when it saved nothing.
+/// What the share extension tells the user for a finished parse: the amount it
+/// will save, or the sentence explaining why nothing was saved.
 ///
 /// Both failures used to share one sentence, so a report of "couldn't find an
 /// amount" could not be told apart from "the extension never received any
