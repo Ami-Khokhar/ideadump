@@ -57,8 +57,8 @@ enum SpendTimeline {
         midnightReset.count = 0
 
         let rollingRefresh = calendar.date(
-            byAdding: .minute,
-            value: 30,
+            byAdding: .second,
+            value: Int(rollingInterval),
             to: now
         ) ?? now.addingTimeInterval(rollingInterval)
 

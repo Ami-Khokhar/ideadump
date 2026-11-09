@@ -220,7 +220,7 @@ struct CaptureForm: View {
             }
         }
 
-        WidgetCenter.shared.reloadTimelines(ofKind: "SpendWidget")
+        WidgetCenter.shared.reloadTimelines(ofKind: WidgetReload.kind)
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         dismiss()
     }

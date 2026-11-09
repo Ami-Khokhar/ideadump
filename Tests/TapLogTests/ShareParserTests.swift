@@ -141,6 +141,34 @@ extension ShareParserTests {
         XCTAssertEqual(bounded.flatMap { ShareParser.parse($0).amount }, 42)
     }
 
+    /// The byte cap lands wherever it lands: in text of three-byte characters it
+    /// falls inside a character, and a decoder that gave up there would drop a
+    /// share the user meant to log. This is the case the retry exists for — with
+    /// the retry removed, the decode returns nil.
+    func testAByteCapInsideACharacterStillDecodes() {
+        let text = "a" + String(repeating: "₹", count: ShareParser.maxFieldLength * 2)
+        let data = Data(text.utf8)
+        XCTAssertGreaterThan(data.count, (ShareParser.maxFieldLength + 1) * 4, "the cap must fall inside the string")
+
+        let bounded = ShareParser.text(from: data)
+
+        XCTAssertNotNil(bounded, "a truncated multi-byte tail is a cut, not corrupt data")
+        XCTAssertEqual(bounded?.count, ShareParser.maxFieldLength, "the cut still applies the field limit")
+        XCTAssertFalse(
+            bounded?.contains("\u{FFFD}") ?? true,
+            "a character the cap split must be dropped, never replaced"
+        )
+    }
+
+    /// A byte that is invalid rather than truncated is corrupt input, and the
+    /// retry must not paper over it by dropping enough bytes to hide the fault.
+    func testInvalidBytesInsideALargePayloadStillYieldNoText() {
+        var data = Data(repeating: 0x41, count: 9_000)
+        data[5_000] = 0xFF
+
+        XCTAssertNil(ShareParser.text(from: data))
+    }
+
     func testNonemptyAttributedBodyIsPreservedForExtraction() {
         let body = "You spent $12.50 at Starbucks"
         XCTAssertEqual(

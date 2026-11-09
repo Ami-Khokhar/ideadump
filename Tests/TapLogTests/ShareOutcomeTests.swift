@@ -49,6 +49,10 @@ final class ShareOutcomeTests: XCTestCase {
             extensionSource.contains("Shared text had no amount TapLog could read"),
             "the sentence belongs to ShareOutcome, not to the extension"
         )
+        XCTAssertFalse(
+            extensionSource.contains("parsed.amount"),
+            "the amount travels inside ShareOutcome.saved, so the extension must not unwrap the parse again"
+        )
     }
 
     func testAnEmptyShareSaysNothingWasShared() {
@@ -62,20 +66,29 @@ final class ShareOutcomeTests: XCTestCase {
         )
     }
 
-    func testAParsedAmountHasNoFailureMessage() {
-        XCTAssertNil(
+    func testAZeroAmountIsTreatedAsUnreadable() {
+        XCTAssertEqual(
+            ShareOutcome.of(ShareParse(amount: 0, note: nil, hasText: true)),
+            .noReadableAmount,
+            "a zero amount is not an expense, and the message must not claim one was saved"
+        )
+    }
+
+    func testAParsedAmountIsCarriedInTheSavedOutcome() {
+        XCTAssertEqual(
             ShareOutcome.of(ShareParse(amount: 12.5, note: "Cafe", hasText: true)),
+            .saved(12.5),
             "an entry that was read is saved, not explained"
         )
     }
 
-    func testTheTwoFailuresDoNotShareOneSentence() {
+    func testTheTwoFailuresDoNotShareOneSentence() throws {
         XCTAssertNotEqual(
             ShareOutcome.nothingShared.message,
             ShareOutcome.noReadableAmount.message,
             "an empty share and an unparseable one must be told apart on screen"
         )
-        XCTAssertTrue(ShareOutcome.nothingShared.message.contains("Nothing was shared"))
-        XCTAssertTrue(ShareOutcome.noReadableAmount.message.contains("no amount"))
+        XCTAssertTrue(try XCTUnwrap(ShareOutcome.nothingShared.message).contains("Nothing was shared"))
+        XCTAssertTrue(try XCTUnwrap(ShareOutcome.noReadableAmount.message).contains("no amount"))
     }
 }

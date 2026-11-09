@@ -38,10 +38,13 @@ final class EntryRowActionsTests: XCTestCase {
     /// The rendering half of the behaviour lives in a `View`, which the test
     /// target cannot tap, so the call site is asserted against the list's source
     /// the way `ShareOutcomeTests.testTheExtensionShowsTheSharedOutcome` asserts
-    /// the share extension. This cannot see inside the row body — deleting the
-    /// trash `Button` would pass — and it is sensitive to formatting. It covers
-    /// exactly one thing: the list must not pass its own full-swipe literal, and
-    /// must call the renderer that draws the two controls.
+    /// the share extension. This cannot see inside the row body, so it pins what
+    /// the source can prove: the list calls the renderer that draws the two
+    /// controls, it takes the full-swipe policy from the value, and both visible
+    /// controls still carry their own accessibility labels. The swipe actions are
+    /// titled "Archive", "Unarchive" and "Delete", so these labels belong to the
+    /// visible controls alone and their presence fails with a row that lost one.
+    /// It remains sensitive to formatting.
     func testTheRowRendersBothControlsAndASlowSwipe() throws {
         let list = try String(
             contentsOf: repoRoot.appendingPathComponent("Sources/TapLog/List/EntryListView.swift"),
@@ -60,8 +63,12 @@ final class EntryRowActionsTests: XCTestCase {
             "a full swipe running archive/restore is the bug #58 reports"
         )
         XCTAssertTrue(
-            list.contains("Button(role: .destructive)"),
-            "the row's delete control must be the destructive one VoiceOver announces"
+            list.contains(".accessibilityLabel(\"Edit entry\")"),
+            "the visible edit control is the only control VoiceOver announces as \"Edit entry\""
+        )
+        XCTAssertTrue(
+            list.contains(".accessibilityLabel(\"Delete entry\")"),
+            "the visible delete control is the only control VoiceOver announces as \"Delete entry\""
         )
     }
 
