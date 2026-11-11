@@ -1,6 +1,7 @@
 # TapLog submission checklist
 
-Updated 12 October 2026 IST by the readiness pass recorded at the end of this file. The
+Updated 12 October 2026 IST by the readiness pass recorded at the end of this file, and
+corrected on 11 November 2026 for the signing team. The
 previous pass's code fixes are in [release-fix-results.md](release-fix-results.md). External
 submission/device checks remain pending.
 
@@ -23,7 +24,8 @@ and does not repeat the older checklist's legal/tax conclusions as verified fact
   1. Support email + two HTTPS URLs, then publish and check the pages on a phone
      (runbook step 0, checklist "Release blockers first").
   2. The paid team is already in `project.yml`; raise `CURRENT_PROJECT_VERSION`, then run
-     [signed-build-testflight-runbook.md](signed-build-testflight-runbook.md) steps 2–8.
+     [signed-build-testflight-runbook.md](signed-build-testflight-runbook.md) steps 1–8
+     (regenerate, verify, provision, archive).
   3. Install the processed build and work through
      [physical-device-qa-sheet.md](physical-device-qa-sheet.md).
   4. Finish App Store Connect (product, agreements, tax/banking, age rating, screenshots,
@@ -55,16 +57,16 @@ and does not repeat the older checklist's legal/tax conclusions as verified fact
   - **Missing:** the real support email and two HTTPS hosting URLs. Add them, then check
     mobile rendering, that no login is required, and that the contact route works. Hosting
     outside the repo is unknown.
-- [ ] **Current configuration:** sign with the paid team already in the tree, then inspect
-  a signed archive.
+- [ ] **Current configuration:** the paid team `FKM4DL483M` is in the tree, re-checked
+  11 November 2026 against `project.yml` and the generated project. Provision the app and
+  both extensions, then inspect a signed archive.
   - **Proven 12 Oct:** `project.yml` then set `DEVELOPMENT_TEAM: 87VL9T9A8H` (personal)
     while the committed project was generated with `FKM4DL483M`; the archive commands are
-    in [signed-build-testflight-runbook.md](signed-build-testflight-runbook.md). The team
-    has since been flipped: `project.yml:12` and the generated project now both read
-    `FKM4DL483M`.
+    in [signed-build-testflight-runbook.md](signed-build-testflight-runbook.md).
   - **Missing:** provisioning of the app and both extensions with the same
     registered App Group in the paid team, and inspection of the signed archive's
-    entitlements. Changing accounts is outside this pass's authority.
+    entitlements. The archive inspection needs the owner's signed build; no account change
+    is left to make.
 - [x] **Fixed and tested:** original P1 code findings addressed with production regressions.
   Final combined simulator suite and unsigned Release passed. Physical-device integration
   remains pending. See `docs/release-fix-results.md` and the re-run below.
