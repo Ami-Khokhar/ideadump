@@ -24,7 +24,8 @@ and does not repeat the older checklist's legal/tax conclusions as verified fact
   1. Support email + two HTTPS URLs, then publish and check the pages on a phone
      (runbook step 0, checklist "Release blockers first").
   2. The paid team is already in `project.yml`; raise `CURRENT_PROJECT_VERSION`, then run
-     [signed-build-testflight-runbook.md](signed-build-testflight-runbook.md) steps 1–8.
+     [signed-build-testflight-runbook.md](signed-build-testflight-runbook.md) steps 1–6 and 8
+     (step 7 is the paywall screenshot, covered by the listing items).
   3. Install the processed build and work through
      [physical-device-qa-sheet.md](physical-device-qa-sheet.md).
   4. Finish App Store Connect (product, agreements, tax/banking, age rating, screenshots,
