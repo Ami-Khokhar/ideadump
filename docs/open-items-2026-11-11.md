@@ -8,9 +8,7 @@ Live state, 11 November 2026:
 | Fact | Value |
 |---|---|
 | Open issues | #96 (owner inputs and store gates); the issue tracker is authoritative for any follow-up to this document |
-| Default branch | `budget-trees-redesign`, CI green on the merged head |
-| Local checkout | level with `origin/budget-trees-redesign`; clean apart from untracked tooling |
-| Automated checks | 512 executed, 0 failures (11 Nov 2026, 15:34 IST, local run) |
+| Automated checks | 512 executed, 0 failures, 11 Nov 2026 15:34 IST (local run) |
 | Engineering and legal gates | 0 of 20 closed (`docs/release-runbook.md`) |
 | Submission checklist | 20 proven, 61 open as of 12 Oct 2026 (`docs/appstore-readiness-checklist.md`) |
 
@@ -23,8 +21,9 @@ Live state, 11 November 2026:
 - [ ] App Review contact: name, email, phone.
 - [ ] Provisioning under the paid team already in `project.yml` (`FKM4DL483M`): the
       app and both extensions registered with the App Group
-      `group.dev.amteshwar.taplog`, and a signed archive's entitlements inspected.
-      The in-tree team flip is done; only account work remains.
+      `group.dev.amteshwar.taplog`, a signed archive built with it, and that
+      archive's entitlements inspected. The in-tree team flip is done; provisioning,
+      signing and the archive inspection remain.
 - [ ] Pro price, launch countries, and the `siri` keyword decision (guideline 2.3.7).
 - [ ] Legal decisions L1–L8 from `docs/release-runbook.md`: enrollment, Paid Apps
       Agreement, W-8BEN, bank, EU DSA trader status, trademark, jurisdiction review,
