@@ -16,6 +16,8 @@ attached file.
   spreadsheet reads it as text; the apostrophe is not part of what was typed.
 - Every prompt below asks for the row count it used. An answer without a count is
   not checkable, and a number you cannot check is worse than no answer.
+- These six prompts have not yet been run against a real export on a device; they
+  are written against the export's column contract and the tests that pin it.
 
 ## 1. Where did my money go last month?
 
@@ -66,7 +68,7 @@ Must not: invent a merchant from a note, or merge two rows into one expense.
 
 ## 4. Is anything here a duplicate?
 
-Columns read: `Date`, `Amount`. Archived rows are included.
+Columns read: `Date`, `Amount` to find the groups; every column of a matching row is echoed back. Archived rows are included.
 
 ```
 Find rows in the attached export that share both the same Date and the same Amount.
