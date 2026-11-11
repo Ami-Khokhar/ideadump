@@ -68,11 +68,13 @@ Must not: invent a merchant from a note, or merge two rows into one expense.
 
 ## 4. Is anything here a duplicate?
 
-Columns read: `Date`, `Amount` to find the groups; every column of a matching row is echoed back. Archived rows are included.
+Columns read: `Date`, `Amount` to find the groups; every column of a matching row
+is echoed back. Archived rows are included.
 
 ```
 Find rows in the attached export that share both the same Date and the same Amount.
-List each group with all its columns and say how many rows are in it. Do not decide
+List each group with all its columns and say how many rows are in it. Also state the
+total number of rows scanned and how many rows sit in matching groups. Do not decide
 which one is the mistake and do not delete or merge anything. If there are more than
 twenty groups, list the twenty largest and give the total group count.
 ```
@@ -87,15 +89,15 @@ date and amount must both match.
 Columns read: `Date`, `Amount`. Archived rows are included.
 
 ```
-Using the attached export, show a daily total for each of the last 14 calendar days,
-including days with no rows as zero. State the first and last date covered and the
-number of rows used. Mark any day whose total is more than twice the median daily
-total.
+Using the attached export, show a daily total for the 14 calendar days ending on the
+latest Date in the file, including days with no rows as zero. State the first and last
+date covered and the number of rows used. Mark any day whose total is more than twice
+the median daily total.
 ```
 
 Answers: the shape of a fortnight, including the quiet days.
 
-Must not: drop empty days, or extend the range past the last row in the file.
+Must not: drop empty days, or extend the window past the latest date in the file.
 
 ## 6. Which notes mention the same shop, spelled differently?
 
