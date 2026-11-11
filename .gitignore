@@ -7,3 +7,9 @@ DerivedData/
 .freebuff/
 build/
 docs/*.png
+
+# Local agent tooling, not product
+.agents/
+.claude/
+agent/
+skills-lock.json
