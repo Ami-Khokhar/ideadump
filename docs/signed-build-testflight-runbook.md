@@ -6,8 +6,9 @@ Exact steps from this working tree to a TestFlight build. Written 12 October 202
 paid developer account, Apple's servers and a device, so they are instructions, not evidence.
 Steps 1 and 3 were run and are marked as verified.
 
-Bundle IDs, versions and team IDs are the current values, checked against `project.yml` and
-the unsigned Release bundle on 12 October 2026.
+Bundle IDs and versions were checked against `project.yml` and the unsigned Release bundle
+on 12 October 2026; the team row was re-checked against `project.yml` and the generated
+project on 11 November 2026.
 
 | Thing | Value |
 |---|---|
