@@ -219,8 +219,8 @@ supplies access and evidence.
     Button workflows, restore and the extensions. No login is required.
 36. **Public URLs and support contact.** The owner has not supplied the support email or
     the hosted support/privacy URLs. `appstore/support.html` and
-    `appstore/privacy-policy.html` retain the `SUPPORT_EMAIL` placeholder with an
-    `UNRESOLVED` comment, and `appstore/metadata.md` marks both URLs *Needed*. Do not
+    `appstore/privacy-policy.html` retain the `SUPPORT_EMAIL` placeholder, and
+    `appstore/metadata.md` marks both URLs *Needed*. Do not
     invent a contact or host a page under a fabricated address. Verify
     HTTPS, mobile rendering, no login, a working contact route and policy accuracy once
     the owner supplies them.

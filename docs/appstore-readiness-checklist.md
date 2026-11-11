@@ -25,7 +25,7 @@ and does not repeat the older checklist's legal/tax conclusions as verified fact
      (runbook step 0, checklist "Release blockers first").
   2. The paid team is already in `project.yml`; raise `CURRENT_PROJECT_VERSION`, then run
      [signed-build-testflight-runbook.md](signed-build-testflight-runbook.md) steps 1–6 and 8
-     (step 7 is the paywall screenshot, covered by the listing items).
+     (step 7 is the paywall screenshot, tracked with the listing items below).
   3. Install the processed build and work through
      [physical-device-qa-sheet.md](physical-device-qa-sheet.md).
   4. Finish App Store Connect (product, agreements, tax/banking, age rating, screenshots,
