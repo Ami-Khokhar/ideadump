@@ -431,3 +431,29 @@
   confirmation of both paths is outstanding: a simulator build proves the intent
   compiles into the widget and the tests prove the tap routing, but only a
   device run shows the launch actually skipping the plant.
+
+## Assistant access starts as an export pack, and Siri comes second
+
+- Context: issue #79. The owner asked whether stored expenses could be read by
+  ChatGPT or another assistant. The spike's report recorded the platform limit
+  that decides the shape: an assistant's MCP client is OpenAI's, not the
+  iPhone's, so a connector needs a public HTTPS endpoint or a tunnel, and no
+  plugin can read the phone's store. TapLog has no account, no server and no
+  sync, and `appstore/privacy-policy.html` says so.
+- Decision: the first shape is an export pack — a compact summary export beside
+  the existing CSV, plus six documented prompts drafted against that CSV's
+  columns. It ships behind the App Store submission fixes, not before them. The
+  bar for keeping it is 1 in 100 recap opens becoming an assistant share within
+  two weeks; below that the prompts come out and the export stays as it is. The
+  Siri and Apple Intelligence route comes second, and reuses `LogExpenseIntent`
+  and `CategoryEntity` rather than adding a second write path. Read access is
+  four tools — transactions with filters, category spend, budgets, and
+  time-range totals — plus a plain-text search over notes, never a regex. The
+  connector shape, the self-hosted bridge and writes are out of scope: nothing
+  is documented for them, and `chatgpt-plugin` is not landed.
+- Consequence: no privacy-policy or App Privacy change, because nothing leaves
+  the phone until the person shares a file. The export stays free. This record
+  authorizes no production code by itself; the summary export and the prompt
+  pack are the next PR, and the prompts are `docs/assistant-export-prompts.md`.
+  A future hosted connector would need accounts, auth, hosting and a new privacy
+  surface, so it starts from this entry rather than from the current code.
