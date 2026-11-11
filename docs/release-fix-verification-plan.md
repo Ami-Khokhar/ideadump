@@ -191,9 +191,9 @@ a real device with a paid team when available; until then record them as **unver
 These cannot be proven from the repository. Mark them **unverified** until the owner
 supplies access and evidence.
 
-28. **Paid-team signing.** Switch `DEVELOPMENT_TEAM` from the personal team to the paid
-    team, provision app + widget + share with the same registered App Group, create a
-    signed archive and inspect entitlements. A no-sign build is not evidence.
+28. **Paid-team signing.** The paid team is already in `project.yml`; provision app +
+    widget + share with the same registered App Group, create a signed archive and inspect
+    entitlements. A no-sign build is not evidence.
 29. **Archive validation/upload.** Validate in Organizer, upload, wait for processing,
     resolve warnings, preserve dSYMs with the release revision. Raise the build number for
     every upload.
