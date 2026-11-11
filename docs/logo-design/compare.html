@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TapLog — identity prototypes, side by side</title>
+<style>
+  :root {
+    --paper: #F7F5F2;
+    --card: #FFFFFF;
+    --ink: #20231F;
+    --muted: #6E6A64;
+    --hair: rgba(28,27,26,0.10);
+    --moss: #2F5D43;
+    --sage: #6B8F71;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1560px; margin: 0 auto; padding: 56px 48px 72px; }
+
+  header h1 { font-size: 40px; letter-spacing: -0.02em; margin: 0 0 10px; font-weight: 600; }
+  header .sub { font-size: 17px; color: var(--muted); margin: 0; max-width: 900px; line-height: 1.5; }
+  .eyebrow {
+    text-transform: uppercase; letter-spacing: 0.14em; font-size: 12px;
+    color: var(--muted); font-weight: 600; margin: 0 0 14px;
+  }
+
+  .grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 28px; margin: 44px 0 0;
+  }
+  .col {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 20px;
+    padding: 26px 26px 22px;
+    display: flex; flex-direction: column;
+  }
+  .col.pick { border: 2px solid var(--moss); }
+
+  .col-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .col-head h2 { font-size: 26px; margin: 0; letter-spacing: -0.01em; font-weight: 600; }
+  .badge {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 4px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .badge.win { background: var(--moss); color: #fff; }
+  .idea { color: var(--muted); font-size: 15px; margin: 8px 0 0; line-height: 1.45; min-height: 42px; }
+
+  .stage {
+    background: var(--paper); border-radius: 14px;
+    margin: 20px 0 0; padding: 22px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .stage.symbol { height: 250px; }
+  .stage.symbol img { width: 190px; height: 190px; }
+  .stage.lockup { height: 130px; }
+  .stage.lockup img { width: 100%; }
+
+  .caption {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--muted); font-weight: 600; margin: 20px 0 10px;
+  }
+
+  .icons { display: flex; align-items: center; gap: 18px; }
+  .icons img.appicon {
+    width: 104px; height: 104px; border-radius: 23%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.14);
+  }
+  .icons .onecol { display: flex; gap: 10px; }
+  .icons .onecol img { width: 46px; height: 46px; }
+  .darkchip {
+    background: #1C1B1A; border-radius: 10px; padding: 6px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .ladder { display: flex; align-items: flex-end; gap: 16px; }
+  .ladder figure { margin: 0; text-align: center; }
+  .ladder figcaption { font-size: 10px; color: var(--muted); margin-top: 7px; }
+
+  .verdict {
+    margin: 18px 0 0; padding: 11px 13px; border-radius: 10px;
+    font-size: 13px; line-height: 1.45;
+  }
+  .verdict.ok { background: rgba(107,143,113,0.16); color: #23422F; }
+  .verdict.warn { background: rgba(181,131,106,0.18); color: #6B4A33; }
+
+  .rationale { margin: 16px 0 0; padding-left: 18px; font-size: 13px; color: var(--muted); line-height: 1.55; }
+  .rationale li { margin-bottom: 5px; }
+
+  footer {
+    margin: 44px 0 0; padding-top: 26px; border-top: 1px solid var(--hair);
+    display: grid; grid-template-columns: 2fr 1fr; gap: 36px;
+  }
+  footer h3 { font-size: 15px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+  footer p { margin: 0 0 12px; font-size: 15px; line-height: 1.55; }
+  footer ul { margin: 0; padding-left: 18px; font-size: 14px; color: var(--muted); line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">TapLog · identity prototypes</p>
+    <h1>Three directions, side by side</h1>
+    <p class="sub">A local-first iPhone expense logger — capture in seconds from the Action Button, widget or Siri, with budgets that grow into a grove. Calm, private, botanical; deliberately not blue fintech. Identical type treatment throughout, so the symbol is the only variable.</p>
+  </header>
+
+  <div class="grid">
+
+    <!-- LEAF -->
+    <section class="col pick">
+      <div class="col-head">
+        <h2>Leaf</h2>
+        <span class="badge win">Recommended</span>
+      </div>
+      <p class="idea">A leaf rooted inside the ring.</p>
+
+      <div class="stage symbol"><img src="concept-d-leaf-ring.svg" alt="Leaf symbol"></div>
+      <div class="stage lockup"><img src="proto-leaf-lockup.svg" alt="Leaf lockup"></div>
+
+      <p class="caption">App icon · one colour</p>
+      <div class="icons">
+        <img class="appicon" src="proto-leaf-icon.svg" alt="Leaf app icon">
+        <div class="onecol">
+          <img src="variants/taplog-leaf-black.svg" alt="Leaf black">
+          <span class="darkchip"><img src="variants/taplog-leaf-white.svg" alt="Leaf white"></span>
+        </div>
+      </div>
+
+      <p class="caption">Scale</p>
+      <div class="ladder">
+        <figure><img src="concept-d-leaf-ring.svg" width="16" height="16" alt="16px"><figcaption>16</figcaption></figure>
+        <figure><img src="concept-d-leaf-ring.svg" width="24" height="24" alt="24px"><figcaption>24</figcaption></figure>
+        <figure><img src="concept-d-leaf-ring.svg" width="32" height="32" alt="32px"><figcaption>32</figcaption></figure>
+        <figure><img src="concept-d-leaf-ring.svg" width="64" height="64" alt="64px"><figcaption>64</figcaption></figure>
+      </div>
+
+      <p class="verdict ok">Holds at 16 px — resolves to a ring and a solid centre, the same legibility shipped today.</p>
+      <ul class="rationale">
+        <li>Keeps the ring equity of the current icon, so it is an evolution, not a replacement</li>
+        <li>The ring is a tap ripple and a tree growth ring at once</li>
+        <li>Two colours, one-colour safe, 99/100 construction audit</li>
+      </ul>
+    </section>
+
+    <!-- SPROUT -->
+    <section class="col">
+      <div class="col-head"><h2>Sprout</h2></div>
+      <p class="idea">A sprout grows out through the opening in the ring.</p>
+
+      <div class="stage symbol"><img src="concept-c-sprout.svg" alt="Sprout symbol"></div>
+      <div class="stage lockup"><img src="proto-sprout-lockup.svg" alt="Sprout lockup"></div>
+
+      <p class="caption">App icon · one colour</p>
+      <div class="icons">
+        <img class="appicon" src="proto-sprout-icon.svg" alt="Sprout app icon">
+        <div class="onecol">
+          <img src="variants/taplog-sprout-black.svg" alt="Sprout black">
+          <span class="darkchip"><img src="variants/taplog-sprout-white.svg" alt="Sprout white"></span>
+        </div>
+      </div>
+
+      <p class="caption">Scale</p>
+      <div class="ladder">
+        <figure><img src="concept-c-sprout.svg" width="16" height="16" alt="16px"><figcaption>16</figcaption></figure>
+        <figure><img src="concept-c-sprout.svg" width="24" height="24" alt="24px"><figcaption>24</figcaption></figure>
+        <figure><img src="concept-c-sprout.svg" width="32" height="32" alt="32px"><figcaption>32</figcaption></figure>
+        <figure><img src="concept-c-sprout.svg" width="64" height="64" alt="64px"><figcaption>64</figcaption></figure>
+      </div>
+
+      <p class="verdict warn">Weakest at 16 px — the sprout fills in and reads as a keyhole.</p>
+      <ul class="rationale">
+        <li>The most explicit telling of the grove metaphor: growth breaks the ring</li>
+        <li>Form and meaning agree — the break is where the growth happens</li>
+        <li>Best story, but needs a separate simplified small-size drawing</li>
+      </ul>
+    </section>
+
+    <!-- NOTCH -->
+    <section class="col">
+      <div class="col-head"><h2>Notch</h2></div>
+      <p class="idea">One entry cut into an otherwise closed record.</p>
+
+      <div class="stage symbol"><img src="concept-a-notched-ring.svg" alt="Notch symbol"></div>
+      <div class="stage lockup"><img src="proto-notch-lockup.svg" alt="Notch lockup"></div>
+
+      <p class="caption">App icon · one colour</p>
+      <div class="icons">
+        <img class="appicon" src="proto-notch-icon.svg" alt="Notch app icon">
+        <div class="onecol">
+          <img src="variants/taplog-notch-black.svg" alt="Notch black">
+          <span class="darkchip"><img src="variants/taplog-notch-white.svg" alt="Notch white"></span>
+        </div>
+      </div>
+
+      <p class="caption">Scale</p>
+      <div class="ladder">
+        <figure><img src="concept-a-notched-ring.svg" width="16" height="16" alt="16px"><figcaption>16</figcaption></figure>
+        <figure><img src="concept-a-notched-ring.svg" width="24" height="24" alt="24px"><figcaption>24</figcaption></figure>
+        <figure><img src="concept-a-notched-ring.svg" width="32" height="32" alt="32px"><figcaption>32</figcaption></figure>
+        <figure><img src="concept-a-notched-ring.svg" width="64" height="64" alt="64px"><figcaption>64</figcaption></figure>
+      </div>
+
+      <p class="verdict warn">Legible at 16 px, but the notch is gone by 32 px, so the idea is lost when small.</p>
+      <ul class="rationale">
+        <li>The most restrained and most abstract of the three</li>
+        <li>A single notch reads as a deliberate record rather than decoration</li>
+        <li>Purely geometric, so it sits quietly beside app UI</li>
+      </ul>
+    </section>
+
+  </div>
+
+  <footer>
+    <div>
+      <h3>Our recommendation</h3>
+      <p><strong>Leaf.</strong> It is the only one of the three that keeps its meaning at every size: the ring already exists in the shipped icon, and the leaf adds the grove story without costing legibility. Sprout tells the best story but cannot survive the 16 px app icon; Notch is the safest but loses its idea when small.</p>
+      <p>Note: these are evaluation prototypes, not shipping artwork. The lockup wordmarks are live text rather than outlines, and stroke weights are not yet expanded to filled paths — both are production-kit steps.</p>
+    </div>
+    <div>
+      <h3>Still open</h3>
+      <ul>
+        <li>Pick a direction</li>
+        <li>Is this replacing the shipped app icon (invalidates the 3 App Store screenshots), or a lockup for landing / README / App Store only?</li>
+      </ul>
+    </div>
+  </footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img">
+  <title>TapLog — Ripple Bloom</title>
+  <rect width="512" height="512" fill="#F8F5EE"/>
+  <circle cx="256" cy="256" r="236" fill="none" stroke="#2F5D43" stroke-width="20" opacity="1.0"/>
+  <circle cx="256" cy="256" r="196" fill="none" stroke="#5F7D62" stroke-width="15" opacity="0.95"/>
+  <circle cx="256" cy="256" r="160" fill="none" stroke="#6B8F71" stroke-width="11" opacity="0.9"/>
+  <circle cx="256" cy="256" r="132" fill="#DDE7D7" opacity="0.55"/>
+  <path d="M 256 344 L 256 172" fill="none" stroke="#5F7D62" stroke-width="14" stroke-linecap="round"/>
+  <path d="M 186.4 329.5 C 213.4 330.0 235.5 312.8 241.6 286.5 C 214.6 286.0 192.5 303.2 186.4 329.5 Z" fill="#2F5D43"/>
+  <path d="M 200.1 318.9 L 227.9 297.1" fill="none" stroke="#DDE7D7" stroke-width="1.7" opacity="0.55"/>
+  <path d="M 270.4 286.5 C 276.5 312.8 298.6 330.0 325.6 329.5 C 319.5 303.2 297.4 286.0 270.4 286.5 Z" fill="#2F5D43"/>
+  <path d="M 284.1 297.1 L 311.9 318.9" fill="none" stroke="#DDE7D7" stroke-width="1.7" opacity="0.55"/>
+  <path d="M 193.7 278.4 C 217.7 281.7 238.7 268.6 246.3 245.6 C 222.3 242.3 201.3 255.4 193.7 278.4 Z" fill="#5F7D62"/>
+  <path d="M 206.8 270.3 L 233.2 253.7" fill="none" stroke="#DDE7D7" stroke-width="1.7" opacity="0.55"/>
+  <path d="M 265.7 245.6 C 273.3 268.6 294.3 281.7 318.3 278.4 C 310.7 255.4 289.7 242.3 265.7 245.6 Z" fill="#5F7D62"/>
+  <path d="M 278.8 253.7 L 305.2 270.3" fill="none" stroke="#DDE7D7" stroke-width="1.7" opacity="0.55"/>
+  <path d="M 204.6 231.4 C 224.6 236.7 243.3 227.6 251.4 208.6 C 231.4 203.3 212.7 212.4 204.6 231.4 Z" fill="#6B8F71"/>
+  <path d="M 216.2 225.7 L 239.8 214.3" fill="none" stroke="#DDE7D7" stroke-width="1.7" opacity="0.55"/>
+  <path d="M 260.6 208.6 C 268.7 227.6 287.4 236.7 307.4 231.4 C 299.3 212.4 280.6 203.3 260.6 208.6 Z" fill="#6B8F71"/>
+  <path d="M 272.2 214.3 L 295.8 225.7" fill="none" stroke="#DDE7D7" stroke-width="1.7" opacity="0.55"/>
+  <ellipse cx="256.0" cy="141.0" rx="16" ry="23" fill="#C0849A" transform="rotate(-90 256.0 141.0)"/>
+  <ellipse cx="277.7" cy="153.5" rx="16" ry="23" fill="#C0849A" transform="rotate(-30 277.7 153.5)"/>
+  <ellipse cx="277.7" cy="178.5" rx="16" ry="23" fill="#C0849A" transform="rotate(30 277.7 178.5)"/>
+  <ellipse cx="256.0" cy="191.0" rx="16" ry="23" fill="#C0849A" transform="rotate(90 256.0 191.0)"/>
+  <ellipse cx="234.3" cy="178.5" rx="16" ry="23" fill="#C0849A" transform="rotate(150 234.3 178.5)"/>
+  <ellipse cx="234.3" cy="153.5" rx="16" ry="23" fill="#C0849A" transform="rotate(210 234.3 153.5)"/>
+  <circle cx="256" cy="166" r="13" fill="#D9A441"/>
+  <circle cx="256" cy="166" r="5" fill="#6B4F3A" opacity="0.5"/>
+</svg>

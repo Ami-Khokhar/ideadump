@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1600" height="840" viewBox="0 0 1600 840"><rect width="1600" height="840" fill="#f7f7f4"/><text x="60" y="78" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="40" font-weight="700" fill="#161616">TapLog — logo concepts</text><text x="60" y="116" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="20" fill="#6b6b6b">Local-first expense logging · sage + ink · one-colour safe</text><rect x="60" y="150" width="474.667" height="630" rx="18" fill="#fff" stroke="#161616" stroke-width="2"/><g><svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 512 512" x="90" y="190" width="414.667" height="300" preserveAspectRatio="xMidYMid meet">
+  <title>TapLog — Concept D — Leaf in Ring</title>
+  <!-- At 16 px this is a ring and a solid centre — exactly today's legibility.
+       At 32 px and up the centre resolves into a leaf, rooted at the bottom of
+       the ring. The tap ripple and the growth ring are the same shape. -->
+  <circle cx="256" cy="256" r="165" fill="none" stroke="#2F5D43" stroke-width="56"/>
+  <path d="M 256 372 C 360 328 364 216 256 140 C 148 216 152 328 256 372 Z"
+        fill="#6B8F71"/>
+  <path d="M 256 372 L 256 390" fill="none" stroke="#6B8F71" stroke-width="20"
+        stroke-linecap="round"/>
+</svg>
+</g><g><svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 512 512" x="90" y="516" width="64" height="64" preserveAspectRatio="xMidYMid meet">
+  <title>TapLog — Concept D — Leaf in Ring</title>
+  <!-- At 16 px this is a ring and a solid centre — exactly today's legibility.
+       At 32 px and up the centre resolves into a leaf, rooted at the bottom of
+       the ring. The tap ripple and the growth ring are the same shape. -->
+  <circle cx="256" cy="256" r="165" fill="none" stroke="#2F5D43" stroke-width="56"/>
+  <path d="M 256 372 C 360 328 364 216 256 140 C 148 216 152 328 256 372 Z"
+        fill="#6B8F71"/>
+  <path d="M 256 372 L 256 390" fill="none" stroke="#6B8F71" stroke-width="20"
+        stroke-linecap="round"/>
+</svg>
+</g><text x="122" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">64px</text><g><svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 512 512" x="180" y="548" width="32" height="32" preserveAspectRatio="xMidYMid meet">
+  <title>TapLog — Concept D — Leaf in Ring</title>
+  <!-- At 16 px this is a ring and a solid centre — exactly today's legibility.
+       At 32 px and up the centre resolves into a leaf, rooted at the bottom of
+       the ring. The tap ripple and the growth ring are the same shape. -->
+  <circle cx="256" cy="256" r="165" fill="none" stroke="#2F5D43" stroke-width="56"/>
+  <path d="M 256 372 C 360 328 364 216 256 140 C 148 216 152 328 256 372 Z"
+        fill="#6B8F71"/>
+  <path d="M 256 372 L 256 390" fill="none" stroke="#6B8F71" stroke-width="20"
+        stroke-linecap="round"/>
+</svg>
+</g><text x="196" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">32px</text><g><svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 512 512" x="238" y="564" width="16" height="16" preserveAspectRatio="xMidYMid meet">
+  <title>TapLog — Concept D — Leaf in Ring</title>
+  <!-- At 16 px this is a ring and a solid centre — exactly today's legibility.
+       At 32 px and up the centre resolves into a leaf, rooted at the bottom of
+       the ring. The tap ripple and the growth ring are the same shape. -->
+  <circle cx="256" cy="256" r="165" fill="none" stroke="#2F5D43" stroke-width="56"/>
+  <path d="M 256 372 C 360 328 364 216 256 140 C 148 216 152 328 256 372 Z"
+        fill="#6B8F71"/>
+  <path d="M 256 372 L 256 390" fill="none" stroke="#6B8F71" stroke-width="20"
+        stroke-linecap="round"/>
+</svg>
+</g><text x="246" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">16px</text><text x="90.0" y="636" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="26" font-weight="700" fill="#161616">A · Leaf</text><text x="90.0" y="664" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="15" font-weight="700" fill="#161616" letter-spacing="1.5">RECOMMENDED</text><text x="90.0" y="698" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="19" fill="#555">A leaf rooted in the ring. Degrades to your</text><text x="90.0" y="724" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="19" fill="#555">current ring-and-dot at 16px.</text><rect x="562.667" y="150" width="474.667" height="630" rx="18" fill="#fff" stroke="#e4e4e0" stroke-width="1"/><g><svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 512 512" x="592.667" y="190" width="414.667" height="300" preserveAspectRatio="xMidYMid meet">
+  <title>TapLog — Concept C — Sprout</title>
+  <!-- The seed sits in the ring and grows out through the opening: budgets
+       become a grove. The break in the ring is where the growth happens. -->
+  <path d="M 344.6 108.6 A 172 172 0 1 1 167.4 108.6"
+        fill="none" stroke="#2F5D43" stroke-width="42" stroke-linecap="round"/>
+  <path d="M 256 300 L 256 104" fill="none" stroke="#5F7D62" stroke-width="26"
+        stroke-linecap="round"/>
+  <path d="M 256 190 Q 340 150 312 76 Q 272 124 256 190 Z" fill="#5F7D62"/>
+  <path d="M 256 190 Q 172 150 200 76 Q 240 124 256 190 Z" fill="#5F7D62"/>
+  <circle cx="256" cy="290" r="58" fill="#6B8F71"/>
+</svg>
+</g><g><svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 512 512" x="592.667" y="516" width="64" height="64" preserveAspectRatio="xMidYMid meet">
+  <title>TapLog — Concept C — Sprout</title>
+  <!-- The seed sits in the ring and grows out through the opening: budgets
+       become a grove. The break in the ring is where the growth happens. -->
+  <path d="M 344.6 108.6 A 172 172 0 1 1 167.4 108.6"
+        fill="none" stroke="#2F5D43" stroke-width="42" stroke-linecap="round"/>
+  <path d="M 256 300 L 256 104" fill="none" stroke="#5F7D62" stroke-width="26"
+        stroke-linecap="round"/>
+  <path d="M 256 190 Q 340 150 312 76 Q 272 124 256 190 Z" fill="#5F7D62"/>
+  <path d="M 256 190 Q 172 150 200 76 Q 240 124 256 190 Z" fill="#5F7D62"/>
+  <circle cx="256" cy="290" r="58" fill="#6B8F71"/>
+</svg>
+</g><text x="624.667" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">64px</text><g><svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 512 512" x="682.667" y="548" width="32" height="32" preserveAspectRatio="xMidYMid meet">
+  <title>TapLog — Concept C — Sprout</title>
+  <!-- The seed sits in the ring and grows out through the opening: budgets
+       become a grove. The break in the ring is where the growth happens. -->
+  <path d="M 344.6 108.6 A 172 172 0 1 1 167.4 108.6"
+        fill="none" stroke="#2F5D43" stroke-width="42" stroke-linecap="round"/>
+  <path d="M 256 300 L 256 104" fill="none" stroke="#5F7D62" stroke-width="26"
+        stroke-linecap="round"/>
+  <path d="M 256 190 Q 340 150 312 76 Q 272 124 256 190 Z" fill="#5F7D62"/>
+  <path d="M 256 190 Q 172 150 200 76 Q 240 124 256 190 Z" fill="#5F7D62"/>
+  <circle cx="256" cy="290" r="58" fill="#6B8F71"/>
+</svg>
+</g><text x="698.667" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">32px</text><g><svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 512 512" x="740.667" y="564" width="16" height="16" preserveAspectRatio="xMidYMid meet">
+  <title>TapLog — Concept C — Sprout</title>
+  <!-- The seed sits in the ring and grows out through the opening: budgets
+       become a grove. The break in the ring is where the growth happens. -->
+  <path d="M 344.6 108.6 A 172 172 0 1 1 167.4 108.6"
+        fill="none" stroke="#2F5D43" stroke-width="42" stroke-linecap="round"/>
+  <path d="M 256 300 L 256 104" fill="none" stroke="#5F7D62" stroke-width="26"
+        stroke-linecap="round"/>
+  <path d="M 256 190 Q 340 150 312 76 Q 272 124 256 190 Z" fill="#5F7D62"/>
+  <path d="M 256 190 Q 172 150 200 76 Q 240 124 256 190 Z" fill="#5F7D62"/>
+  <circle cx="256" cy="290" r="58" fill="#6B8F71"/>
+</svg>
+</g><text x="748.667" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">16px</text><text x="592.6666666666667" y="636" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="26" font-weight="700" fill="#161616">B · Sprout</text><text x="592.6666666666667" y="670" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="19" fill="#555">A full sprout grows out through the ring.</text><text x="592.6666666666667" y="696" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="19" fill="#555">Most expressive, weakest small.</text><rect x="1065.33" y="150" width="474.667" height="630" rx="18" fill="#fff" stroke="#e4e4e0" stroke-width="1"/><g><svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 512 512" x="1095.33" y="190" width="414.667" height="300" preserveAspectRatio="xMidYMid meet">
+  <title>TapLog — Concept A — Notch</title>
+  <!-- A closed ring with one narrow notch: the disc is the record, the notch is
+       the single entry cut into it. Quietest of the three. -->
+  <path d="M 284.6 93.5 A 165 165 0 1 1 227.4 93.5"
+        fill="none" stroke="#2F5D43" stroke-width="62"/>
+  <circle cx="256" cy="256" r="72" fill="#6B8F71"/>
+</svg>
+</g><g><svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 512 512" x="1095.33" y="516" width="64" height="64" preserveAspectRatio="xMidYMid meet">
+  <title>TapLog — Concept A — Notch</title>
+  <!-- A closed ring with one narrow notch: the disc is the record, the notch is
+       the single entry cut into it. Quietest of the three. -->
+  <path d="M 284.6 93.5 A 165 165 0 1 1 227.4 93.5"
+        fill="none" stroke="#2F5D43" stroke-width="62"/>
+  <circle cx="256" cy="256" r="72" fill="#6B8F71"/>
+</svg>
+</g><text x="1127.33" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">64px</text><g><svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 512 512" x="1185.33" y="548" width="32" height="32" preserveAspectRatio="xMidYMid meet">
+  <title>TapLog — Concept A — Notch</title>
+  <!-- A closed ring with one narrow notch: the disc is the record, the notch is
+       the single entry cut into it. Quietest of the three. -->
+  <path d="M 284.6 93.5 A 165 165 0 1 1 227.4 93.5"
+        fill="none" stroke="#2F5D43" stroke-width="62"/>
+  <circle cx="256" cy="256" r="72" fill="#6B8F71"/>
+</svg>
+</g><text x="1201.33" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">32px</text><g><svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 512 512" x="1243.33" y="564" width="16" height="16" preserveAspectRatio="xMidYMid meet">
+  <title>TapLog — Concept A — Notch</title>
+  <!-- A closed ring with one narrow notch: the disc is the record, the notch is
+       the single entry cut into it. Quietest of the three. -->
+  <path d="M 284.6 93.5 A 165 165 0 1 1 227.4 93.5"
+        fill="none" stroke="#2F5D43" stroke-width="62"/>
+  <circle cx="256" cy="256" r="72" fill="#6B8F71"/>
+</svg>
+</g><text x="1251.33" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">16px</text><text x="1095.3333333333335" y="636" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="26" font-weight="700" fill="#161616">C · Notch</text><text x="1095.3333333333335" y="670" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="19" fill="#555">One entry cut into the record. Most</text><text x="1095.3333333333335" y="696" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="19" fill="#555">abstract and most restrained.</text></svg>

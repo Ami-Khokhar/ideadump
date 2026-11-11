@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img">
+  <title>TapLog — Concept D — Leaf in Ring</title>
+  <!-- At 16 px this is a ring and a solid centre — exactly today's legibility.
+       At 32 px and up the centre resolves into a leaf, rooted at the bottom of
+       the ring. The tap ripple and the growth ring are the same shape. -->
+  <circle cx="256" cy="256" r="165" fill="none" stroke="#2F5D43" stroke-width="56"/>
+  <path d="M 256 372 C 360 328 364 216 256 140 C 148 216 152 328 256 372 Z"
+        fill="#6B8F71"/>
+  <path d="M 256 372 L 256 390" fill="none" stroke="#6B8F71" stroke-width="20"
+        stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256"><g transform="translate(-39.42 -40.24) scale(0.654)">
+  
+  <!-- A closed ring with one narrow notch: the disc is the record, the notch is
+       the single entry cut into it. Quietest of the three. -->
+  <path d="M 284.6 93.5 A 165 165 0 1 1 227.4 93.5"
+        fill="none" stroke="#2F5D43" stroke-width="62"/>
+  <circle cx="256" cy="256" r="72" fill="#6B8F71"/>
+</g></svg>

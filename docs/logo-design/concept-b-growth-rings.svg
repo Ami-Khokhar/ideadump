@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img">
+  <title>TapLog — Concept B — Segments</title>
+  <!-- The ring split into four arcs: the cycle of a month, one segment per
+       week, closing on a solid core. Time you can count. -->
+  <g fill="none" stroke="#2F5D43" stroke-width="52" stroke-linecap="round">
+    <path d="M 291.3 89.7 A 170 170 0 0 1 422.3 220.6"/>
+    <path d="M 422.3 291.3 A 170 170 0 0 1 291.3 422.3"/>
+    <path d="M 220.7 422.3 A 170 170 0 0 1 89.7 291.3"/>
+    <path d="M 89.7 220.7 A 170 170 0 0 1 220.7 89.7"/>
+  </g>
+  <circle cx="256" cy="256" r="64" fill="#6B8F71"/>
+</svg>

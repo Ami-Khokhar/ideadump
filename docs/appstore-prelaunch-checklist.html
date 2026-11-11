@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TapLog — App Store Pre-Launch Checklist</title>
+<style>
+  :root{
+    --paper:#f7f5f2; --ink:#121110; --muted:#6e6a60; --hairline:#e4e0d8;
+    --sage:#2d6a4f; --sage-soft:#eef2ee; --clay:#a34f35; --clay-soft:#f6e9e4;
+    --amber:#c88a35; --amber-soft:#f7efe2; --navy:#0f2b48; --navy-soft:#e5ecf3;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;background:var(--paper);color:var(--ink);line-height:1.55;padding:2rem 1rem 5rem}
+  .wrap{max-width:940px;margin:0 auto}
+  header{border-bottom:3px solid var(--ink);padding-bottom:1.2rem;margin-bottom:2rem}
+  .kicker{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--clay);margin-bottom:.4rem}
+  h1{font-size:2rem;letter-spacing:-.02em}
+  .meta{color:var(--muted);font-size:.88rem;margin-top:.5rem}
+  h2{font-size:1.3rem;margin:2.8rem 0 .8rem;padding-bottom:.4rem;border-bottom:2px solid var(--hairline)}
+  h2 .num{color:var(--clay);margin-right:.5rem}
+  h3{font-size:1rem;margin:1.3rem 0 .4rem}
+  p{margin:.5rem 0;max-width:78ch}
+  code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.83em;background:#eceae4;border-radius:4px;padding:1px 5px}
+  .lead{font-size:1.03rem}
+  .box{background:#fff;border:1px solid var(--hairline);border-left:4px solid var(--clay);border-radius:0 10px 10px 0;padding:14px 18px;margin:1rem 0}
+  .box.green{border-left-color:var(--sage)}
+  .box.amber{border-left-color:var(--amber)}
+  table{border-collapse:collapse;width:100%;font-size:.86rem;margin:.8rem 0;background:#fff}
+  th,td{text-align:left;padding:8px 10px;border:1px solid var(--hairline);vertical-align:top}
+  th{background:var(--paper);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .cb{display:inline-block;width:15px;height:15px;border:2px solid var(--muted);border-radius:4px;vertical-align:middle}
+  .pri{display:inline-block;font-size:.66rem;font-weight:800;letter-spacing:.06em;border-radius:5px;padding:2px 7px;white-space:nowrap}
+  .pri.p0{background:var(--clay);color:#fff}
+  .pri.p1{background:var(--amber);color:#fff}
+  .pri.p2{background:#c9c7c0;color:var(--ink)}
+  .stat{font-size:.72rem;font-weight:700;border-radius:999px;padding:2px 9px;display:inline-block}
+  .stat.todo{background:var(--clay-soft);color:var(--clay)}
+  .stat.done{background:var(--sage-soft);color:var(--sage)}
+  .stat.part{background:var(--amber-soft);color:var(--amber)}
+  ul{padding-left:1.3rem;margin:.4rem 0}
+  li{margin:.28rem 0}
+  .funnel{display:flex;flex-direction:column;align-items:center;gap:8px;margin:1.2rem 0}
+  .fstep{border-radius:12px;padding:12px 18px;text-align:center;color:#fff;width:100%;max-width:620px}
+  .fstep b{display:block;font-size:.95rem}
+  .fstep span{font-size:.78rem;opacity:.88}
+  .farrow{color:var(--muted);font-size:.8rem}
+  .footnote{margin-top:4rem;border-top:1px solid var(--hairline);padding-top:1rem;color:var(--muted);font-size:.82rem}
+  @media(max-width:640px){h1{font-size:1.5rem}.fstep{max-width:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">Launch ops · 26 Sep 2026</div>
+  <h1>TapLog — App Store pre-launch checklist</h1>
+  <p class="meta">Everything between "the code works" and "it's on the App Store." Researched against current (2026) Apple requirements and cross-checked against the repo's own deep legal report (<code>reports/TapLog App Store legal checklist.md</code>) and <code>appstore/metadata.md</code>. Repo status flags reflect what is actually in the tree today.</p>
+</header>
+
+<div class="box">
+<b>The single biggest risk is not code review — it's Apple's account chain.</b> In-app purchases do not load in sandbox <em>or in review</em> until three things are all Active: Paid Apps Agreement → tax forms (W-8BEN) → bank account. Each has no published SLA; reports range from days to weeks. If enrollment isn't already approved, start every account step <b>today</b> and set the go/no-go checkpoint per the timeline at the bottom.
+</div>
+
+<h2><span class="num">0</span>Where TapLog already stands</h2>
+<table>
+  <tr><th>Item</th><th>Status in repo</th></tr>
+  <tr><td>Store listing copy (name, subtitle, keywords, promo, description, IAP text)</td><td><span class="stat done">DONE</span> <code>appstore/metadata.md</code> — paste into App Store Connect</td></tr>
+  <tr><td>App Review notes (how to reach the paywall, no-account statement)</td><td><span class="stat done">DONE</span> in metadata.md — paste into the Review Notes field</td></tr>
+  <tr><td>Screenshots (3 × 1320×2868, 6.9" slot)</td><td><span class="stat done">DONE</span> <code>appstore/screenshots/</code> — upload in order</td></tr>
+  <tr><td>Privacy policy + support page HTML</td><td><span class="stat part">GAPS</span> <code>appstore/privacy-policy.html</code> + <code>support.html</code> exist but per legal report need: developer legal name, postal address, support-email section, "last updated" date — and both need hosting at a stable URL</td></tr>
+  <tr><td>Export compliance</td><td><span class="stat done">DONE</span> <code>ITSAppUsesNonExemptEncryption: false</code> already in Info.plist</td></tr>
+  <tr><td>StoreKit product ID</td><td><span class="stat done">DONE</span> <code>dev.amteshwar.taplog.pro.lifetime</code> in code + local <code>Configs/TapLog.storekit</code></td></tr>
+  <tr><td>Privacy manifests (<code>PrivacyInfo.xcprivacy</code>)</td><td><span class="stat todo">MISSING</span> — no xcprivacy anywhere in the tree; app uses UserDefaults + file timestamps (CSV) = required-reason APIs. Must add (see §4)</td></tr>
+  <tr><td>Paywall copy</td><td><span class="stat todo">FIX</span> "One payment, yours for good" in <code>PaywallView.swift</code> — ownership claim (see §5.1)</td></tr>
+  <tr><td>App icon</td><td><span class="stat done">DONE</span> AppIcon.appiconset populated</td></tr>
+</table>
+
+<h2><span class="num">1</span>The account chain — start day 1, it gates everything</h2>
+
+<div class="funnel">
+  <div class="fstep" style="background:#a34f35"><b>1 · Developer Program enrollment</b><span>India: Apple Developer app only · same device throughout · exact legal name · government photo ID · $99/yr · no published approval time (reports: 7–40+ days)</span></div>
+  <div class="farrow">▼ only after approval</div>
+  <div class="fstep" style="background:#c88a35"><b>2 · Paid Apps Agreement (Account Holder signs)</b><span>irreversible signature · required for IAP submission AND Small Business Program</span></div>
+  <div class="farrow">▼</div>
+  <div class="fstep" style="background:#6b8f71"><b>3 · Tax forms — W-8BEN via Apple's questionnaire</b><span>PAN as foreign TIN · <b>locks after submission</b> · book the CA call for the Part II treaty line BEFORE submitting (Art 12 vs Art 7 vs none)</span></div>
+  <div class="farrow">▼ bank needs tax forms first</div>
+  <div class="fstep" style="background:#2d6a4f"><b>4 · Bank account (INR, India)</b><span>holder name exactly as the bank record, in English · Apple's best case "within 24h", reports say days–weeks</span></div>
+  <div class="farrow">▼ only when all three are Active</div>
+  <div class="fstep" style="background:#0f2b48"><b>5 · IAP loads in sandbox → then in review</b><span>the #1 first-submission rejection is IAP that doesn't load for the reviewer (Guideline 2.1)</span></div>
+</div>
+
+<table>
+  <tr><th></th><th>Action</th><th>Why / rule</th></tr>
+  <tr><td><span class="cb"></span></td><td><b>Complete/confirm enrollment</b> in the Apple Developer app (India: app-only). Two-factor ON, name matches ID exactly.</td><td>Enrollment is the longest uncontrolled delay. A name/alias mismatch is the one documented delay cause.</td></tr>
+  <tr><td><span class="cb"></span></td><td><b>Create the App Store Connect record today</b>: "TapLog: Expense Tracker" (23/30 chars). Have a fallback name ready.</td><td>The bare name "TapLog" is already taken on the US store by another developer (Peter Underwood, "One-Tap Activity Tracking"). Record creation both tests and reserves the string.</td></tr>
+  <tr><td><span class="cb"></span></td><td><b>Sign the Paid Apps Agreement</b> the day approval lands.</td><td>Gates IAP + Small Business Program.</td></tr>
+  <tr><td><span class="cb"></span></td><td><b>CA call → then submit W-8BEN</b> (PAN as foreign TIN).</td><td>Without a valid form Apple withholds 30% in the US. The form locks; the treaty line (Art 12 royalties / Art 7 business profits / none) is a decision the repo's legal report explicitly flags as CA-territory.</td></tr>
+  <tr><td><span class="cb"></span></td><td><b>Add the bank account</b> — INR, exact holder name, bank's address.</td><td>Processed only after tax forms. India/INR payout threshold is effectively nil ($0.02).</td></tr>
+  <tr><td><span class="cb"></span></td><td><b>Apply to the Small Business Program the same day</b>.</td><td>15% instead of 30% commission. Takes effect 15 days after the fiscal month of approval — every day of delay can leave September sales at 30%. New developers qualify (≤$1M/yr).</td></tr>
+</table>
+
+<h2><span class="num">2</span>The EU trader decision (do not skip)</h2>
+<div class="box amber">
+Every developer must declare a DSA trader status — with a paid IAP, "trader" is effectively mandatory (selling counts as Apple's first trader factor). Trader verification publishes your <b>address, phone, and email on EU product pages</b>.
+</div>
+<table>
+  <tr><th></th><th>Action</th><th>Notes</th></tr>
+  <tr><td><span class="cb"></span></td><td><b>Declare trader status</b> and start verification now (email code, phone code, name-and-address document; P.O. box OK for display with proof, not for enrollment).</td><td>Recommended pragmatic path per the legal report: declare trader, then <b>deselect the 27 EU storefronts</b> in Pricing & Availability for launch. Switch the EU on once verification clears. Keeps the declaration truthful and your home address off public pages at launch.</td></tr>
+  <tr><td><span class="cb"></span></td><td>Use the <b>same address</b> for the DSA display and the privacy policy.</td><td>The two public identities must match.</td></tr>
+</table>
+
+<h2><span class="num">3</span>Legal fixes to the listing and the app</h2>
+
+<h3>3.1 · In the app (one string change + one row)</h3>
+<table>
+  <tr><th></th><th>Action</th><th>Why</th></tr>
+  <tr><td><span class="cb"></span></td><td><b>Change "One payment, yours for good"</b> in <code>PaywallView.included</code> to something like <code>"One-time purchase. No subscription. Restore anytime."</code></td><td>Apple's terms grant a licence, not ownership; California AB 2426 restricts ownership wording for digital goods unless the licence is disclosed. Keep "ONE PAYMENT, NO SUBSCRIPTION" in the description (factual), never "lifetime"/"own" in UI or product name. The IAP display name in metadata.md ("TapLog Pro") is already clean.</td></tr>
+  <tr><td><span class="cb"></span></td><td><b>Add a "Privacy Policy" row in Settings</b> linking the hosted policy.</td><td>Guideline 5.1.1(i) requires the in-app link, not just the ASC field — even for an app that collects nothing.</td></tr>
+  <tr><td><span class="cb"></span></td><td>Add a <b>Terms row</b> in Settings linking Apple's <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/">Standard EULA</a> (no custom EULA needed).</td><td>Legal report item 1.17; costs one row and closes a 2.1(a) surface.</td></tr>
+  <tr><td><span class="cb"></span></td><td>Add a one-line <b>"not financial advice"</b> disclaimer in Settings → About (and on the support page).</td><td>SEBI hedging per legal report item 1.18. Recaps must describe spending, never recommend.</td></tr>
+</table>
+
+<h3>3.2 · In the listing (App Store Connect)</h3>
+<table>
+  <tr><th></th><th>Action</th><th>Why</th></tr>
+  <tr><td><span class="cb"></span></td><td><b>Remove "siri" and "action button" from keywords</b> in metadata.md before pasting.</td><td>Siri® is an Apple registered trademark; Guideline 2.3.7 bars trademarked terms in metadata. "Action Button" names a hardware feature. Replace with: <code>expense,spending,tracker,money,budget,offline,diary,daily,cash,habit,streak,grove,no account</code>. Keep "works with Siri" in the <em>description</em> — referential use is fine.</td></tr>
+  <tr><td><span class="cb"></span></td><td>Update the privacy policy page: full legal name, postal address, privacy contact email, support-email section (what you receive, provider, retention, rights, ≤90-day response), international-transfer line, DNT line, "Last updated".</td><td>GDPR Art 13 / Cal. Bus. &amp; Prof. 22575 / DPDP prep — the exact gap list from the legal report (fact 3). For an offline app, the support email is the only personal-data flow; this section carries the legal load.</td></tr>
+  <tr><td><span class="cb"></span></td><td><b>Host</b> policy + support pages at stable URLs (e.g. under amteshwar.dev — <code>taplog.com</code>/<code>.app</code> are taken) and put the URLs in ASC.</td><td>Guideline 2.1(a): URLs must work at review time.</td></tr>
+  <tr><td><span class="cb"></span></td><td>Support page must include: working contact email, "Refunds are handled by Apple at reportaproblem.apple.com", the not-financial-advice disclaimer.</td><td>Apple is merchant of record for refunds; the disclaimer hedges the "financial planning" reading.</td></tr>
+</table>
+
+<h2><span class="num">4</span>Privacy manifests & the privacy label (binary-level, since May 2024)</h2>
+<div class="box">
+<b>No <code>PrivacyInfo.xcprivacy</code> exists in this repo.</b> App Store Connect rejects uploads with undeclared required-reason API usage (ITMS-91053 family). TapLog's three targets all use UserDefaults; CSV export touches file timestamps.
+</div>
+<table>
+  <tr><th></th><th>Action</th><th>Notes</th></tr>
+  <tr><td><span class="cb"></span></td><td>Create <code>PrivacyInfo.xcprivacy</code> for <b>the app target</b>: declare NSPrivacyAccessedAPICategoryUserDefaults with reason <code>CA92.1</code> (app's own defaults) and <code>1C8F.1</code> (App Group shared defaults); declare FileTimestamp with <code>C617.1</code> if CSV/file APIs qualify; NSPrivacyCollectedDataTypes = empty; NSPrivacyTracking = false.</td><td>Third-party SDKs: none (zero dependencies) — so only the first-party bundles need manifests.</td></tr>
+  <tr><td><span class="cb"></span></td><td>Create manifests for <b>TapLogWidget.appex and TapLogShare.appex</b> — each executable bundle that touches UserDefaults (App Group / @AppStorage) needs its own.</td><td>Extensions are separate bundles; the app's manifest does not cover them. Wire into the three targets via <code>project.yml</code> resources, then <code>xcodegen generate</code>.</td></tr>
+  <tr><td><span class="cb"></span></td><td>Archive → run Xcode's <b>Generate Privacy Report</b> and check all three bundles appear.</td><td>Catches a bundle silently missing its manifest before upload.</td></tr>
+  <tr><td><span class="cb"></span></td><td>App Privacy label in ASC: <b>"Data Not Collected"</b> — answer No to every collection question.</td><td>On-device data, Apple-handled payments, and Apple's Siri processing are not developer-collected. Matches the app's real behavior (zero network). The privacy-info section of metadata.md already says this.</td></tr>
+  <tr><td><span class="cb"></span></td><td>Age rating questionnaire: answer "None" everywhere → expect <b>4+</b>.</td><td>No web access, no UGC, no gambling, no medical. New 13+/16+/18+ tiers apply to new apps; TapLog's content is 4+ under them.</td></tr>
+</table>
+
+<h2><span class="num">5</span>Build hygiene before the upload</h2>
+<table>
+  <tr><th></th><th>Action</th><th>Notes</th></tr>
+  <tr><td><span class="cb"></span></td><td>Raise <code>CURRENT_PROJECT_VERSION</code> (build number) before the archive; keep <code>MARKETING_VERSION 1.0</code>.</td><td>One edit in project.yml versions app + both extensions. Raise the build number on every rejected-and-resubmitted upload.</td></tr>
+  <tr><td><span class="cb"></span></td><td>Run the full unit test suite once more: <code>xcodebuild test -scheme TapLog -destination 'platform=iOS Simulator,name=iPhone 17 Pro'</code>.</td><td>23 test files / ~300 assertions are the fastest regression gate you have.</td></tr>
+  <tr><td><span class="cb"></span></td><td><b>Real-device QA pass</b> on the Release config: every front door (Action Button, both widgets, Control Center, Siri ×3 phrases, share sheet incl. an OTP text, deep link), capture timing ≤5s, undo, budget tree states, monthly-recap paywall, Restore button with no purchase (should show the "No previous purchase found" message), dark mode, Dynamic Type, Reduce Motion.</td><td>Nothing has had a hands-on pass since the keypad redesign (Aug 28 review caveat). Reviewers test on hardware; the App Shortcut tiles behave differently device-vs-simulator (linkd team-ID behavior noted in README).</td></tr>
+  <tr><td><span class="cb"></span></td><td>Archive with the <b>Release</b> config, generic iOS device → verify no debug hooks: the seed/autolog/route launch args are <code>#if DEBUG</code>-gated in code, confirm the archive doesn't respond to <code>-seedSampleData</code>.</td><td>Test hooks in release are a 2.1(b) risk and a data-integrity risk.</td></tr>
+  <tr><td><span class="cb"></span></td><td>Confirm first-open experience on a fresh install (no seed): Welcome → first log is short and the home screen is never empty-empty; consider enabling the sample-data offer for review convenience instead of shipping seeds.</td><td>4.2 minimum functionality + 2.1(a): an app that opens useful works better in review than a blank slate.</td></tr>
+</table>
+
+<h2><span class="num">6</span>App Store Connect — the version page</h2>
+<table>
+  <tr><th></th><th>Action</th><th>Notes</th></tr>
+  <tr><td><span class="cb"></span></td><td>Create the <b>non-consumable IAP</b>: product ID <code>dev.amteshwar.taplog.pro.lifetime</code> (must match code exactly), reference name "TapLog Pro (lifetime)", display name "TapLog Pro", description "Every budget tree and the monthly recap" (39/45), price tier $4.99 (matches local test file; set INR pricing too — India is the seed market), review screenshot of the paywall (Recap → Month).</td><td>IAP display name must not contain "lifetime"; reference name can. Attach the IAP to version 1.0 under "In-App Purchases and Subscriptions" <b>before</b> pressing Submit for Review — the first non-consumable must ship with a version.</td></tr>
+  <tr><td><span class="cb"></span></td><td><b>Sandbox-test the purchase on a physical device</b> after the account chain is Active: buy → verify unlock → wipe app → restore → verify unlock → restore with nothing (verify the empty-restore message).</td><td>3.1.1 requires a restore mechanism; 2.1(b) requires the IAP to work for the reviewer. Sandbox Apple Account: Settings → App Store → Sandbox Account.</td></tr>
+  <tr><td><span class="cb"></span></td><td>Paste listing copy from <code>appstore/metadata.md</code> (with the §3.2 keyword fix). Primary category <b>Finance</b>, secondary <b>Productivity</b>. Price: Free + IAP.</td><td>Categories per metadata.md; Finance triggers extra scrutiny the Review Notes already pre-empt.</td></tr>
+  <tr><td><span class="cb"></span></td><td>Upload the 3 screenshots (6.9" 1320×2868 set). Portrait, PNG.</td><td>6.9" is the required iPhone slot for current submissions; ASC scales down. Screenshot captions must contain no prices and no "own forever" phrasing (§3.1 rule applies to screenshots too).</td></tr>
+  <tr><td><span class="cb"></span></td><td>Paste the <b>Review Notes</b> from metadata.md (no account; two routes to the paywall; Siri/Action Button/control instructions; no bank connections, no data leaves the device).</td><td>2.3.1 wants demo-account-free, specific notes; the money-management/money-moving statement heads off 3.2.1(viii) and 5.1.1(ix) readings, and the manual-capture statement helps against 4.3(b) "crowded category".</td></tr>
+  <tr><td><span class="cb"></span></td><td>Copyright: "2026 Amteshwar Singh Khokhar". Seller name = your personal legal name (individual account; only an org account changes it).</td><td>Per legal report: personal name is what shows on the store; editing your Apple Account name doesn't change it.</td></tr>
+  <tr><td><span class="cb"></span></td><td>Export compliance: already answered in the binary (<code>ITSAppUsesNonExemptEncryption = NO</code>) — confirm the ASC question reflects it.</td><td>Standard HTTPS-only exemption.</td></tr>
+</table>
+
+<h2><span class="num">7</span>Submission-day order</h2>
+<div class="funnel">
+  <div class="fstep" style="background:#0f2b48"><b>Archive & upload</b><span>Xcode → Product → Archive → Distribute App → App Store Connect (or altool). Wait for processing; fix any ITMS warnings immediately.</span></div>
+  <div class="farrow">▼</div>
+  <div class="fstep" style="background:#2d6a4f"><b>Complete the version page</b><span>copy · screenshots · review notes · IAP attached · privacy label · age rating · pricing & availability (EU deselected per §2)</span></div>
+  <div class="farrow">▼</div>
+  <div class="fstep" style="background:#6b8f71"><b>Sandbox-verify the IAP one last time</b><span>buy + restore on device with the agreement chain showing Active</span></div>
+  <div class="farrow">▼</div>
+  <div class="fstep" style="background:#c88a35"><b>Submit for Review</b><span>typical review: 24–48h; respond to rejection threads in Resolution Center with evidence, not argument</span></div>
+  <div class="farrow">▼ approved</div>
+  <div class="fstep" style="background:#a34f35"><b>Release: Manually, timed to the marketing plan</b><span>release when the r/shortcuts + r/iosapps posts go live (see companion GTM artifact) — an approved-but-unreleased build lets you pick the moment</span></div>
+</div>
+
+<h2><span class="num">8</span>Timeline & go/no-go</h2>
+<table>
+  <tr><th>When</th><th>Milestone</th></tr>
+  <tr><td>Today</td><td>Enrollment confirmed/started · ASC record created (reserves the name) · CA booked for W-8BEN · trader verification started · privacy/support pages fixed + hosted · xcprivacy manifests added · paywall string fixed</td></tr>
+  <tr><td>+2–5 days</td><td>Agreement signed → W-8BEN submitted → bank added → SBP applied (each the moment the previous clears) · device QA pass done</td></tr>
+  <tr><td>Checkpoint (≈2 days before target launch)</td><td><b>Go/no-go:</b> agreement + tax + bank all Active? → submit with the IAP. Not all Active? → choose deliberately: move the date, <em>or</em> submit 1.0 with every paywall entry point removed (no hidden purchase flows — 2.1(b)/2.3.1) and ship Pro in 1.1. Never submit with the chain still "Processing".</td></tr>
+  <tr><td>Post-approval</td><td>Release timed to community posts. First payout for September sales ≈ mid-November (45–60d SWIFT) — Tier-2 tax/GST/fira setup from the legal report before then.</td></tr>
+</table>
+
+<h2><span class="num">9</span>Explicitly out of scope (verified non-issues)</h2>
+<ul>
+  <li><b>Financial licences (RBI/SEBI/PSD2/CFPB):</b> no bank connections, no money movement, no advice — non-issues. Hold the design line: recaps describe, never recommend.</li>
+  <li><b>Demo account for review:</b> the app has no accounts. Review notes explain this explicitly.</li>
+  <li><b>GDPR Art 27 representative:</b> not required at this scale (occasional, low-risk; controller only for support email) — revisit with a lawyer if EU revenue grows.</li>
+  <li><b>DPDP (India):</b> main duties start ≈13 May 2027; the policy fixes above keep you ahead of it.</li>
+  <li><b>Third-party SDK privacy manifests:</b> zero dependencies — first-party bundles only.</li>
+</ul>
+
+<div class="footnote">TapLog App Store pre-launch checklist · 26 Sep 2026 · builds on <code>reports/TapLog App Store legal checklist.md</code> (primary-source research, 25 Sep deadline context) and <code>appstore/metadata.md</code> · companion artifacts: repo explainer, iPhone setup guide, marketing & revenue plan.</div>
+
+</div>
+</body>
+</html>

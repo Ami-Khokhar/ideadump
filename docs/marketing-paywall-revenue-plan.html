@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TapLog — Marketing, Paywall & Revenue Plan</title>
+<style>
+  :root{
+    --paper:#f7f5f2; --ink:#121110; --muted:#6e6a60; --hairline:#e4e0d8;
+    --sage:#2d6a4f; --sage-soft:#eef2ee; --clay:#a34f35; --clay-soft:#f6e9e4;
+    --amber:#c88a35; --amber-soft:#f7efe2; --navy:#0f2b48; --navy-soft:#e5ecf3;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;background:var(--paper);color:var(--ink);line-height:1.55;padding:2rem 1rem 5rem}
+  .wrap{max-width:940px;margin:0 auto}
+  header{border-bottom:3px solid var(--ink);padding-bottom:1.2rem;margin-bottom:2rem}
+  .kicker{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--sage);margin-bottom:.4rem}
+  h1{font-size:2rem;letter-spacing:-.02em}
+  .meta{color:var(--muted);font-size:.88rem;margin-top:.5rem}
+  h2{font-size:1.3rem;margin:2.8rem 0 .8rem;padding-bottom:.4rem;border-bottom:2px solid var(--hairline)}
+  h2 .num{color:var(--sage);margin-right:.5rem}
+  h3{font-size:1rem;margin:1.3rem 0 .4rem}
+  p{margin:.5rem 0;max-width:78ch}
+  code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.83em;background:#eceae4;border-radius:4px;padding:1px 5px}
+  .lead{font-size:1.03rem}
+  .box{background:#fff;border:1px solid var(--hairline);border-left:4px solid var(--sage);border-radius:0 10px 10px 0;padding:14px 18px;margin:1rem 0}
+  .box.clay{border-left-color:var(--clay)}
+  .box.amber{border-left-color:var(--amber)}
+  table{border-collapse:collapse;width:100%;font-size:.86rem;margin:.8rem 0;background:#fff}
+  th,td{text-align:left;padding:8px 10px;border:1px solid var(--hairline);vertical-align:top}
+  th{background:var(--paper);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .good{color:var(--sage);font-weight:700}
+  .bad{color:var(--clay);font-weight:700}
+  ul{padding-left:1.3rem;margin:.4rem 0}
+  li{margin:.28rem 0}
+  .funnel{display:flex;flex-direction:column;align-items:center;gap:8px;margin:1.2rem 0}
+  .fstep{border-radius:12px;padding:12px 18px;text-align:center;color:#fff;width:100%}
+  .fstep b{display:block;font-size:.95rem}
+  .fstep span{font-size:.78rem;opacity:.88}
+  .farrow{color:var(--muted);font-size:.8rem}
+  .diagram{background:#fff;border:1px solid var(--hairline);border-radius:16px;padding:20px;margin:1rem 0;overflow-x:auto}
+  .dsvg{min-width:640px;display:block;margin:0 auto}
+  .dlabel{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px}
+  .dnote{font-size:.8rem;color:var(--muted);margin-top:.6rem}
+  .grid{display:grid;gap:14px}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+  .card{background:#fff;border:1px solid var(--hairline);border-radius:14px;padding:16px 18px}
+  .card h4{font-size:.93rem;margin-bottom:.35rem}
+  .card p{font-size:.85rem;color:var(--muted);margin:.2rem 0}
+  .big{font-size:1.7rem;font-weight:800}
+  .footnote{margin-top:4rem;border-top:1px solid var(--hairline);padding-top:1rem;color:var(--muted);font-size:.82rem}
+  @media(max-width:640px){h1{font-size:1.5rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">Growth · Paywall · Revenue · 26 Sep 2026</div>
+  <h1>TapLog — marketing, paywall & revenue plan</h1>
+  <p class="meta">Built from the shipped code (ProGate, PaywallView, PaywallEvidence), the paywall brief, the indie payment-patterns research, the existing distribution kit, and the legal report's pricing facts. The pricing model is treated as fixed: <b>one non-consumable, no subscription</b> — the code already ships that way and the reasoning below stays inside it.</p>
+</header>
+
+<div class="box">
+<b>The one-sentence plan:</b> market the 5-second capture and the privacy, let the free grove do the selling, and ask for money only at the two moments the user reaches for more — because with a one-time purchase, the paywall has exactly one chance per user, and the trigger moment carries all the weight.
+</div>
+
+<!-- ============ 1. WHAT SELLS ============ -->
+<h2><span class="num">1</span>What actually sells this app</h2>
+<p>Not a feature list. Two arguments, in this order:</p>
+<div class="grid g2">
+  <div class="card"><h4>1 · "It takes five seconds, from anywhere"</h4><p>Demonstrable in one video: Action Button press → keypad → amount → Log → haptic → pocket. No finance app in the top charts can shoot that ad. The hook is <em>capture friction</em>, and the demo IS the marketing.</p></div>
+  <div class="card"><h4>2 · "Your spending never leaves your phone"</h4><p>Verifiable: no account, no bank login, no server, no analytics, no tracking — and CSV export free. This is a structural position incumbents can't copy (their business model <em>is</em> the data flow). Post-Mint, it's a purchase driver.</p></div>
+</div>
+<p>The grove is the <em>third</em> argument and the one that closes: it's the screenshot people share, the reason the app is memorable, and — since the current paywall line — the thing Pro unlocks. Earlier marketing drafts sold a different app than the one built; the grove now <b>is</b> the product's face and belongs in every asset.</p>
+
+<!-- ============ 2. PAYWALL ============ -->
+<h2><span class="num">2</span>The paywall: the line, and when it appears</h2>
+
+<h3>2.1 · The line (as shipped — endorsed)</h3>
+<table>
+  <tr><th>Free, forever</th><th>Pro — one payment</th></tr>
+  <tr><td>All capture from all 7 front doors</td><td>A budget tree for every category</td></tr>
+  <tr><td>Unlimited entries & history, categories</td><td>The monthly recap (weekly stays free)</td></tr>
+  <tr><td><b>3</b> budget trees</td><td></td></tr>
+  <tr><td>Weekly recap · streaks · CSV export (free by principle)</td><td></td></tr>
+</table>
+<p><b>Why this line is right:</b> capture is the habit, and the habit must form before anything can be sold — gating it would kill the product before the pitch. Three trees is enough to <em>feel</em> the mechanic (one tree is a progress bar; three start reading as a grove) while the argument for Pro is visual: something thriving beside something wilting. The weekly recap — the thing the one notification is about, the retention loop's backbone — stays free so the loop never breaks for non-payers. CSV stays free because it's the only exit the data has; charging for it converts the privacy promise into a hostage situation (and an angry review).</p>
+<p><b>The fairness rule that's already coded:</b> deleting a budget returns the free slot, and existing budgets are never taken away. Gate only <em>addition</em>, never <em>keeping</em>.</p>
+
+<h3>2.2 · When the paywall appears (and when it never does)</h3>
+<div class="diagram"><div class="dlabel">Trigger map</div>
+<svg class="dsvg" viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,Helvetica,sans-serif">
+  <defs><marker id="a1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#6e6a60"/></marker></defs>
+  <!-- timeline -->
+  <line x1="40" y1="150" x2="720" y2="150" stroke="#c9c7c0" stroke-width="2"/>
+  <text x="40" y="176" font-size="10" fill="#6e6a60">Day 1</text>
+  <text x="300" y="176" font-size="10" fill="#6e6a60">Week 2–3</text>
+  <text x="620" y="176" font-size="10" fill="#6e6a60">Month 1+</text>
+  <!-- events -->
+  <circle cx="70" cy="150" r="6" fill="#2d6a4f"/>
+  <text x="70" y="128" font-size="10.5" text-anchor="middle" font-weight="700" fill="#2d6a4f">habit starts</text>
+  <text x="70" y="114" font-size="9" text-anchor="middle" fill="#40634c">first logs — free, zero prompts</text>
+  <circle cx="340" cy="150" r="6" fill="#c88a35"/>
+  <text x="340" y="128" font-size="10.5" text-anchor="middle" font-weight="700" fill="#8a6a34">TRIGGER 1</text>
+  <text x="340" y="114" font-size="9" text-anchor="middle" fill="#8a6a34">tries to plant a 4th tree</text>
+  <text x="340" y="100" font-size="9" text-anchor="middle" fill="#8a6a34">"Grow a whole grove"</text>
+  <circle cx="620" cy="150" r="6" fill="#c88a35"/>
+  <text x="620" y="128" font-size="10.5" text-anchor="middle" font-weight="700" fill="#8a6a34">TRIGGER 2</text>
+  <text x="620" y="114" font-size="9" text-anchor="middle" fill="#8a6a34">taps "Month" on recap</text>
+  <text x="620" y="100" font-size="9" text-anchor="middle" fill="#8a6a34">"See the longer view"</text>
+  <!-- red zone -->
+  <rect x="40" y="210" width="680" height="70" rx="12" fill="#f6e9e4"/>
+  <text x="380" y="234" font-size="10.5" text-anchor="middle" font-weight="700" fill="#a34f35">NEVER: at launch · on a timer · after N logs · interstitials · before the undo toast clears</text>
+  <text x="380" y="256" font-size="9.5" text-anchor="middle" fill="#a34f35">the paywall appears only when the user reaches for the thing it sells — nobody is shown it for the same tap twice</text>
+</svg>
+<div class="dnote">Both triggers are <b>intent moments</b>: the user has just tried to do the thing Pro does. By then the paywall can say something no competitor's can — <code>PaywallEvidence</code> reads the user's real record ("143 expenses · 24 days · ₹18,400 tracked") and shows it only once there are ≥8 entries over ≥3 days; below that, thin numbers would argue <em>against</em> paying, so the grove illustration shows instead. The sentence that sells is the one the user writes in their own head while reading their own numbers.</div>
+</div>
+
+<div class="box amber">
+<b>Natural trigger timing (what to expect):</b> trigger 1 (4th tree) fires early for eager users — sometimes week 1 — and is the higher-volume moment. Trigger 2 (monthly recap) fires around the <b>first month boundary</b> and is the higher-<em>conviction</em> moment: small-money patterns need a month to become visible, so the month view is where the insight actually lives. Two triggers at different depths of engagement is exactly what a one-shot paywall wants. Do not add a third entry point, a settings nudge, or a "Pro" badge anywhere in the capture path.
+</div>
+
+<h3>2.3 · Paywall mechanics (already correct in code — keep them)</h3>
+<ul>
+  <li>Price from <code>displayPrice</code> (never hard-coded), fetched only when the paywall shows.</li>
+  <li>"Not now" dismisses; unlock dismisses instantly; cancellation is silence — never an argument.</li>
+  <li>Restore always reachable (paywall + Settings); empty restore says so plainly.</li>
+  <li>Copy fix before launch (from the checklist): "One payment, yours for good" → <b>"One-time purchase. No subscription. Restore anytime."</b> — an ownership claim is a legal problem, not just a style choice.</li>
+  <li>No timers, no countdowns, no confirm-shaming, no repeat pop-ups — those are the dark patterns India's CCPA guidelines and the UK DMCC Act now target, and they'd poison the trust the app's entire pitch rests on.</li>
+</ul>
+
+<!-- ============ 3. PRICING ============ -->
+<h2><span class="num">3</span>Pricing</h2>
+<table>
+  <tr><th>Market</th><th>Price</th><th>Rationale</th></tr>
+  <tr><td>US / global</td><td><b>$4.99</b> one-time</td><td>Matches the App Store Connect plan and the local StoreKit test config. Impulse territory for a utility; undercuts every subscription incumbent by 20–50×.</td></tr>
+  <tr><td>India (seed market)</td><td><b>₹499</b> (Apple's tier for $4.99; lower ₹299 tier exists if a launch cohort needs it)</td><td>Below the Indian iPhone impulse threshold; incumbents charge ₹799–1,999+/mo. India-first defaults (chai, metro, ₹, RS-SMS parsing) mean the launch community is Indian iPhone users first.</td></tr>
+  <tr><td>EU</td><td>$4.99 equivalent, storefronts <b>deselected at launch</b></td><td>Turned on after DSA trader verification clears (see checklist §2). A few weeks of EU revenue is the cost of keeping a home address off public pages.</td></tr>
+</table>
+<ul>
+  <li><b>Small Business Program (apply day 1):</b> commission 30% → 15%. Net per sale ≈ <b>$4.24</b> (before taxes) instead of $3.49. At this price point the program literally doubles the margin.</li>
+  <li><b>No launch discount</b> — one price, one product, permanently. Changing a listed price later is allowed (and a $4.99→$7.99 move with a v2 feature is a real lever); "launch special" urgency mechanics aren't worth the copy risk.</li>
+  <li><b>Offer codes, not discounts:</b> Apple's offer-code system (up to 25,000/quarter for IAPs) is the clean way to seed communities and creators — a free unlock costs nothing and buys goodwill, a discount just reprices the product.</li>
+  <li><b>Never a family-share question mark:</b> consider enabling Family Sharing on the non-consumable at setup — it's free generosity that reads as confidence, and reviewers like it.</li>
+</ul>
+
+<!-- ============ 4. REVENUE MODEL ============ -->
+<h2><span class="num">4</span>Revenue plan — the funnel and the honest math</h2>
+
+<div class="funnel">
+  <div class="fstep" style="background:#0f2b48"><b>Installs</b><span>community posts · App Store search (ASO: "expense tracker / offline / no account") · word of mouth · featuring pitch</span></div>
+  <div class="farrow">▼ ~70–85% reach first log (onboarding is one screen and one log)</div>
+  <div class="fstep" style="background:#2d6a4f"><b>Habituated loggers (D7)</b><span>the retention loop holds them: weekly target → streak → Sunday notification → recap</span></div>
+  <div class="farrow">▼ the engaged subset budgets categories</div>
+  <div class="fstep" style="background:#6b8f71"><b>Grove users (≥1 tree)</b><span>the signature mechanic; the grove strip sits on every capture</span></div>
+  <div class="farrow">▼ hits the 3-tree line or the month boundary</div>
+  <div class="fstep" style="background:#c88a35"><b>Paywall impressions</b><span>their own record on screen: "143 expenses · 24 days · ₹18,400 tracked"</span></div>
+  <div class="farrow">▼ one-time conversion</div>
+  <div class="fstep" style="background:#a34f35"><b>Purchases — $4.24 net each</b><span>no second chance per user: the trigger moment is everything</span></div>
+</div>
+
+<h3>Scenario table (one-time purchase at $4.99, SBP 15%, net ≈ $4.24/sale)</h3>
+<table>
+  <tr><th>Scenario</th><th>Installs (yr 1)</th><th>Paywall reach¹</th><th>Conversion²</th><th>Sales</th><th>Net revenue</th></tr>
+  <tr><td class="bad">Floor — launch posts flop</td><td>300</td><td>~25%</td><td>1.5%</td><td>~5</td><td>~$20</td></tr>
+  <tr><td>Base — community launch works</td><td>2,500</td><td>~35%</td><td>3%</td><td>~26</td><td>~$110</td></tr>
+  <tr><td>Good — one post/press hit lands</td><td>10,000</td><td>~40%</td><td>4%</td><td>~160</td><td>~$680</td></tr>
+  <tr><td>Exceptional — featuring + viral grove screenshots</td><td>40,000</td><td>~45%</td><td>5%</td><td>~900</td><td>~$3,800</td></tr>
+</table>
+<p class="meta">¹ share of installs reaching a trigger moment (tree-hungry or month-curious) · ² purchase ÷ paywall impression. Lifetime-unlock conversion for utilities typically lands 1.5–5% of *engaged* users — the table converts from impressions to keep it honest.</p>
+
+<div class="box clay">
+<b>The honest read:</b> at $4.99 one-time, this is a validation business, not an income business. Even the good case is a few hundred dollars — <em>and that's fine, because it's the number that de-risks the decision</em>. The Day-30/90 gates below exist to answer one question: does a 40%+ D30 logging habit exist, and do 3–5% of engaged users pay? If yes, <em>that's</em> the asset — it justifies v2 investment (iCloud sync and multi-device as a second Pro tier or a paid major version, the two highest-value additions this architecture lacks). If no, the app remains a portfolio piece, and nothing was spent finding out.
+</div>
+
+<h3>Revenue levers, in order of leverage</h3>
+<ol>
+  <li><b>Distribution, not price.</b> The patterns research is blunt: the build is weeks; distribution is the moat. Every hour goes to the channels below before any pricing debate.</li>
+  <li><b>EU storefronts on</b> (post-verification) — instant market expansion, zero work.</li>
+  <li><b>Grove shareability.</b> The grove is the artifact people screenshot. A tasteful "share my grove" image export (health states, no amounts) in v1.1 turns users into the acquisition channel — the free tier doing the marketing, deliberately.</li>
+  <li><b>Localization</b> (Hindi first) once Indian traction shows; the ASO keywords then move into a proper India localization.</li>
+  <li><b>Price ladder via v2 value</b>, never via a second tier: sync/multi-device justifies $9.99 for new buyers while grandfathering everyone (fairness rule, already the app's ethos).</li>
+</ol>
+
+<!-- ============ 5. METRICS ============ -->
+<h2><span class="num">5</span>Measurement without betraying the privacy pitch</h2>
+<p>The app ships <b>zero analytics</b> — that's a brand decision, not an oversight, and it must never regress. Everything needed is already available without it:</p>
+<table>
+  <tr><th>Metric</th><th>Source</th></tr>
+  <tr><td>Downloads, D1/D7/D28 retention, conversion → purchase, proceeds</td><td>App Store Connect analytics (no SDK needed)</td></tr>
+  <tr><td>IAP funnel (views → buys), crashes, sandbox behavior</td><td>ASC Sales & Trends + App Store server notifications (free, server-side, no user data)</td></tr>
+  <tr><td>Habit depth (logs/user, streaks, tree counts)</td><td>Not collectible — infer from community feedback, TestFlight testers, and your own cohort + reviewers' anecdotes</td></tr>
+  <tr><td>Channel attribution</td><td>UTM'd landing page link + per-channel post timing vs install spikes (the landing page exists: <code>taplog-landing-page.html</code> — host it)</td></tr>
+</table>
+
+<!-- ============ 6. DISTRIBUTION ============ -->
+<h2><span class="num">6</span>30-day launch plan (channels & calendar)</h2>
+<p>The repo's <code>launch-distribution-kit.md</code> already contains the copy-paste packets (r/shortcuts, r/iosapps, r/privacy), Show HN / Product Hunt playbooks, and two video storyboards. Use them, with three updates: swap all old pricing/feature claims for the shipped reality (grove, 3 free trees, monthly recap, $4.99, no subscription), and lead every asset with the two §1 arguments.</p>
+
+<table>
+  <tr><th>Phase</th><th>Days</th><th>Actions</th></tr>
+  <tr><td><b>Assets</b></td><td>1–3</td><td>Record the 10-second Action Button demo (the §1 video). Screenshot captions: no prices, no "own forever" (legal rule). Prepare grove screenshots — the shareable visual.</td></tr>
+  <tr><td><b>Soft launch</b></td><td>4–10</td><td>Release the app (approval in hand, manual release). Post Packet A → r/shortcuts, Packet B → r/iosapps. Engage comments 2h/day. 25 offer codes for active commenters.</td></tr>
+  <tr><td><b>Expansion</b></td><td>11–18</td><td>Show HN (maker-story first comment) and/or Product Hunt. Packet C → r/privacy. App Store featuring pitch to Apple: privacy story + Action Button + no-account (indie-featuring angle).</td></tr>
+  <tr><td><b>Video loop</b></td><td>19–25</td><td>Post the 2 short-form videos (storyboards in the kit); DM 15 iOS-utility creators with offer codes.</td></tr>
+  <tr><td><b>Gate</b></td><td>30</td><td>Scorecard below → continue / iterate / park.</td></tr>
+</table>
+
+<h3>Day-30 scorecard (from the repo's own kit — now actually runnable)</h3>
+<div class="grid g2">
+  <div class="card"><h4 class="good">PASS — compound</h4><p>150+ installs · <b>15+ sales</b> (≈$64+ net) · &gt;20% D7 active loggers · organic grove screenshots appearing. → Localize, EU on, build the share-my-grove feature, pitch press.</p></div>
+  <div class="card"><h4 class="bad">FAIL — park or pivot</h4><p>&lt;50 installs despite posts · 0–2 sales · feedback says manual logging itself is the friction. → Stop hardening; the thesis was already falsified once. Keep it free for yourself.</p></div>
+</div>
+
+<h3>Day-90 questions (the real decision)</h3>
+<ul>
+  <li>Is D30 logging retention ≥40%? (the metric that proves capture-first)</li>
+  <li>What share of paywall impressions converted? &lt;2% → the trigger moments or the offer, not the price, need work. &gt;5% → consider the v2 price ladder.</li>
+  <li>Did any single channel produce &gt;50% of installs? Double down on it; drop the rest.</li>
+</ul>
+
+<!-- ============ 7. RISKS ============ -->
+<h2><span class="num">7</span>Risks & anti-patterns (decided, not open)</h2>
+<ul>
+  <li><b>No subscription, ever, for what's local.</b> Subscription-on-purely-local-utility is a documented backlash pattern; the anti-subscription stance is also a marketing asset. If recurring revenue ever matters, it arrives as new server-backed value (sync), priced separately.</li>
+  <li><b>No ads, no data sales, no analytics.</b> The privacy brand can never violate itself.</li>
+  <li><b>Category crowding (4.3(b)):</b> Finance is the most crowded shelf on the store. The Review Notes statement (manual-only, no bank connections, no advice) plus the distinctive grove visual identity are the differentiators — keep screenshots visually unmistakable.</li>
+  <li><b>One-shot paywall anxiety:</b> resist the urge to "improve" conversion with interruption. The line's integrity is worth more than a point of conversion; one angry "paywall ambush" review outlives a hundred installs.</li>
+  <li><b>Meta-lesson to keep on the wall:</b> users pay for what they can't comfortably operate without. This app's daily-use loop (capture → streak → recap) is the P3/P4 pattern stack — the job is distribution, and the grove is the word-of-mouth engine.</li>
+</ul>
+
+<div class="footnote">TapLog marketing, paywall & revenue plan · 26 Sep 2026 · sources: shipped <code>ProGate/PaywallView/PaywallEvidence</code> · <code>paywall-brief.md</code> · <code>indie-app-payment-patterns.md</code> · <code>launch-distribution-kit.md</code> (packets reused, pricing updated) · legal report pricing facts · companion artifacts: repo explainer, iPhone setup guide, App Store pre-launch checklist.</div>
+
+</div>
+</body>
+</html>
