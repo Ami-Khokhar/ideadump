@@ -9,7 +9,7 @@ Live state at the time of this scan:
 
 | Fact | Value |
 |---|---|
-| Open issues | **1** — #79 (assistant-access spike) |
+| Open issues | **#79 closed** by PR #97 on 11 Nov 13:27 UTC; #98 was its follow-up |
 | Open PRs | **0** |
 | Default branch | `budget-trees-redesign` @ `130801d` |
 | Gate | working — `pr-gatekeeper` succeeded 2026-11-09 17:08Z on PR #90 |
@@ -18,17 +18,18 @@ Live state at the time of this scan:
 | Tracked release gate list | `docs/release-runbook.md`, S1–S12 and L1–L8, **all unclosed** |
 | Untracked gate list | `docs/appstore-readiness-checklist.md`, "20 proven, 61 open" (12 Oct) |
 
-**Status 11 Nov, 15:55 IST.** The documents are captured in `bc15e57` on
-`docs/release-gate-evidence-2026-11-11`, the 14 dead worktrees are pruned, and the
-remaining work is tracked as issues:
+**Status 11 Nov, 16:30 IST.** The checkout is reconciled and published, the
+documents are in git, the test baseline is recorded, and #79 is closed by PR #97.
+Issue state: #92, #93, #94 and #95 closed; #97 merged; #98 is the follow-up this
+edit answers; #96 stays open because it needs the owner and Apple.
 
-| Issue | Work |
-|---|---|
-| #92 | Reconcile the checkout with origin; archive and retire the superseded source |
-| #93 | Archive or land `chatgpt-plugin` |
-| #94 | Local test baseline on the merged head |
-| #95 | Delete merged branches and stale `pr/*` refs |
-| #96 | Owner inputs and App Store Connect gates |
+| Issue | Work | State |
+|---|---|---|
+| #92 | Reconcile the checkout; archive and retire the superseded source | closed |
+| #93 | Archive or land `chatgpt-plugin` | closed — not built, branch kept |
+| #94 | Local test baseline on the merged head | closed — 512 tests, 0 failures |
+| #95 | Branches and stale `pr/*` refs | closed |
+| #96 | Owner inputs and App Store Connect gates | open |
 
 ---
 
@@ -55,8 +56,11 @@ exist **only as untracked files in this checkout**. No commit, no branch, no rem
       git add docs reports
       git commit -m "docs: capture the release gate, review evidence and device QA plan"
       ```
-- [ ] **Decide what happens to the divergent code, then discard it.** The dirty
-      source is the *pre-supersession* design, not new value:
+- [x] **Decide what happens to the divergent code, then discard it.** Archived as
+      `94609be`, then deleted after a compile test proved all three archived test
+      files fail to build against the merged head (`CaptureBottomBar` constants,
+      `CurrencyChange`, `WidgetQuickLogWriter` are gone). The dirty source was the
+      *pre-supersession* design, never new value:
       - `Sources/TapLog/AppIntents/AmountEntity.swift`, `LogAmountIntent.swift`,
         `Shared/SpokenAmountParser.swift` — the numeric intent and entity that
         origin's `docs/decisions.md` says were **removed** ("the removed numerical
@@ -68,37 +72,30 @@ exist **only as untracked files in this checkout**. No commit, no branch, no rem
       - `README.md` in this checkout still promises "Hey Siri, log 25 rupees"; the
         merged README says that phrase is unsupported.
       - `project.yml`, `TapLog.xcodeproj`, `appstore/*` here are older than origin.
-- [ ] **Reconcile the main checkout to origin** once the docs are committed
-      (`git switch budget-trees-redesign && git reset --hard origin/budget-trees-redesign`),
-      so future work starts from `130801d`, not from a 51-commit-old tree.
-- [ ] **Push or archive `chatgpt-plugin`.** One local-only commit, `f6b8434`,
-      21 files / 2,774 lines: `plugins/taplog` MCP server (Node), two skills, a
-      recap widget. Not on any remote. Ten minutes to lose.
-- [ ] **Delete the stale state docs or mark them resolved.** `docs/STATE.md` and
-      `docs/plan-issue-queue-2026-11-09.md` both describe 9 open issues, 10 open
-      PRs and a dead `GATEKEEPER_READ_TOKEN`. All three facts are false now.
+- [x] **Reconcile the main checkout to origin.** Done 11 Nov: `budget-trees-redesign`
+      moved to `origin/budget-trees-redesign`, the captured docs merged, and the
+      documentation pushed (`130801d..1c46f2b`). Working tree clean apart from
+      untracked tooling.
+- [x] **Push or archive `chatgpt-plugin`.** Pushed to origin, then recorded as not
+      built and not landed (#93). The branch is the only copy, so it is kept.
+- [x] **Delete the stale state docs or mark them resolved.** Both carry a
+      superseded banner in `a810bf3`; they describe 9 open issues, 10 open PRs and
+      a dead `GATEKEEPER_READ_TOKEN`, all false now.
 
-## P1 — Close issue #79 (the only open issue)
+## P1 — Issue #79 (closed 11 Nov 2026)
 
-The spike is written but not delivered against its own acceptance criteria: a
-decision in `docs/decisions.md` plus the prompt pack. `spike/issue-79` (6 commits,
-pushed) carries only a report page; no PR, no decision entry, and the issue body
-still says nothing has been designed.
+The five questions are answered, the decision is recorded, and the prompt pack is
+merged. The plugin is not built. The report page stays on `spike/issue-79` as the
+research record and needs no PR now that the decision supersedes it.
 
-- [ ] **Answer the five questions the report is waiting on** (pinned in the page's
-      "Four things to settle"): A before D? · is the 1-in-100 share threshold fair? ·
-      does the self-hosted bridge go in the record as "possible, not distributed"? ·
-      who writes the six prompts? · are four read-only tools the whole surface?
-- [ ] **Record the decision** in `docs/decisions.md`: Shape A (export pack today) then
-      Shape D (Siri / Apple Intelligence), with cost, privacy-policy delta and the
-      trigger that would justify Shape C (hosted connector).
-- [ ] **Draft the prompt pack** against a real CSV export from the simulator
-      (six prompts; the report claims it is a day's work).
-- [ ] **Raise the PR for the spike** and drop `.taste-skill/direction.json` from the
-      branch — it is a build-tool artifact, not a deliverable.
-- [ ] **Decide the parked plugin's fate.** `f6b8434` implements Shape B/C ahead of the
-      decision; the spike's own last commit parks it as "Ask AI". Keep as reference in
-      a branch, or delete.
+- [x] **Answer the five questions.** Answered 11 Nov; the table is in #79.
+- [x] **Record the decision** in `docs/decisions.md` ("Assistant access starts as an
+      export pack, and Siri comes second"). Merged in #97.
+- [x] **Draft the prompt pack** in `docs/assistant-export-prompts.md`. Merged in #97.
+- [x] **Raise the PR for the spike.** The decision PR supersedes the branch-only
+      report, so the report is not merged.
+- [x] **Decide the parked plugin's fate.** Not built and not landed; the branch is
+      pushed as the only copy, recorded in #93.
 
 ## P2 — Repo hygiene
 
@@ -106,9 +103,8 @@ still says nothing has been designed.
       3 worktrees remain. Original list: `idg-issue79`,
       `idg-issue84`, `idg-pr77`, `taplog-release-fixes`, `idg-pr67`–`idg-pr76`, `idg-scratch`.
       Two live worktrees stay: `ideadump-worktrees/chatgpt-plugin` and `/review-fixes`.
-- [ ] Delete merged local branches: `codex/issue-58` … `codex/issue-66`,
-      `followup/issue-76`, `followup/issue-84`, `chore/documentation-policy-migration`;
-      and the 39 stale `remotes/pr/*` refs.
+- [x] Delete merged local branches and the 39 stale `remotes/pr/*` refs. Done 11 Nov:
+      11 branches deleted, refs at 0, archive branch removed after the compile test.
 - [ ] Decide whether agent tooling belongs in the repo: `.agents/`, `agent/`,
       `.claude/`, `skills-lock.json` are untracked and unignored.
 - [ ] One Release build for generic iOS after the reconciliation, to confirm no
