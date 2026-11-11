@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256"><g transform="translate(-28.42 -25.98) scale(0.611)">
+  
+  <!-- The seed sits in the ring and grows out through the opening: budgets
+       become a grove. The break in the ring is where the growth happens. -->
+  <path d="M 344.6 108.6 A 172 172 0 1 1 167.4 108.6"
+        fill="none" stroke="#2F5D43" stroke-width="42" stroke-linecap="round"/>
+  <path d="M 256 300 L 256 104" fill="none" stroke="#5F7D62" stroke-width="26"
+        stroke-linecap="round"/>
+  <path d="M 256 190 Q 340 150 312 76 Q 272 124 256 190 Z" fill="#5F7D62"/>
+  <path d="M 256 190 Q 172 150 200 76 Q 240 124 256 190 Z" fill="#5F7D62"/>
+  <circle cx="256" cy="290" r="58" fill="#6B8F71"/>
+</g></svg>

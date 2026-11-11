@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img">
+  <title>TapLog — Notch — app icon (prototype)</title>
+  <!-- Opaque, full-bleed, no alpha: Apple masks the corners itself. -->
+  <rect width="1024" height="1024" fill="#F8F5EE"/>
+  <g transform="scale(2)">
+    <path d="M 284.6 93.5 A 165 165 0 1 1 227.4 93.5" fill="none" stroke="#2F5D43" stroke-width="62"/>
+    <circle cx="256" cy="256" r="72" fill="#6B8F71"/>
+  </g>
+</svg>

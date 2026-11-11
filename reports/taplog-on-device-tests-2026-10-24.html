@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TapLog — On-Device Test Checklist</title>
+<style>
+  /* ── TapLog design tokens, mirrored from Sources/TapLog/Theme/Theme.swift ── */
+  :root {
+    --bg: #F7F5F2;            /* Theme.background — warm paper */
+    --paper: #F8F5EE;         /* Theme.paper — field-journal ground */
+    --surface: #EFECE7;       /* Theme.surface — chips, cards */
+    --surface-strong: #E7E3DC;/* Theme.surfaceStrong — bars, pressed */
+    --text: #20231F;          /* Theme.ink — primary text */
+    --text-2: #6E6A64;        /* Theme.textSecondary */
+    --text-3: #A39E96;        /* Theme.textTertiary */
+    --accent: #6B8F71;        /* Theme.accent — sage */
+    --accent-deep: #2F5D43;   /* Theme.moss — primary action */
+    --fern: #5F7D62;          /* Theme.fern — linework, nav tint */
+    --lichen: #DDE7D7;        /* Theme.lichen — soft selection */
+    --bark: #6B4F3A;          /* Theme.bark — trunks, strokes */
+    --clay: #B5836A;          /* Theme.clay — over-budget signal, never red */
+    --marigold: #D9A441;      /* Theme.bloomMarigold — sparse reward */
+    --hairline: rgba(32, 35, 31, 0.08);   /* Theme.hairline */
+    --code-bg: #ECEAE5;
+    --verdict-bg: #E4EDE4;
+    --warn-bg: #F1E4DB;
+    --serif: "New York", ui-serif, Georgia, "Times New Roman", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --rounded: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --ease: cubic-bezier(0.25, 0.55, 0.3, 1.0);  /* Motion.gentle */
+    --t-fast: 0.15s;                             /* Motion.fast */
+    --t-standard: 0.38s;                         /* Motion.standard */
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121110;
+      --paper: #121110;
+      --surface: #1C1B1A;
+      --surface-strong: #242220;
+      --text: #F0EEEB;
+      --text-2: #8A857E;
+      --text-3: #5C5852;
+      --accent: #7FA085;
+      --accent-deep: #5E8F6E;
+      --fern: #7E9A80;
+      --lichen: #24302A;
+      --bark: #9A7B62;
+      --clay: #C08E70;
+      --marigold: #E0B45E;
+      --hairline: rgba(240, 238, 235, 0.08);
+      --code-bg: #242220;
+      --verdict-bg: #24302A;
+      --warn-bg: #2E241D;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: var(--sans);
+    color: var(--text);
+    background: var(--bg);
+    margin: 0;
+    padding: 32px 16px 80px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 82ch; margin: 0 auto; }
+
+  /* Brand header — the wordmark wears the one expressive voice: serif focal */
+  .brand { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+  .brand svg { width: 40px; height: 50px; flex: none; }
+  .brand .name { font-family: var(--serif); font-size: 1.5rem; font-weight: 600; letter-spacing: 0.01em; }
+  .brand .tag { font-size: 0.8rem; color: var(--text-2); }
+
+  h1 { font-family: var(--serif); font-size: 1.8rem; font-weight: 600; margin: 10px 0 4px; }
+  h2 {
+    font-family: var(--sans);
+    font-size: 1.1rem; font-weight: 650;
+    margin: 40px 0 10px; padding-bottom: 6px;
+    border-bottom: 2px solid var(--hairline);
+    display: flex; align-items: center; gap: 8px;
+  }
+  h2 svg { width: 13px; height: 16px; flex: none; opacity: 0.85; }
+  h3 { font-size: 0.98rem; font-weight: 650; margin: 20px 0 6px; }
+  .meta { color: var(--text-2); font-size: 0.9rem; margin-bottom: 20px; }
+  p { max-width: 70ch; }
+  code { font-family: var(--mono); font-size: 0.85em; background: var(--code-bg); border-radius: 4px; padding: 1px 5px; }
+
+  .verdict {
+    background: var(--verdict-bg);
+    border-left: 4px solid var(--accent-deep);
+    padding: 14px 18px; border-radius: 0 12px 12px 0; margin: 20px 0;
+  }
+  .warn {
+    background: var(--warn-bg);
+    border-left: 4px solid var(--clay);
+    padding: 12px 16px; border-radius: 0 12px 12px 0; margin: 16px 0; font-size: 0.94rem;
+  }
+
+  .progress {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--surface); border: 1px solid var(--hairline);
+    border-radius: 16px; padding: 12px 16px; margin: 18px 0;
+    font-size: 0.92rem; flex-wrap: wrap;
+  }
+  .progress b { font-family: var(--rounded); font-variant-numeric: tabular-nums; font-size: 1.3rem; color: var(--accent-deep); }
+  .progress.complete b { color: var(--marigold); }
+  .bar { flex: 1; min-width: 120px; height: 8px; background: var(--surface-strong); border-radius: 4px; overflow: hidden; }
+  .bar span { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 4px; transition: width var(--t-standard) var(--ease); }
+  .done-note { display: none; color: var(--marigold); font-weight: 600; font-size: 0.85rem; }
+  .progress.complete .done-note { display: inline; }
+  button.reset {
+    font: inherit; font-size: 0.85rem; font-weight: 600;
+    background: var(--accent-deep); border: none; color: var(--paper);
+    border-radius: 999px; padding: 6px 14px; cursor: pointer;
+    transition: transform var(--t-fast) var(--ease);   /* PressStyle: settle, not bounce */
+  }
+  button.reset:active { transform: scale(0.97); }
+  button.reset:hover { filter: brightness(1.08); }
+
+  ul { list-style: none; padding-left: 4px; margin: 8px 0; }
+  li { margin: 4px 0; }
+  label { display: flex; gap: 10px; align-items: baseline; cursor: pointer; padding: 6px 8px; border-radius: 10px; transition: background var(--t-fast) var(--ease); }
+  label:hover { background: var(--surface); }
+  input[type=checkbox] { transform: translateY(2px); accent-color: var(--accent-deep); flex: none; }
+  .why { display: block; color: var(--text-2); font-size: 0.85rem; margin-top: 1px; }
+  label.done > span:first-child { color: var(--text-3); text-decoration: line-through; }
+
+  /* Design-system section */
+  .tablewrap { overflow-x: auto; margin: 12px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; margin: 12px 0; }
+  th, td { text-align: left; padding: 8px 10px; border: 1px solid var(--hairline); vertical-align: middle; }
+  th { background: var(--surface); font-weight: 650; }
+  td.hex { font-family: var(--mono); font-size: 0.8rem; white-space: nowrap; }
+  .swatch { display: inline-block; width: 15px; height: 15px; border-radius: 5px; vertical-align: -2px; margin-right: 7px; border: 1px solid var(--hairline); }
+  .sample-serif { font-family: var(--serif); font-size: 1.35rem; font-weight: 600; }
+  .sample-rounded { font-family: var(--rounded); font-variant-numeric: tabular-nums; font-weight: 700; font-size: 1.2rem; }
+  .sample-sans { font-family: var(--sans); font-size: 1rem; }
+  .pill-demo { display: inline-block; background: var(--accent-deep); color: var(--paper); border-radius: 999px; padding: 5px 16px; font-weight: 600; font-size: 0.88rem; }
+  .chip-demo { display: inline-block; background: var(--lichen); color: var(--accent-deep); border-radius: 10px; padding: 3px 12px; font-size: 0.85rem; font-weight: 600; }
+  @media (max-width: 480px) { body { padding: 20px 12px 60px; } }
+
+  /* Motion is a whisper: never under Reduce Motion */
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+    button.reset:active { transform: none; }
+  }
+
+  .footnote { color: var(--text-2); font-size: 0.85rem; border-top: 1px solid var(--hairline); margin-top: 48px; padding-top: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- The app's own tree geometry (64×80 design canvas, TreeMark.swift), one
+     leaf-mass repeated at partial opacity so overlaps compound their depth. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="tree">
+      <ellipse cx="32" cy="72.5" rx="12.5" ry="2.6" fill="var(--bark)" opacity="0.16"/>
+      <path d="M30.2 72.5 C30.9 66 31.2 60 31.4 53.5 L32.9 53.5 C33.2 60 33.6 66 34.3 72.5 Z" fill="var(--bark)" opacity="0.85"/>
+      <path d="M31.4 57 C26.2 57.8 20.6 55 18.2 49.2 C24.2 46.4 29.4 48.8 31.4 53.6 Z" fill="var(--fern)" opacity="0.55"/>
+      <path d="M32.7 54.4 C37.9 55.2 43.5 52.4 45.9 46.6 C39.9 43.8 34.7 46.2 32.7 51 Z" fill="var(--fern)" opacity="0.55"/>
+      <path d="M32.2 47.6 C32.3 55 34.2 52.6 34.2 52.6 C30.4 52.7 30.3 50 32.2 47.6 Z" fill="var(--accent)" opacity="0.6"/>
+    </g>
+    <g id="seed">
+      <ellipse cx="8" cy="14.6" rx="4.6" ry="1.1" fill="var(--bark)" opacity="0.16"/>
+      <path d="M7.2 14.5 C7.4 12 7.5 10 7.6 8.4 L8.4 8.4 C8.6 10 8.8 12 9 14.5 Z" fill="var(--bark)" opacity="0.8"/>
+      <path d="M8 8.5 C8 11 9 10 9 10 C6.4 10.1 6.3 8.9 8 8.5 Z" fill="var(--accent)" opacity="0.7"/>
+      <path d="M7.7 6.4 C5.6 5.4 5.9 3.4 7.7 4.4 Z" fill="var(--fern)" opacity="0.7"/>
+      <path d="M8.3 6.4 C10.4 5.4 10.1 3.4 8.3 4.4 Z" fill="var(--fern)" opacity="0.7"/>
+    </g>
+  </defs>
+</svg>
+
+<div class="brand">
+  <svg viewBox="0 0 64 80"><use href="#tree"/></svg>
+  <div>
+    <div class="name">TapLog</div>
+    <div class="tag">field-journal design system · pre-flight checklist</div>
+  </div>
+</div>
+
+<h1>On-Device Test Checklist</h1>
+<p class="meta">iPhone 16 Pro, physical device · run before App Store submission · 24 Oct 2026 · tick items as you go; ticks are saved in this browser.</p>
+
+<div class="verdict">
+<strong>Run this on the phone, not the simulator.</strong> Sixty-one checks across eleven sections. The simulator cannot test the widget process, Siri, the Action Button, notifications, or real haptics — and two of those are App Review rejection risks. Finish by reinstalling the exact Release build and re-running sections 2, 3 and 4.
+</div>
+
+<div class="warn">
+<strong>Expected, not a bug:</strong> on this development-signed build the paywall shows "The App Store price isn't available right now." The product does not exist in App Store Connect yet. That state itself is a test (section 3). Real purchase testing happens later through TestFlight.
+</div>
+
+<div class="progress">
+  <b id="count">0</b><span>of 61 done</span>
+  <div class="bar"><span id="fill"></span></div>
+  <span class="done-note">Grove complete</span>
+  <button class="reset" id="reset">Reset ticks</button>
+</div>
+
+<h2><svg viewBox="0 0 16 18"><use href="#seed"/></svg>1. Install and first run (5)</h2>
+<ul>
+  <li><label><input type="checkbox"><span>Old "TapLog no longer available" icon deleted before installing the new build.<span class="why">The expired profile leaves a dead icon; a fresh install avoids confusion about which copy you are testing.</span></span></label></li>
+  <li><label><input type="checkbox"><span>First launch shows the onboarding, and the very first log happens on the real home screen — no fake tutorial screens.<span class="why">Onboarding is the first impression App Review and every new user sees.</span></span></label></li>
+  <li><label><input type="checkbox"><span>Notification permission prompt appears once, at the right moment, and both choices (allow / deny) leave the app working normally.<span class="why">A denied permission must never break the recap or nag.</span></span></label></li>
+  <li><label><input type="checkbox"><span>App icon, name ("TapLog"), and portrait-only orientation all correct on the home screen and app switcher.</span></label></li>
+  <li><label><input type="checkbox"><span>Kill and relaunch: the launch animation runs, the app is usable within about two seconds, and no "sign in to Apple Account" prompt appears at launch.<span class="why">A store prompt at launch on a fresh install is a known anti-pattern this app deliberately avoids.</span></span></label></li>
+</ul>
+
+<h2><svg viewBox="0 0 16 18"><use href="#seed"/></svg>2. Core capture loop (7)</h2>
+<ul>
+  <li><label><input type="checkbox"><span>Log an amount on the keypad: digits, decimal point, backspace, and a multi-tap total all behave; each tap gives a haptic click.</span></label></li>
+  <li><label><input type="checkbox"><span>Pick a category tile, add a short note, save. A tree-state toast appears with the right wording, and the new entry is on the list instantly.</span></label></li>
+  <li><label><input type="checkbox"><span>Note field with a full sentence: the system keyboard must not bury the field or leave the screen unusable.<span class="why">A known geometry risk: the keyboard stacks on top of the fixed keypad. Check it on the 6.3-inch screen.</span></span></label></li>
+  <li><label><input type="checkbox"><span>Spend-intent button cycles through all three states and the chosen state shows on the saved entry in History.</span></label></li>
+  <li><label><input type="checkbox"><span>Undo: the toast's undo button restores the state before the log, and the counters (streak, totals) roll back correctly.</span></label></li>
+  <li><label><input type="checkbox"><span>Edit an old entry from History, then delete one — both update every counter, and the list order stays stable.</span></label></li>
+  <li><label><input type="checkbox"><span>Log 3–4 entries in a row quickly: no dropped saves, no layout jump, no double entries from a single tap.</span></label></li>
+</ul>
+
+<h2><svg viewBox="0 0 16 18"><use href="#seed"/></svg>3. Budgets, grove and paywall (7)</h2>
+<ul>
+  <li><label><input type="checkbox"><span>Create budgets until the grove is full (three free). Trees render at readable size and states (seedling, growing, wilted) match spend.</span></label></li>
+  <li><label><input type="checkbox"><span>Attempt a fourth budget: the paywall appears with the right headline for that moment ("Grow a whole grove").</span></label></li>
+  <li><label><input type="checkbox"><span>Open the monthly recap as a free user: the paywall appears with its own headline ("See the longer view").</span></label></li>
+  <li><label><input type="checkbox"><span>On this dev build the price area shows the honest "price isn't available" message with a working "Try again" — not a dead dash or frozen button.</span></label></li>
+  <li><label><input type="checkbox"><span>"Not now" and swipe-to-dismiss both close the paywall cleanly; returning to the same action shows it again.</span></label></li>
+  <li><label><input type="checkbox"><span>Restore purchase runs and reports "no previous purchase found" (expected before the product exists in the store).</span></label></li>
+  <li><label><input type="checkbox"><span>Paywall screenshots captured for the App Review notes, in light and dark.</span></label></li>
+</ul>
+
+<h2><svg viewBox="0 0 16 18"><use href="#seed"/></svg>4. Widgets — home screen, lock screen, Control Center (8)</h2>
+<ul>
+  <li><label><input type="checkbox"><span>Every widget size (small, medium, large) renders the tree art and current figures correctly after adding from the gallery.<span class="why">Widgets run in a separate process; only a device proves the shared data store works.</span></span></label></li>
+  <li><label><input type="checkbox"><span>Lock-screen widgets (both circular and rectangular slots) show correct data.</span></label></li>
+  <li><label><input type="checkbox"><span>Control Center control widget is present and its buttons log without opening the app.</span></label></li>
+  <li><label><input type="checkbox"><span>One-tap quick-log from the widget: after a few in-app logs of the same pattern, the widget offers it, and tapping it logs correctly with a confirmation.</span></label></li>
+  <li><label><input type="checkbox"><span>Log in the app, then wait: widget figures refresh on their own within a minute, or update when the widget is next viewed.</span></label></li>
+  <li><label><input type="checkbox"><span>Tap a widget: it deep-links into the app's capture screen, not the launch screen.</span></label></li>
+  <li><label><input type="checkbox"><span>Quick-log straight after a phone reboot, before opening the app once.<span class="why">Cold-boot is when the shared data store is most likely to be missing.</span></span></label></li>
+  <li><label><input type="checkbox"><span>Dark Mode: widgets restyle with no white flashes or stale light-mode text.</span></label></li>
+</ul>
+
+<h2><svg viewBox="0 0 16 18"><use href="#seed"/></svg>5. Siri, Action Button and shortcuts (6)</h2>
+<ul>
+  <li><label><input type="checkbox"><span>TapLog's App Shortcuts appear under Settings → Siri (and in the Shortcuts app) with sensible names.</span></label></li>
+  <li><label><input type="checkbox"><span>Ask Siri to log an expense: the amount and category land correctly, or Siri asks for what is missing — no silent failure.<span class="why">Siri intents are a frequent App Review stumble; test the exact phrases you document.</span></span></label></li>
+  <li><label><input type="checkbox"><span>Assign TapLog to the Action Button; a press opens capture ready to log.</span></label></li>
+  <li><label><input type="checkbox"><span>Action Button / Siri log while the phone is locked: it works or fails gracefully, and the entry appears once unlocked.</span></label></li>
+  <li><label><input type="checkbox"><span>Deep link <code>taplog://</code> from Notes or a browser opens the app with fields prefilled.</span></label></li>
+  <li><label><input type="checkbox"><span>A deep link naming an unknown category falls back visibly (Other), not silently.</span></label></li>
+</ul>
+
+<h2><svg viewBox="0 0 16 18"><use href="#seed"/></svg>6. Share sheet — SMS parsing (4)</h2>
+<ul>
+  <li><label><input type="checkbox"><span>Share a bank-spend SMS to TapLog from Messages: amount is parsed into the form for confirmation.</span></label></li>
+  <li><label><input type="checkbox"><span>Confirm the shared entry lands in History and counts everywhere (totals, tree, streak).</span></label></li>
+  <li><label><input type="checkbox"><span>Share plain garbage text: the form opens without a bogus amount and nothing saves silently.</span></label></li>
+  <li><label><input type="checkbox"><span>Back out of the share form: no half-entry is left behind.</span></label></li>
+</ul>
+
+<h2><svg viewBox="0 0 16 18"><use href="#seed"/></svg>7. Recap and notifications (5)</h2>
+<ul>
+  <li><label><input type="checkbox"><span>Weekly recap shows this week's entries; the bar chart matches History, including the Sunday-first edge.</span></label></li>
+  <li><label><input type="checkbox"><span>Recap coverage line is honest ("X of Y entries — Z% of this week's spend") and the percentage is never absurd.</span></label></li>
+  <li><label><input type="checkbox"><span>Monthly recap opens (as Pro or with the paywall) and its range covers exactly the calendar month.</span></label></li>
+  <li><label><input type="checkbox"><span>Weekly nudge notification is scheduled after the first logs, arrives (use the debug trigger if present, otherwise next week), and its time zone matches yours.<span class="why">The only trigger in the habit loop; if it never fires the app has no reason to be reopened.</span></span></label></li>
+  <li><label><input type="checkbox"><span>Tapping the notification opens the app straight to the recap.</span></label></li>
+</ul>
+
+<h2><svg viewBox="0 0 16 18"><use href="#seed"/></svg>8. Export, currency and data (6)</h2>
+<ul>
+  <li><label><input type="checkbox"><span>Export CSV; the file opens in Numbers or Excel with clean columns, correct decimal amounts, and readable dates.</span></label></li>
+  <li><label><input type="checkbox"><span>Export with zero entries: handled gracefully, no empty or broken file.</span></label></li>
+  <li><label><input type="checkbox"><span>Switch currency in Settings: old and new entries display consistently, with no mixing of symbols in one list.</span></label></li>
+  <li><label><input type="checkbox"><span>Airplane mode: logging, widgets, recaps and export all work with zero network.<span class="why">The privacy promise is "nothing leaves the phone" — offline operation is the proof.</span></span></label></li>
+  <li><label><input type="checkbox"><span>Force-quit the app, wait, relaunch: every counter and entry intact.</span></label></li>
+  <li><label><input type="checkbox"><span>"Delete all entries" asks for confirmation, then genuinely clears list, counters, trees and recaps.</span></label></li>
+</ul>
+
+<h2><svg viewBox="0 0 16 18"><use href="#seed"/></svg>9. Appearance and accessibility (5)</h2>
+<ul>
+  <li><label><input type="checkbox"><span>Dark Mode walk-through of every screen: home, history, budgets, recap, paywall, settings — no white flashes, unreadable text or stale light surfaces.</span></label></li>
+  <li><label><input type="checkbox"><span>VoiceOver pass on the home screen, an entry row and a tree: each control says something useful, trees are described (not just "image"), and order follows the screen.</span></label></li>
+  <li><label><input type="checkbox"><span>Recap bar chart read aloud by VoiceOver makes sense (day and value), since charts are the easiest thing to leave mute.<span class="why">Known gap from the August review; check whether it is still open.</span></span></label></li>
+  <li><label><input type="checkbox"><span>Larger type (accessibility sizes): text grows where the app promises; note anything that clips instead of scaling.</span></label></li>
+  <li><label><input type="checkbox"><span>Reduce Motion on: the launch animation and tree transitions calm down rather than still playing in full.</span></label></li>
+</ul>
+
+<h2><svg viewBox="0 0 16 18"><use href="#seed"/></svg>10. Interruptions and rough handling (4)</h2>
+<ul>
+  <li><label><input type="checkbox"><span>Start logging, get a phone call / answer a call, return: the app resumes with no lost or duplicated entry.</span></label></li>
+  <li><label><input type="checkbox"><span>Background the app mid-purchase (or mid-save), return after a few minutes: state is sane, no stuck spinner.</span></label></li>
+  <li><label><input type="checkbox"><span>Low Power Mode for a while: widgets may lag more, but nothing crashes or corrupts.</span></label></li>
+  <li><label><input type="checkbox"><span>Rotate attempt (Control Centre rotation lock off): app stays portrait with no squashed layout.</span></label></li>
+</ul>
+
+<h2><svg viewBox="0 0 16 18"><use href="#seed"/></svg>11. Release gate — the exact build you will submit (4)</h2>
+<ul>
+  <li><label><input type="checkbox"><span>Reinstall the Release configuration build signed for distribution, then re-run sections 2, 3 and 4 on it.<span class="why">Debug and Release behave differently around store calls, animations and data. Most late surprises live in that gap.</span></span></label></li>
+  <li><label><input type="checkbox"><span>Version and build number on the phone match what you entered in App Store Connect.</span></label></li>
+  <li><label><input type="checkbox"><span>Privacy manifest and privacy-policy link open correctly from Settings; the policy URL is live publicly.</span></label></li>
+  <li><label><input type="checkbox"><span>App Review notes ready: how to trigger the paywall (add a fourth budget), and that the in-app purchase must be approved for the price to load.<span class="why">Reviewers reject fastest over a paywall they cannot reach or understand.</span></span></label></li>
+</ul>
+
+<h2><svg viewBox="0 0 16 18"><use href="#seed"/></svg>The brand, defined</h2>
+<p>This page is drawn from the app's own tokens — <code>Sources/TapLog/Theme/Theme.swift</code> — so what you see here is what ships on the phone. The system is a warm field journal: paper grounds, one sage accent, botanical linework, and a single serif voice reserved for focal numbers.</p>
+
+<h3>Palette</h3>
+<p>Every colour is adaptive: two hex values per token, one per appearance, chosen pair by pair so each keeps its contrast in both modes. Over-budget uses clay, never red — the budget system encourages rather than judges.</p>
+<div class="tablewrap">
+<table>
+  <tr><th>Token</th><th>Light</th><th>Dark</th><th>Role</th></tr>
+  <tr><td>background</td><td class="hex"><span class="swatch" style="background:#F7F5F2"></span>#F7F5F2</td><td class="hex"><span class="swatch" style="background:#121110"></span>#121110</td><td>Warm paper in light, warm near-black in dark. Never pure white, never pure black.</td></tr>
+  <tr><td>surface</td><td class="hex"><span class="swatch" style="background:#EFECE7"></span>#EFECE7</td><td class="hex"><span class="swatch" style="background:#1C1B1A"></span>#1C1B1A</td><td>Chips, circles, cards.</td></tr>
+  <tr><td>surfaceStrong</td><td class="hex"><span class="swatch" style="background:#E7E3DC"></span>#E7E3DC</td><td class="hex"><span class="swatch" style="background:#242220"></span>#242220</td><td>Chart bars, pressed states.</td></tr>
+  <tr><td>ink / text</td><td class="hex"><span class="swatch" style="background:#20231F"></span>#20231F</td><td class="hex"><span class="swatch" style="background:#F0EEEB"></span>#F0EEEB</td><td>Primary text and numerals.</td></tr>
+  <tr><td>textSecondary</td><td class="hex"><span class="swatch" style="background:#6E6A64"></span>#6E6A64</td><td class="hex"><span class="swatch" style="background:#8A857E"></span>#8A857E</td><td>Supporting copy, "why" lines on this page.</td></tr>
+  <tr><td>textTertiary</td><td class="hex"><span class="swatch" style="background:#A39E96"></span>#A39E96</td><td class="hex"><span class="swatch" style="background:#5C5852"></span>#5C5852</td><td>Placeholders, done items.</td></tr>
+  <tr><td>accent (sage)</td><td class="hex"><span class="swatch" style="background:#6B8F71"></span>#6B8F71</td><td class="hex"><span class="swatch" style="background:#7FA085"></span>#7FA085</td><td>The one accent: the Log pill, selection, undo. Used sparingly.</td></tr>
+  <tr><td>moss</td><td class="hex"><span class="swatch" style="background:#2F5D43"></span>#2F5D43</td><td class="hex"><span class="swatch" style="background:#5E8F6E"></span>#5E8F6E</td><td>Primary botanical action — this page's buttons and strong links.</td></tr>
+  <tr><td>fern</td><td class="hex"><span class="swatch" style="background:#5F7D62"></span>#5F7D62</td><td class="hex"><span class="swatch" style="background:#7E9A80"></span>#7E9A80</td><td>Secondary linework, nav tint, tree canopy.</td></tr>
+  <tr><td>lichen</td><td class="hex"><span class="swatch" style="background:#DDE7D7"></span>#DDE7D7</td><td class="hex"><span class="swatch" style="background:#24302A"></span>#24302A</td><td>Soft selection fills, quiet grouped surfaces, this page's verdict box.</td></tr>
+  <tr><td>bark</td><td class="hex"><span class="swatch" style="background:#6B4F3A"></span>#6B4F3A</td><td class="hex"><span class="swatch" style="background:#9A7B62"></span>#9A7B62</td><td>Trunks and branch strokes.</td></tr>
+  <tr><td>clay</td><td class="hex"><span class="swatch" style="background:#B5836A"></span>#B5836A</td><td class="hex"><span class="swatch" style="background:#C08E70"></span>#C08E70</td><td>Over-budget and warnings — warm, tired, never alarm red.</td></tr>
+  <tr><td>bloomMarigold</td><td class="hex"><span class="swatch" style="background:#D9A441"></span>#D9A441</td><td class="hex"><span class="swatch" style="background:#E0B45E"></span>#E0B45E</td><td>Sparse progress flower — appears here when all 61 checks are done.</td></tr>
+  <tr><td>hairline</td><td class="hex" colspan="2">ink at 8% opacity, both modes</td><td>Dividers and card edges — felt, not seen.</td></tr>
+</table>
+</div>
+
+<h3>Typography — three voices, strict jobs</h3>
+<div class="tablewrap">
+<table>
+  <tr><th>Voice</th><th>Sample</th><th>Job</th></tr>
+  <tr><td>Editorial serif (New York)</td><td class="sample-serif">₹ 4,999</td><td>The one expressive voice: focal amounts and recap headlines only. Never body text.</td></tr>
+  <tr><td>Rounded, tabular numerals (SF Rounded)</td><td class="sample-rounded">₹1,240</td><td>Amounts everywhere else — hero, list rows, totals. Digits are monospaced so numbers tick in place.</td></tr>
+  <tr><td>System sans</td><td class="sample-sans">Log, categories, settings — the utility voice.</td><td>Everything functional. Headings on this page use it too.</td></tr>
+</table>
+</div>
+
+<h3>Shape and rhythm</h3>
+<ul>
+  <li><label style="cursor:default"><span>Cards and surfaces at 16pt corner radius; small chips at 10–12pt; primary buttons are full capsules <span class="pill-demo">Log</span> and selected chips read <span class="chip-demo">Chai</span> on lichen.</span></label></li>
+  <li><label style="cursor:default"><span>16pt screen gutters, 8pt vertical rhythm between rows. Hairlines at 8% ink separate without drawing attention.</span></label></li>
+  <li><label style="cursor:default"><span>Amount fields size themselves: the display shrinks as digits grow (56pt down to a 34pt floor) so a long value never clips.</span></label></li>
+</ul>
+
+<h3>Motion — a whisper, never an announcement</h3>
+<ul>
+  <li><label style="cursor:default"><span>One easing curve app-wide: <code>cubic-bezier(0.25, 0.55, 0.3, 1.0)</code> — a gentle settle, no bounce anywhere.</span></label></li>
+  <li><label style="cursor:default"><span>Three speeds: 0.15s for presses and chip toggles, 0.38s for entrances and state changes, 0.5s for big reveals.</span></label></li>
+  <li><label style="cursor:default"><span>Entrances fade in and rise 14pt, optionally staggered so the eye lands on the hero first. Press feedback settles to 0.97 scale.</span></label></li>
+  <li><label style="cursor:default"><span>Reduce Motion is honoured everywhere — animations are dropped, not shortened. This page does the same.</span></span></li>
+</ul>
+
+<h3>Principles</h3>
+<ul>
+  <li><label style="cursor:default"><span>Encouragement over judgment. Trees wilt but never die; overspend reads as tired clay, not alarm red.</span></label></li>
+  <li><label style="cursor:default"><span>One accent, held back. Sage marks the single primary action per screen; everything else is paper, ink and hairline.</span></label></li>
+  <li><label style="cursor:default"><span>The serif is earned, not decorative — it appears only where a number is the whole point of the screen.</span></label></li>
+  <li><label style="cursor:default"><span>Depth comes from compositing, not gradients: tree canopies are one leaf-mass repeated at partial opacity so overlaps darken on their own (the mark at the top of this page is built the same way, from the app's own coordinates).</span></label></li>
+  <li><label style="cursor:default"><span>Every colour, font and animation adapts to the system appearance and to Reduce Motion by construction — dark mode is a paired value in the token, never an afterthought filter.</span></label></li>
+</ul>
+
+<p class="footnote">Every item was derived from the shipped feature surface (capture, widgets, Siri, share sheet, budgets, recap, export) and from open findings in the 28 Aug 2026 review. Tick marks are stored only in this browser. Re-check this file out of the repo after submission; it is a pre-flight list, not a permanent document.</p>
+
+</div>
+<script>
+  const KEY = 'taplog-tests-2026-10-24';
+  const boxes = Array.from(document.querySelectorAll('input[type=checkbox]'));
+  boxes.forEach((b, i) => b.id = 't' + i);
+  const saved = JSON.parse(localStorage.getItem(KEY) || '[]');
+  boxes.forEach((b, i) => { if (saved.includes(i)) b.checked = true; });
+  const progress = document.querySelector('.progress');
+  function refresh() {
+    const done = boxes.filter(b => b.checked);
+    document.getElementById('count').textContent = done.length;
+    document.getElementById('fill').style.width = (100 * done.length / boxes.length) + '%';
+    progress.classList.toggle('complete', done.length === boxes.length);
+    localStorage.setItem(KEY, JSON.stringify(done.map(b => +b.id.slice(1))));
+    boxes.forEach(b => b.closest('label').classList.toggle('done', b.checked));
+  }
+  boxes.forEach(b => b.addEventListener('change', refresh));
+  document.getElementById('reset').addEventListener('click', () => {
+    boxes.forEach(b => b.checked = false);
+    refresh();
+  });
+  refresh();
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+<svg fill="#000000" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img">
+  <title>TapLog — Concept A — Notch</title>
+  <!-- A closed ring with one narrow notch: the disc is the record, the notch is
+       the single entry cut into it. Quietest of the three. -->
+  <path d="M 284.6 93.5 A 165 165 0 1 1 227.4 93.5"
+        fill="none" stroke="#000000" stroke-width="62"/>
+  <circle cx="256" cy="256" r="72" fill="#000000"/>
+</svg>

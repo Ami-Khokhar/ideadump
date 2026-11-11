@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TapLog — home screen context test</title>
+<style>
+  body { margin:0; background:#F7F5F2; color:#20231F;
+         font-family:-apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; }
+  .wrap { max-width:1180px; margin:0 auto; padding:48px 44px 64px; }
+  h1 { font-size:34px; letter-spacing:-0.02em; margin:0 0 8px; }
+  .sub { color:#6E6A64; font-size:16px; margin:0; max-width:820px; line-height:1.5; }
+  h2 { font-size:12px; text-transform:uppercase; letter-spacing:0.14em; color:#6E6A64;
+       margin:38px 0 14px; font-weight:700; }
+
+  .screen {
+    background: radial-gradient(circle at 30% 20%, #2A2E33 0%, #16181B 55%, #0D0E10 100%);
+    border-radius:26px; padding:34px 30px 30px;
+    display:grid; grid-template-columns:repeat(4, 1fr); gap:26px 18px;
+    max-width:560px;
+  }
+  .slot { text-align:center; }
+  .slot img {
+    width:78px; height:78px; border-radius:18px; display:block; margin:0 auto;
+    box-shadow:0 4px 12px rgba(0,0,0,0.45);
+  }
+  .slot .lbl { color:#EDEBE7; font-size:11px; margin-top:8px; letter-spacing:0.01em; }
+  .slot.cand img { box-shadow:0 0 0 2px #6B8F71, 0 4px 12px rgba(0,0,0,0.45); }
+  .slot.cand .lbl { color:#9FBFA3; font-weight:700; }
+
+  .f1{background:#3B82F6} .f2{background:#EF4444} .f3{background:#F59E0B}
+  .f4{background:#8B5CF6} .f5{background:#EC4899} .f6{background:#14B8A6}
+  .f7{background:#6366F1} .f8{background:#F97316} .f9{background:#0EA5E9}
+  .f10{background:#22C55E} .f11{background:#A855F7} .f12{background:#F43F5E}
+
+  .strip { display:flex; gap:30px; align-items:flex-end; background:#fff;
+           border:1px solid rgba(28,27,26,0.1); border-radius:16px; padding:26px 30px; }
+  .strip figure { margin:0; text-align:center; }
+  .strip img { display:block; margin:0 auto; border-radius:4px; }
+  .strip figcaption { font-size:11px; color:#6E6A64; margin-top:8px; }
+
+  .squint .slot img { filter: blur(4px); }
+  .note { font-size:13px; color:#6E6A64; line-height:1.55; margin-top:14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Does it work as an app icon, next to other icons?</h1>
+  <p class="sub">The test I skipped. Your shipped icon and my three concepts, at real home-screen size, mixed in with ordinary iOS-coloured neighbours. Green ring = a candidate.</p>
+
+  <h2>Home screen, actual size</h2>
+  <div class="screen">
+    <div class="slot"><div class="f1" style="width:78px;height:78px;border-radius:18px;margin:0 auto;box-shadow:0 4px 12px rgba(0,0,0,.45)"></div><div class="lbl"> &nbsp;</div></div>
+    <div class="slot cand"><img src="../app-icon-1024.png" alt="shipped"><div class="lbl">SHIPPED</div></div>
+    <div class="slot cand"><img src="proto-leaf-icon.svg" alt="leaf"><div class="lbl">LEAF</div></div>
+    <div class="slot"><div class="f3" style="width:78px;height:78px;border-radius:18px;margin:0 auto;box-shadow:0 4px 12px rgba(0,0,0,.45)"></div><div class="lbl"> &nbsp;</div></div>
+
+    <div class="slot"><div class="f4" style="width:78px;height:78px;border-radius:18px;margin:0 auto;box-shadow:0 4px 12px rgba(0,0,0,.45)"></div><div class="lbl"> &nbsp;</div></div>
+    <div class="slot cand"><img src="proto-sprout-icon.svg" alt="sprout"><div class="lbl">SPROUT</div></div>
+    <div class="slot cand"><img src="proto-notch-icon.svg" alt="notch"><div class="lbl">NOTCH</div></div>
+    <div class="slot"><div class="f6" style="width:78px;height:78px;border-radius:18px;margin:0 auto;box-shadow:0 4px 12px rgba(0,0,0,.45)"></div><div class="lbl"> &nbsp;</div></div>
+
+    <div class="slot"><div class="f7" style="width:78px;height:78px;border-radius:18px;margin:0 auto;box-shadow:0 4px 12px rgba(0,0,0,.45)"></div><div class="lbl"> &nbsp;</div></div>
+    <div class="slot"><div class="f8" style="width:78px;height:78px;border-radius:18px;margin:0 auto;box-shadow:0 4px 12px rgba(0,0,0,.45)"></div><div class="lbl"> &nbsp;</div></div>
+    <div class="slot"><div class="f9" style="width:78px;height:78px;border-radius:18px;margin:0 auto;box-shadow:0 4px 12px rgba(0,0,0,.45)"></div><div class="lbl"> &nbsp;</div></div>
+    <div class="slot"><div class="f11" style="width:78px;height:78px;border-radius:18px;margin:0 auto;box-shadow:0 4px 12px rgba(0,0,0,.45)"></div><div class="lbl"> &nbsp;</div></div>
+  </div>
+
+  <h2>Squint test — is the silhouette distinct?</h2>
+  <div class="screen squint">
+    <div class="slot cand"><img src="../app-icon-1024.png" alt="shipped"><div class="lbl">SHIPPED</div></div>
+    <div class="slot cand"><img src="proto-leaf-icon.svg" alt="leaf"><div class="lbl">LEAF</div></div>
+    <div class="slot cand"><img src="proto-sprout-icon.svg" alt="sprout"><div class="lbl">SPROUT</div></div>
+    <div class="slot cand"><img src="proto-notch-icon.svg" alt="notch"><div class="lbl">NOTCH</div></div>
+  </div>
+  <p class="note">Blurred, the shipped icon still reads as a ring. The leaf, sprout and notch all collapse into the same soft blob — they are one idea, not three.</p>
+
+  <h2>Small sizes</h2>
+  <div class="strip">
+    <figure><img src="../app-icon-1024.png" width="32" height="32" alt=""><figcaption>shipped 32</figcaption></figure>
+    <figure><img src="../app-icon-1024.png" width="16" height="16" alt=""><figcaption>shipped 16</figcaption></figure>
+    <figure><img src="proto-leaf-icon.svg" width="32" height="32" alt=""><figcaption>leaf 32</figcaption></figure>
+    <figure><img src="proto-leaf-icon.svg" width="16" height="16" alt=""><figcaption>leaf 16</figcaption></figure>
+    <figure><img src="proto-sprout-icon.svg" width="32" height="32" alt=""><figcaption>sprout 32</figcaption></figure>
+    <figure><img src="proto-sprout-icon.svg" width="16" height="16" alt=""><figcaption>sprout 16</figcaption></figure>
+    <figure><img src="proto-notch-icon.svg" width="32" height="32" alt=""><figcaption>notch 32</figcaption></figure>
+    <figure><img src="proto-notch-icon.svg" width="16" height="16" alt=""><figcaption>notch 16</figcaption></figure>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,54 @@
+{
+  "brand": "TapLog",
+  "tagline": "Log it before you forget",
+  "brief": "A local-first iPhone expense logger. Capture a purchase in seconds from the Action Button, a widget, or Siri, and watch weekly budgets grow into a grove of trees. It should feel calm, private and botanical — the opposite of blue fintech dashboards that demand a bank login.",
+  "adjectives": ["calm", "private", "botanical", "fast", "warm"],
+  "criteria": "Success: distinct from blue finance marks, legible at 16 px, works in one colour, and visibly connected to the grove metaphor the app already uses.",
+  "industry": "consumer-app",
+  "nav": ["How it works", "Privacy", "Download"],
+  "brand_color": "#2F5D43",
+  "greyscale": false,
+  "designer": "TapLog",
+  "round": 1,
+  "concepts": [
+    {
+      "name": "Leaf",
+      "symbol": "concept-d-leaf-ring.svg",
+      "lockup": "proto-leaf-lockup.svg",
+      "avatar": "variants/taplog-leaf-square.svg",
+      "idea": "A leaf rooted inside the ring.",
+      "rationale": [
+        "Keeps the ring equity of the current app icon, so this is an evolution and not a replacement",
+        "At 16 px it degrades to a ring and a solid centre — exactly the legibility shipped today",
+        "The ring is a tap ripple and a tree growth ring at the same time",
+        "Two colours, one-colour safe, 99/100 construction audit"
+      ]
+    },
+    {
+      "name": "Sprout",
+      "symbol": "concept-c-sprout.svg",
+      "lockup": "proto-sprout-lockup.svg",
+      "avatar": "variants/taplog-sprout-square.svg",
+      "idea": "A sprout grows out through the opening in the ring.",
+      "rationale": [
+        "The most explicit telling of the grove metaphor — growth breaks the ring",
+        "The break in the ring is where the growth happens, so form and meaning agree",
+        "Weakest at 16 px: the sprout fills in and reads as a keyhole"
+      ]
+    },
+    {
+      "name": "Notch",
+      "symbol": "concept-a-notched-ring.svg",
+      "lockup": "proto-notch-lockup.svg",
+      "avatar": "variants/taplog-notch-square.svg",
+      "idea": "One entry cut into an otherwise closed record.",
+      "rationale": [
+        "The most restrained and the most abstract of the three",
+        "A single notch reads as a deliberate record rather than decoration",
+        "Purely geometric, so it sits quietly next to app UI",
+        "The notch is invisible by 32 px, so the mark loses its idea when small"
+      ]
+    }
+  ],
+  "recommendation": "Leaf. It is the only one of the three that keeps its meaning at every size: the ring already exists in the shipped icon, and the leaf adds the grove story without costing legibility. Sprout tells the best story but cannot survive the 16 px app icon; Notch is the safest but loses its idea when small. Recommended next step: take Leaf to a full kit, with a simplified drawing reserved for 16 px if needed."
+}

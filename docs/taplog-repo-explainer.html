@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TapLog — How Everything Works</title>
+<style>
+  :root{
+    --paper:#f7f5f2; --ink:#121110; --muted:#6e6a60; --hairline:#e4e0d8;
+    --sage:#6b8f71; --sage-soft:#eef2ee; --clay:#a34f35; --clay-soft:#f6e9e4;
+    --amber:#c88a35; --amber-soft:#f7efe2; --navy:#0f2b48; --surface:#fff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;background:var(--paper);color:var(--ink);line-height:1.55;padding:2rem 1rem 5rem}
+  .wrap{max-width:920px;margin:0 auto}
+  header{border-bottom:3px solid var(--ink);padding-bottom:1.2rem;margin-bottom:2.2rem}
+  h1{font-size:2rem;letter-spacing:-.02em}
+  .kicker{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--sage);margin-bottom:.4rem}
+  .meta{color:var(--muted);font-size:.88rem;margin-top:.5rem}
+  h2{font-size:1.35rem;margin:3rem 0 .8rem;padding-bottom:.4rem;border-bottom:2px solid var(--hairline)}
+  h2 .num{color:var(--sage);margin-right:.5rem}
+  h3{font-size:1.02rem;margin:1.4rem 0 .4rem}
+  p{margin:.5rem 0;max-width:76ch}
+  .lead{font-size:1.05rem;color:var(--ink)}
+  .muted{color:var(--muted)}
+  code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.83em;background:#eceae4;border-radius:4px;padding:1px 5px}
+  /* ---------- cards & chips ---------- */
+  .grid{display:grid;gap:14px}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+  .card{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:16px 18px}
+  .card h4{font-size:.95rem;margin-bottom:.35rem}
+  .card p{font-size:.85rem;color:var(--muted);margin:.2rem 0}
+  .card .file{font-family:ui-monospace,Menlo,monospace;font-size:.72rem;color:var(--navy);background:var(--amber-soft);border-radius:5px;padding:2px 7px;display:inline-block;margin-bottom:.45rem;word-break:break-all}
+  .chip{display:inline-block;font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;padding:2px 10px;margin-right:6px}
+  .chip.sage{background:var(--sage-soft);color:var(--sage)}
+  .chip.clay{background:var(--clay-soft);color:var(--clay)}
+  .chip.amber{background:var(--amber-soft);color:var(--amber)}
+  .chip.navy{background:#e5ecf3;color:var(--navy)}
+  /* ---------- diagrams ---------- */
+  .diagram{background:var(--surface);border:1px solid var(--hairline);border-radius:16px;padding:20px;margin:1rem 0;overflow-x:auto}
+  .dsvg{min-width:640px;display:block;margin:0 auto}
+  .dlabel{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px}
+  .dnote{font-size:.8rem;color:var(--muted);margin-top:.6rem;max-width:70ch}
+  /* ---------- funnel ---------- */
+  .funnel{display:flex;flex-direction:column;align-items:center;gap:8px;margin:1.2rem 0}
+  .fstep{border-radius:12px;padding:12px 18px;text-align:center;color:#fff;min-width:340px}
+  .fstep b{display:block;font-size:.95rem}
+  .fstep span{font-size:.76rem;opacity:.85}
+  .farrow{color:var(--muted);font-size:.8rem}
+  /* ---------- tables ---------- */
+  table{border-collapse:collapse;width:100%;font-size:.87rem;margin:.8rem 0;background:var(--surface)}
+  th,td{text-align:left;padding:8px 10px;border:1px solid var(--hairline);vertical-align:top}
+  th{background:var(--paper);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .ok{color:var(--sage);font-weight:600}
+  .warn{color:var(--clay);font-weight:600}
+  ul{padding-left:1.3rem;margin:.4rem 0}
+  li{margin:.25rem 0}
+  .footnote{margin-top:4rem;border-top:1px solid var(--hairline);padding-top:1rem;color:var(--muted);font-size:.82rem}
+  @media (max-width:640px){ h1{font-size:1.5rem} .fstep{min-width:0;width:100%} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">Visual Repo Review · 26 Sep 2026</div>
+  <h1>TapLog — how everything works</h1>
+  <p class="meta">Every component of the codebase, explained with diagrams and funnels. Built from a full read of <code>Sources/</code> (72 Swift files, 4 targets), <code>project.yml</code>, the 23 test files, and the existing strategy docs. Branch <code>budget-trees-redesign</code>.</p>
+</header>
+
+<!-- ================= 1. WHAT IT IS ================= -->
+<h2><span class="num">1</span>The app in one funnel</h2>
+<p class="lead">TapLog is a local-first iPhone expense logger. The entire product is one loop: <b>capture an expense in ≤5 seconds from anywhere</b>, then <b>pay the user back weekly</b> with a recap, a streak, and a grove of budget trees that never die.</p>
+
+<div class="funnel">
+  <div class="fstep" style="background:#0f2b48;width:100%;max-width:760px"><b>7 capture front doors</b><span>Keypad · Widget · Siri · Action Button · Control Center · Lock Screen · Share Sheet · Deep link</span></div>
+  <div class="farrow">▼ all doors write through one shared path</div>
+  <div class="fstep" style="background:#2d6a4f;width:86%;max-width:660px"><b>One SwiftData store</b><span>App Group container → widget + share extension read/write the same data</span></div>
+  <div class="farrow">▼ every confirmed log triggers</div>
+  <div class="fstep" style="background:#6b8f71;width:72%;max-width:560px"><b>CaptureBookkeeping</b><span>category learning · streaks & freezes · widget reload</span></div>
+  <div class="farrow">▼ data pays the user back</div>
+  <div class="fstep" style="background:#c88a35;width:58%;max-width:460px"><b>Weekly recap + Budget grove</b><span>vs. last week · impulse share · trees that wilt but never die</span></div>
+  <div class="farrow">▼ the only two paid upgrades</div>
+  <div class="fstep" style="background:#a34f35;width:44%;max-width:360px"><b>TapLog Pro — one payment</b><span>unlimited budget trees + the monthly recap</span></div>
+</div>
+<p class="dnote">Everything above the Pro line is free and unlimited. Capture — the thing the app exists for — is never gated. The paywall appears only at the exact moment a user tries to plant a 4th tree or open the monthly recap.</p>
+
+<!-- ================= 2. PROJECT SHAPE ================= -->
+<h2><span class="num">2</span>Project shape: one spec, four targets</h2>
+<p><code>project.yml</code> (XcodeGen) is the single source of truth. Never hand-edit <code>TapLog.xcodeproj</code> — edit the YAML and run <code>xcodegen generate</code>.</p>
+
+<div class="diagram"><div class="dlabel">Target map</div>
+<svg class="dsvg" viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,Helvetica,sans-serif">
+  <rect x="20" y="70" width="220" height="150" rx="14" fill="#0f2b48"/>
+  <text x="130" y="100" fill="#fff" font-size="15" font-weight="700" text-anchor="middle">TapLog.app</text>
+  <text x="130" y="120" fill="#cfe0ee" font-size="10.5" text-anchor="middle">dev.amteshwar.taplog</text>
+  <text x="130" y="150" fill="#cfe0ee" font-size="10.5" text-anchor="middle">UI · models · budgets · recaps</text>
+  <text x="130" y="166" fill="#cfe0ee" font-size="10.5" text-anchor="middle">intents · paywall · settings</text>
+  <text x="130" y="196" fill="#8fb3d0" font-size="9.5" text-anchor="middle">iOS 17+ · SwiftUI · SwiftData</text>
+
+  <rect x="300" y="20" width="210" height="105" rx="14" fill="#2d6a4f"/>
+  <text x="405" y="48" fill="#fff" font-size="13.5" font-weight="700" text-anchor="middle">TapLogWidget.appex</text>
+  <text x="405" y="68" fill="#d7e8dd" font-size="10" text-anchor="middle">Home / Lock Screen widget</text>
+  <text x="405" y="83" fill="#d7e8dd" font-size="10" text-anchor="middle">quick-log buttons · today total</text>
+  <text x="405" y="103" fill="#a8ccb4" font-size="9" text-anchor="middle">+ iOS 18 Control Center control</text>
+
+  <rect x="300" y="165" width="210" height="105" rx="14" fill="#c88a35"/>
+  <text x="405" y="193" fill="#fff" font-size="13.5" font-weight="700" text-anchor="middle">TapLogShare.appex</text>
+  <text x="405" y="213" fill="#f7ead3" font-size="10" text-anchor="middle">Share-sheet extension</text>
+  <text x="405" y="228" fill="#f7ead3" font-size="10" text-anchor="middle">bank SMS → pending entry</text>
+  <text x="405" y="248" fill="#dfc79a" font-size="9" text-anchor="middle">parses ₹ / $ / “debited” text</text>
+
+  <rect x="560" y="92" width="180" height="105" rx="14" fill="#6e6a60"/>
+  <text x="650" y="120" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">TapLogTests</text>
+  <text x="650" y="140" fill="#e2e0db" font-size="10" text-anchor="middle">23 test files, host-app</text>
+  <text x="650" y="155" fill="#e2e0db" font-size="10" text-anchor="middle">pure-logic unit tests</text>
+  <text x="650" y="175" fill="#c9c7c0" font-size="9" text-anchor="middle">money math · streaks · parsing</text>
+
+  <path d="M240 120 L 300 85" stroke="#6e6a60" stroke-width="1.6" marker-end="url(#arr)"/>
+  <path d="M240 165 L 300 205" stroke="#6e6a60" stroke-width="1.6" marker-end="url(#arr)"/>
+  <path d="M510 92 L 560 135" stroke="#c9c7c0" stroke-width="1.4" stroke-dasharray="4 4" marker-end="url(#arr)"/>
+  <path d="M510 205 L 560 160" stroke="#c9c7c0" stroke-width="1.4" stroke-dasharray="4 4" marker-end="url(#arr)"/>
+  <defs><marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#6e6a60"/></marker></defs>
+  <text x="252" y="92" font-size="9" fill="#6e6a60">embed</text>
+  <text x="252" y="196" font-size="9" fill="#6e6a60">embed</text>
+</svg>
+<div class="dnote">App + widget + share extension all share <b>one App Group</b> (<code>group.dev.amteshwar.taplog</code>) holding the SwiftData store and the shared <code>UserDefaults</code>. All three carry the same <code>MARKETING_VERSION</code>/build number from one settings block. Shared source files (Models, Shared, math) are compiled into each target that needs them — that's why <code>project.yml</code> lists e.g. <code>Shared/</code> under both extensions.</div>
+</div>
+
+<!-- ================= 3. LAUNCH SEQUENCE ================= -->
+<h2><span class="num">3</span>App launch — what happens, in order</h2>
+<p><code>TapLogApp.init()</code> runs five setup steps before the first frame; then <code>ContentView</code> decides what to show.</p>
+
+<div class="diagram"><div class="dlabel">Cold-start sequence</div>
+<svg class="dsvg" viewBox="0 0 760 250" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,Helvetica,sans-serif">
+  <defs><marker id="a2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#6e6a60"/></marker></defs>
+  <rect x="15" y="30" width="128" height="120" rx="12" fill="#0f2b48"/>
+  <text x="79" y="56" fill="#fff" font-size="11.5" font-weight="700" text-anchor="middle">1 · StoreLocator</text>
+  <text x="79" y="76" fill="#cfe0ee" font-size="9.5" text-anchor="middle">open App Group store,</text>
+  <text x="79" y="90" fill="#cfe0ee" font-size="9.5" text-anchor="middle">heal split, else fall</text>
+  <text x="79" y="104" fill="#cfe0ee" font-size="9.5" text-anchor="middle">back to App Support</text>
+  <text x="79" y="132" fill="#8fb3d0" font-size="8.5" text-anchor="middle">memoised once per process</text>
+
+  <rect x="160" y="30" width="128" height="120" rx="12" fill="#0f2b48"/>
+  <text x="224" y="56" fill="#fff" font-size="11.5" font-weight="700" text-anchor="middle">2 · Migrations</text>
+  <text x="224" y="76" fill="#cfe0ee" font-size="9.5" text-anchor="middle">legacy retention state,</text>
+  <text x="224" y="90" fill="#cfe0ee" font-size="9.5" text-anchor="middle">legacy “Planned” flags,</text>
+  <text x="224" y="104" fill="#cfe0ee" font-size="9.5" text-anchor="middle">seed 13 categories</text>
+  <text x="224" y="132" fill="#8fb3d0" font-size="8.5" text-anchor="middle">one-time, guarded</text>
+
+  <rect x="305" y="30" width="128" height="120" rx="12" fill="#0f2b48"/>
+  <text x="369" y="56" fill="#fff" font-size="11.5" font-weight="700" text-anchor="middle">3 · RecapNotifier</text>
+  <text x="369" y="76" fill="#cfe0ee" font-size="9.5" text-anchor="middle">register delegate</text>
+  <text x="369" y="90" fill="#cfe0ee" font-size="9.5" text-anchor="middle">(no permission ask,</text>
+  <text x="369" y="104" fill="#cfe0ee" font-size="9.5" text-anchor="middle">no scheduling yet)</text>
+  <text x="369" y="132" fill="#8fb3d0" font-size="8.5" text-anchor="middle">ask happens only after</text>
+  <text x="369" y="145" fill="#8fb3d0" font-size="8.5" text-anchor="middle">recap seen or week done</text>
+
+  <rect x="450" y="30" width="128" height="120" rx="12" fill="#0f2b48"/>
+  <text x="514" y="56" fill="#fff" font-size="11.5" font-weight="700" text-anchor="middle">4 · ProStore.start()</text>
+  <text x="514" y="76" fill="#cfe0ee" font-size="9.5" text-anchor="middle">listen Transaction.updates,</text>
+  <text x="514" y="90" fill="#cfe0ee" font-size="9.5" text-anchor="middle">read currentEntitlements</text>
+  <text x="514" y="132" fill="#8fb3d0" font-size="8.5" text-anchor="middle">product price fetched later,</text>
+  <text x="514" y="145" fill="#8fb3d0" font-size="8.5" text-anchor="middle">only when paywall shows</text>
+
+  <rect x="595" y="30" width="150" height="120" rx="12" fill="#2d6a4f"/>
+  <text x="670" y="56" fill="#fff" font-size="11.5" font-weight="700" text-anchor="middle">5 · ContentView</text>
+  <text x="670" y="76" fill="#d7e8dd" font-size="9.5" text-anchor="middle">consume pending intent,</text>
+  <text x="670" y="90" fill="#d7e8dd" font-size="9.5" text-anchor="middle">widget-undo receipt,</text>
+  <text x="670" y="104" fill="#d7e8dd" font-size="9.5" text-anchor="middle">onboarding reconcile,</text>
+  <text x="670" y="118" fill="#d7e8dd" font-size="9.5" text-anchor="middle">deep-link prefill</text>
+  <text x="670" y="140" fill="#a8ccb4" font-size="8.5" text-anchor="middle">→ LogHomeView (capture-first)</text>
+
+  <path d="M143 90 L158 90" stroke="#6e6a60" stroke-width="1.6" marker-end="url(#a2)"/>
+  <path d="M288 90 L303 90" stroke="#6e6a60" stroke-width="1.6" marker-end="url(#a2)"/>
+  <path d="M433 90 L448 90" stroke="#6e6a60" stroke-width="1.6" marker-end="url(#a2)"/>
+  <path d="M578 90 L593 90" stroke="#6e6a60" stroke-width="1.6" marker-end="url(#a2)"/>
+</svg>
+<div class="dnote">Note the deliberate restraint: no network call, no analytics, no notification prompt, no App Store product fetch at launch. <code>ProStore.start()</code> reads entitlements locally and only listens — the price is fetched when the paywall appears, so a user without an Apple Account signed in never sees a sign-in dialog at launch.</div>
+
+<!-- ================= 4. CAPTURE ================= -->
+<h2><span class="num">4</span>Capture: seven front doors, one form</h2>
+<p>Every entry point lands on the same capture surface (<code>LogHomeView</code>) or writes through the same persistence path. This is the app's core design rule: <b>one capture form, infinite front doors</b>.</p>
+
+<div class="diagram"><div class="dlabel">Front doors → one pipe</div>
+<svg class="dsvg" viewBox="0 0 780 330" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,Helvetica,sans-serif">
+  <defs><marker id="a3" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#6e6a60"/></marker></defs>
+  <!-- doors -->
+  <g font-size="10.5">
+    <rect x="15" y="15" width="150" height="44" rx="10" fill="#eef2ee" stroke="#6b8f71"/><text x="90" y="34" text-anchor="middle" font-weight="700">⌨️ In-app keypad</text><text x="90" y="49" text-anchor="middle" fill="#6e6a60" font-size="8.5">LogHomeView.save()</text>
+    <rect x="15" y="70" width="150" height="44" rx="10" fill="#eef2ee" stroke="#6b8f71"/><text x="90" y="89" text-anchor="middle" font-weight="700">🧩 Home widget</text><text x="90" y="104" text-anchor="middle" fill="#6e6a60" font-size="8.5">QuickLogIntent (headless)</text>
+    <rect x="15" y="125" width="150" height="44" rx="10" fill="#eef2ee" stroke="#6b8f71"/><text x="90" y="144" text-anchor="middle" font-weight="700">🗣 Siri “Log chai…”</text><text x="90" y="159" text-anchor="middle" fill="#6e6a60" font-size="8.5">LogExpenseIntent</text>
+    <rect x="15" y="180" width="150" height="44" rx="10" fill="#eef2ee" stroke="#6b8f71"/><text x="90" y="199" text-anchor="middle" font-weight="700">🔘 Action Button</text><text x="90" y="214" text-anchor="middle" fill="#6e6a60" font-size="8.5">OpenCaptureIntent</text>
+    <rect x="15" y="235" width="150" height="44" rx="10" fill="#eef2ee" stroke="#6b8f71"/><text x="90" y="254" text-anchor="middle" font-weight="700">🎛 Control Center</text><text x="90" y="269" text-anchor="middle" fill="#6e6a60" font-size="8.5">taplog://log deep link</text>
+    <rect x="615" y="15" width="150" height="44" rx="10" fill="#f7efe2" stroke="#c88a35"/><text x="690" y="34" text-anchor="middle" font-weight="700">🔗 Deep link</text><text x="690" y="49" text-anchor="middle" fill="#6e6a60" font-size="8.5">CapturePrefill → keypad</text>
+    <rect x="615" y="70" width="150" height="44" rx="10" fill="#f7efe2" stroke="#c88a35"/><text x="690" y="89" text-anchor="middle" font-weight="700">📱 Share sheet</text><text x="690" y="104" text-anchor="middle" fill="#6e6a60" font-size="8.5">ShareParser → pending</text>
+    <rect x="615" y="125" width="150" height="44" rx="10" fill="#f7efe2" stroke="#c88a35"/><text x="690" y="144" text-anchor="middle" font-weight="700">🔒 Lock Screen widget</text><text x="690" y="159" text-anchor="middle" fill="#6e6a60" font-size="8.5">taplog://log link</text>
+    <rect x="615" y="180" width="150" height="44" rx="10" fill="#f7efe2" stroke="#c88a35"/><text x="690" y="199" text-anchor="middle" font-weight="700">⏬ Shortcuts app</text><text x="690" y="214" text-anchor="middle" fill="#6e6a60" font-size="8.5">all three intents</text>
+  </g>
+  <!-- pipe -->
+  <rect x="230" y="100" width="320" height="130" rx="16" fill="#0f2b48"/>
+  <text x="390" y="126" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">One capture pipe</text>
+  <text x="390" y="150" fill="#cfe0ee" font-size="10" text-anchor="middle">Entry(amount, category, note, intent?)</text>
+  <text x="390" y="168" fill="#cfe0ee" font-size="10" text-anchor="middle">EntryPersistence.commit (refusals visible)</text>
+  <text x="390" y="186" fill="#cfe0ee" font-size="10" text-anchor="middle">CaptureBookkeeping.apply</text>
+  <text x="390" y="204" fill="#8fb3d0" font-size="9" text-anchor="middle">→ logCount+1 · streaks · WidgetCenter.reload</text>
+
+  <path d="M165 37 C 210 40 230 110 245 130" fill="none" stroke="#6b8f71" stroke-width="1.5" marker-end="url(#a3)"/>
+  <path d="M165 92 L 243 130" fill="none" stroke="#6b8f71" stroke-width="1.5" marker-end="url(#a3)"/>
+  <path d="M165 147 L 243 150" fill="none" stroke="#6b8f71" stroke-width="1.5" marker-end="url(#a3)"/>
+  <path d="M165 202 L 243 170" fill="none" stroke="#6b8f71" stroke-width="1.5" marker-end="url(#a3)"/>
+  <path d="M165 257 C 210 250 240 200 245 185" fill="none" stroke="#6b8f71" stroke-width="1.5" marker-end="url(#a3)"/>
+  <path d="M615 37 C 570 40 550 115 535 135" fill="none" stroke="#c88a35" stroke-width="1.5" marker-end="url(#a3)"/>
+  <path d="M615 92 L 537 145" fill="none" stroke="#c88a35" stroke-width="1.5" marker-end="url(#a3)"/>
+  <path d="M615 147 L 537 160" fill="none" stroke="#c88a35" stroke-width="1.5" marker-end="url(#a3)"/>
+  <path d="M615 202 L 537 175" fill="none" stroke="#c88a35" stroke-width="1.5" marker-end="url(#a3)"/>
+</svg>
+</div>
+
+<h3>Component-by-component (capture path)</h3>
+<div class="grid g2">
+  <div class="card"><span class="file">Capture/LogHomeView.swift</span><h4>Capture-first home</h4><p>Hero amount display + custom in-app keypad (no system keyboard = no layout fight), 4 learned category tiles + More, 3-state impulse toggle (nil → impulse → planned → nil; unmarked is a real state), Log pill. Bottom-pinned so amount→Log is one thumb arc. Opening plant animation skipped for intent launches and Reduce Motion.</p></div>
+  <div class="card"><span class="file">Shared/AmountInputFilter.swift</span><h4>Amount input rules</h4><p>Single tested filter for typed digits and pasted text: locale-aware separators (US 1,200 vs EU 12,50 vs Indian 1,20,000), 2-decimal cap, max ₹999,999,999.99, leading-zero trim. The keypad routes through the same <code>filterEdit</code> as the edit form.</p></div>
+  <div class="card"><span class="file">Shared/Money.swift</span><h4>Money</h4><p>17 currencies, symbol + formatting from one place, human-separator <code>parse</code> (rightmost separator = decimal), Decimal end-to-end. <code>fromAmount</code> rounds intent Doubles to cents so 12.99 never becomes 12.9900000001.</p></div>
+  <div class="card"><span class="file">Capture/EntryPersistence.swift</span><h4>Visible refusals</h4><p>Every save runs through one <code>commit</code> that rolls back on failure and shows a toast (“Couldn't save that expense — try again”). No silent data loss anywhere; undo failures explicitly report that nothing changed.</p></div>
+  <div class="card"><span class="file">Shared/CaptureBookkeeping.swift</span><h4>Shared bookkeeping</h4><p><code>apply</code> / <code>revert</code> run for every confirmed log regardless of door: category <code>logCount</code>+1 (drives tile ranking), lifetime log count, streaks/freezes via RetentionManager, widget timeline reload. Undo-safe with strict ordering.</p></div>
+  <div class="card"><span class="file">Undo/UndoStack.swift</span><h4>Undo toast</h4><p>5-second toast, LIFO stack that survives toast expiry; budget-tree confirmation attached to log actions; failed-save reports enter the toast but not the undo history (nothing to reverse).</p></div>
+  <div class="card"><span class="file">DeepLink/CapturePrefill.swift</span><h4>Deep links</h4><p><code>taplog://log?amount=&note=&category=</code>. Machine amounts are validated by a strict grammar distinct from human <code>Money.parse</code> — <code>amount=12.345</code> pre-fills nothing rather than logging ₹12,345.</p></div>
+  <div class="card"><span class="file">AppIntents/*</span><h4>Siri & Shortcuts</h4><p>Three intents: <b>Log Expense</b> (headless: Siri asks amount→category→optional note, saves, speaks confirmation), <b>Open Expense Capture</b> (Action Button/Control Center; writes a durable pending-activation that ContentView consumes → keypad focused, splash skipped), <b>Quick Log</b> (widget process, no UI). Category phrases use an AppEntity (“Log chai in TapLog”).</p></div>
+  <div class="card"><span class="file">TapLogWidget/SpendWidget.swift</span><h4>Widget</h4><p>Small (today total + decorative tree), medium (today total + 3 <b>learned</b> quick-log buttons from real history via QuickButtonRanking — deterministic tie-breaks so taps can't drift), lock-screen circular/rectangular. 15-min refresh + reload after every log. Mis-tap undo: WidgetLogReceipt → app shows toast on next open (10-min window).</p></div>
+  <div class="card"><span class="file">TapLogShare/ShareViewController.swift</span><h4>Share sheet</h4><p>Parses shared text for amount + merchant. OTP-gated: the loose bare-number fallback only runs if the text mentions spending (debit/spent/paid/₹…). Saves a <b>pending</b> entry (category Other); user confirms/discards in History. Fails with a message, never crashes the host app.</p></div>
+  <div class="card"><span class="file">Shared/StoreLocator.swift</span><h4>StoreLocator</h4><p>Opens the SwiftData store once per process: prefers the App Group container, falls back to Application Support when the entitlement is missing (free-account dev builds), heals a split store by one-time row-by-row copy, and pins whatever opened so diagnostics never lie. The memoisation is load-bearing: Siri intents run in the app process — a second container would crash.</p></div>
+  <div class="card"><span class="file">Shared/Log.swift</span><h4>Logging</h4><p>os.Logger with five categories; never logs amounts/notes; error descriptions redacted to domain+code so a sysdiagnose can be shared safely.</p></div>
+</div>
+
+<!-- ================= 5. BUDGETS ================= -->
+<h2><span class="num">5</span>Budgets & the grove — the signature mechanic</h2>
+<p>The moat-feature: each budgeted category is a tree whose state encodes <b>two periods</b> of history, not just one number.</p>
+
+<div class="diagram"><div class="dlabel">Tree health = f(current period, previous period)</div>
+<svg class="dsvg" viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,Helvetica,sans-serif">
+  <defs><marker id="a4" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#6e6a60"/></marker></defs>
+  <rect x="30" y="20" width="300" height="240" rx="14" fill="#eef2ee" stroke="#6b8f71"/>
+  <text x="180" y="45" font-size="12" font-weight="700" text-anchor="middle" fill="#2d6a4f">BUDGET ENTRY (SpendCategory)</text>
+  <text x="180" y="70" font-size="10" text-anchor="middle" fill="#40634c">budgetTarget: Decimal? (weekly | monthly)</text>
+  <text x="180" y="88" font-size="10" text-anchor="middle" fill="#40634c">budgetHealthResetDate — baseline for fairness</text>
+  <text x="180" y="106" font-size="10" text-anchor="middle" fill="#40634c">logCount — drives tile + widget learning</text>
+  <text x="180" y="140" font-size="10.5" text-anchor="middle" fill="#2d6a4f" font-weight="600">BudgetCalculator.report(for:entries:)</text>
+  <text x="180" y="162" font-size="9.5" text-anchor="middle" fill="#40634c">interval math (locale calendar) · filters pending/archived</text>
+  <text x="180" y="178" font-size="9.5" text-anchor="middle" fill="#40634c">· future-dated cut-off · Decimal totals</text>
+  <text x="180" y="206" font-size="9.5" text-anchor="middle" fill="#40634c">switch (within?, wasPreviouslyOver?)</text>
+  <text x="180" y="224" font-size="9.5" text-anchor="middle" fill="#40634c">→ one of six states</text>
+
+  <rect x="430" y="12" width="300" height="256" rx="14" fill="#fff" stroke="#e4e0d8"/>
+  <g font-size="11">
+    <circle cx="462" cy="42" r="11" fill="#6b8f71"/><text x="480" y="46" font-weight="600">seedling — first clean period</text>
+    <circle cx="462" cy="80" r="11" fill="#2d6a4f"/><text x="480" y="84" font-weight="600">sprout — recovering from overspend</text>
+    <circle cx="462" cy="118" r="11" fill="#40634c"/><text x="480" y="122" font-weight="600">growing — two clean periods</text>
+    <circle cx="462" cy="156" r="11" fill="#a34f35"/><text x="480" y="160" font-weight="600">wilting — one bad period</text>
+    <circle cx="462" cy="194" r="11" fill="#c88a35"/><text x="480" y="198" font-weight="600">resting — chronic, never dead</text>
+    <circle cx="462" cy="232" r="11" fill="#c9c7c0"/><text x="480" y="236" font-weight="600">noBudget — target without cadence</text>
+  </g>
+  <path d="M330 140 L 425 140" stroke="#6e6a60" stroke-width="1.6" marker-end="url(#a4)"/>
+</svg>
+<div class="dnote">A tree <b>never dies</b> — chronic overspend is “resting”, by design the app does not punish. Changing target or cadence stamps <code>budgetHealthResetDate</code> so a new target can't retroactively re-judge an old period (fairness). Cadence conversion preserves real rates (₹50/wk → ₹216.67/mo, honest 52÷12). Everything is Decimal, calendar-injectable, and unit-tested.</div>
+</div>
+
+<div class="grid g2">
+  <div class="card"><span class="file">Budget/GroveStripModel · GroveSceneModel · GroveScene</span><h4>Rendering pipeline</h4><p><code>GroveStripModel.tree(for:)</code> derives state → strip on capture screen (cap + overflow count) → full grove on Budgets (deterministic FNV-1a hash per category → species, x-position, depth, bloom — same layout every launch).</p></div>
+  <div class="card"><span class="file">Budget/TreeMark · TreeStateGlyph · TreeSpeciesArt</span><h4>Three tree renderers</h4><p>Hand-authored vector marks on a 64×80 canvas (six states, ~950 lines of path data, crown depth from compositing translucent leaf copies); a badge-size silhouette glyph for tiles/widget; species art for the grove. All Canvas-based, tinted, VoiceOver-labelled.</p></div>
+  <div class="card"><span class="file">Budget/BudgetSetupView · BudgetTargetEditor · BudgetsView</span><h4>Budget UI</h4><p>Plant/edit budgets with live tree preview, stepper grid (weekly ±50 / monthly ±250), cadence switch converts the target honestly. Budgets screen lists spent-vs-target per period with last-period comparison.</p></div>
+  <div class="card"><span class="file">Capture/GroveStrip.swift</span><h4>GroveStrip on capture</h4><p>Small strip above the keypad; trees at a glance before the tap; over-budget trees tinted clay. Kept quiet so the amount stays the hero.</p></div>
+</div>
+
+<!-- ================= 6. RECAP & RETENTION ================= -->
+<h2><span class="num">6</span>Recap, streaks, and the one notification</h2>
+
+<div class="diagram"><div class="dlabel">Retention loop</div>
+<svg class="dsvg" viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,Helvetica,sans-serif">
+  <defs><marker id="a5" markerWeek="w" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#6b8f71"/></marker></defs>
+  <rect x="40" y="80" width="150" height="80" rx="14" fill="#2d6a4f"/>
+  <text x="115" y="112" fill="#fff" font-size="12" font-weight="700" text-anchor="middle">LOG anything</text>
+  <text x="115" y="132" fill="#d7e8dd" font-size="9.5" text-anchor="middle">any front door</text>
+  <rect x="250" y="80" width="150" height="80" rx="14" fill="#6b8f71"/>
+  <text x="325" y="106" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">RetentionManager</text>
+  <text x="325" y="126" fill="#e2efe5" font-size="9" text-anchor="middle">7-day mask · locale week start</text>
+  <text x="325" y="140" fill="#e2efe5" font-size="9" text-anchor="middle">flock-guarded (app+widget race)</text>
+  <rect x="460" y="80" width="140" height="80" rx="14" fill="#c88a35"/>
+  <text x="530" y="106" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">Target met?</text>
+  <text x="530" y="126" fill="#f7ead3" font-size="9" text-anchor="middle">streak +1 · freeze every 10 logs</text>
+  <text x="530" y="140" fill="#f7ead3" font-size="9" text-anchor="middle">missed week → freeze or reset</text>
+  <rect x="620" y="80" width="115" height="80" rx="14" fill="#a34f35"/>
+  <text x="677" y="108" fill="#fff" font-size="10.5" font-weight="700" text-anchor="middle">Sun 9am</text>
+  <text x="677" y="124" fill="#f6e0d6" font-size="9" text-anchor="middle">“Your week is ready.”</text>
+  <text x="677" y="138" fill="#f6e0d6" font-size="9" text-anchor="middle">no amounts in notif</text>
+  <path d="M190 120 L248 120" stroke="#6b8f71" stroke-width="1.6" marker-end="url(#a5)"/>
+  <path d="M400 120 L458 120" stroke="#6b8f71" stroke-width="1.6" marker-end="url(#a5)"/>
+  <path d="M600 120 L618 120" stroke="#6b8f71" stroke-width="1.6" marker-end="url(#a5)"/>
+  <path d="M677 80 C 677 30 115 20 115 78" fill="none" stroke="#c9c7c0" stroke-width="1.3" stroke-dasharray="5 4" marker-end="url(#a5)"/>
+  <text x="400" y="30" font-size="9" fill="#8a867c" text-anchor="middle">the only notification in the app loops back into logging</text>
+</svg>
+</div>
+
+<div class="grid g2">
+  <div class="card"><span class="file">Recap/RecapMath.swift</span><h4>Recap math (pure, tested)</h4><p>Locale-correct week splitting (Sunday-first safe), daily bars, category shares, month-week blocks. Impulse vs planned is computed over <b>marked spend only</b>, with an explicit coverage disclosure — a partial answer is never presented as complete.</p></div>
+  <div class="card"><span class="file">Recap/WeeklyRecapView.swift</span><h4>Recap screen</h4><p>Weekly span free; monthly span is the Pro moment. Totals vs previous, daily bars, category breakdown, budgets section, impulse read, CSV export (free, always).</p></div>
+  <div class="card"><span class="file">Retention/RecapNotifier.swift</span><h4>The one notification</h4><p>“Your week is ready. / See where it went.” — no amounts on the lock screen. Permission requested only after the recap was opened or a week completed (the prompt can only be spent once). One request ID → rescheduling is idempotent; tapping routes to Recap.</p></div>
+  <div class="card"><span class="file">Shared/RetentionManager.swift</span><h4>Streaks</h4><p>Weekly target (3–7 days), streak in weeks, freezes earned per 10 logs (max 3) absorb a missed week; week start from the user's calendar; cross-process <code>flock</code> so a widget log and the app can't corrupt the mask; undo never takes earned streaks away.</p></div>
+</div>
+
+<!-- ================= 7. PRO ================= -->
+<h2><span class="num">7</span>The Pro layer</h2>
+
+<div class="diagram"><div class="dlabel">Paywall decision flow</div>
+<svg class="dsvg" viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,Helvetica,sans-serif">
+  <defs><marker id="a6" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#6e6a60"/></marker></defs>
+  <rect x="30" y="20" width="180" height="56" rx="12" fill="#eef2ee" stroke="#6b8f71"/>
+  <text x="120" y="43" font-size="11" font-weight="700" text-anchor="middle">Free: capture everything,</text>
+  <text x="120" y="60" font-size="11" font-weight="700" text-anchor="middle">3 trees, weekly recap</text>
+  <rect x="260" y="12" width="200" height="72" rx="12" fill="#f7efe2" stroke="#c88a35"/>
+  <text x="360" y="36" font-size="11" font-weight="700" text-anchor="middle">Trigger 1: plant 4th tree</text>
+  <text x="360" y="53" font-size="9.5" text-anchor="middle" fill="#8a6a34">BudgetSetup → ProGate.canPlantAnotherTree</text>
+  <text x="360" y="68" font-size="9.5" text-anchor="middle" fill="#8a6a34">Deleting a budget returns the slot</text>
+  <rect x="260" y="106" width="200" height="72" rx="12" fill="#f7efe2" stroke="#c88a35"/>
+  <text x="360" y="130" font-size="11" font-weight="700" text-anchor="middle">Trigger 2: Recap → “Month”</text>
+  <text x="360" y="147" font-size="9.5" text-anchor="middle" fill="#8a6a34">ProGate.canUseMonthlyRecap</text>
+  <text x="360" y="162" font-size="9.5" text-anchor="middle" fill="#8a6a34">weekly stays free forever</text>
+  <rect x="510" y="59" width="220" height="72" rx="12" fill="#a34f35"/>
+  <text x="620" y="83" fill="#fff" font-size="12" font-weight="700" text-anchor="middle">PaywallView</text>
+  <text x="620" y="103" fill="#f6e0d6" font-size="9.5" text-anchor="middle">“143 expenses · 24 days · ₹18,400 tracked”</text>
+  <text x="620" y="118" fill="#f6e0d6" font-size="9.5" text-anchor="middle">your real numbers as the hero image</text>
+  <path d="M210 48 L258 48" stroke="#6e6a60" stroke-width="1.5" marker-end="url(#a6)"/>
+  <path d="M210 75 L258 130" stroke="#6e6a60" stroke-width="1.5" marker-end="url(#a6)"/>
+  <path d="M460 48 L508 82" stroke="#6e6a60" stroke-width="1.5" marker-end="url(#a6)"/>
+  <path d="M460 142 L508 108" stroke="#6e6a60" stroke-width="1.5" marker-end="url(#a6)"/>
+  <rect x="510" y="170" width="220" height="100" rx="12" fill="#0f2b48"/>
+  <text x="620" y="192" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">ProStore (StoreKit 2)</text>
+  <text x="620" y="212" fill="#cfe0ee" font-size="9.5" text-anchor="middle">isPro from Transaction.currentEntitlements</text>
+  <text x="620" y="227" fill="#cfe0ee" font-size="9.5" text-anchor="middle">never cached in UserDefaults</text>
+  <text x="620" y="242" fill="#8fb3d0" font-size="9.5" text-anchor="middle">listener starts before entitlement check</text>
+  <text x="620" y="257" fill="#8fb3d0" font-size="9.5" text-anchor="middle">purchase · restore · Ask-to-Buy safe</text>
+</svg>
+<div class="dnote">The paywall appears at two moments only — never at launch, never on a timer. Evidence-based: below 8 entries / 3 days it shows the grove illustration instead of thin numbers. On unlock it dismisses itself; purchase cancellation is silence, not an error dialog. CSV export is deliberately free forever — it's the only way data leaves the device, and charging for it turns the privacy pitch into a hostage situation.</div>
+</div>
+
+<!-- ================= 8. ONBOARDING ================= -->
+<h2><span class="num">8</span>Onboarding & first-run funnel</h2>
+
+<div class="funnel">
+  <div class="fstep" style="background:#0f2b48;max-width:640px"><b>First launch → Welcome</b><span>one screen, skippable — never blocks logging</span></div>
+  <div class="farrow">▼</div>
+  <div class="fstep" style="background:#2d6a4f;max-width:580px"><b>First log ON the real home screen</b><span>amount → category → Log = core onboarding complete (no tutorial tour)</span></div>
+  <div class="farrow">▼ (after toast clears — prompts never cover the undo)</div>
+  <div class="fstep" style="background:#6b8f71;max-width:520px"><b>Deferred prompt 1: “your categories”</b><span>after ≥1 log; categories were seeded, now invite customization</span></div>
+  <div class="farrow">▼</div>
+  <div class="fstep" style="background:#c88a35;max-width:460px"><b>Deferred prompt 2: plant the first tree</b><span>after ≥1 log, no budgets yet, live tree preview</span></div>
+  <div class="farrow">▼</div>
+  <div class="fstep" style="background:#a34f35;max-width:400px"><b>Deferred prompt 3: faster ways to log</b><span>after ≥2 logs, not the first session → front doors setup</span></div>
+</div>
+<p class="dnote">A log from Siri/widget/deep link on first launch counts and <b>skips the whole flow</b> — the app never replays setup screens at someone who already did the thing. Killed mid-onboarding resumes at the stored step. Every gate is a small, tested predicate in <code>OnboardingFlow</code> (pure functions over UserDefaults).</p>
+
+<!-- ================= 9. DATA & PRIVACY ================= -->
+<h2><span class="num">9</span>Data model, privacy, themes</h2>
+<div class="grid g2">
+  <div class="card"><span class="file">Models/Entry.swift</span><h4>Entry</h4><p>amount (Decimal) · category key · note · date · isArchived · isPending · <code>intent: SpendIntent?</code> (nil = unmarked, deliberately a third state) · createdAt. Optional intent survives lightweight migration honestly: old rows land “unmarked”, never fabricated.</p></div>
+  <div class="card"><span class="file">Models/SpendCategory.swift</span><h4>SpendCategory</h4><p>key (stable slug) / name / emoji / sortOrder / logCount / budgetTarget+period+resetDate. Entries reference categories <b>by key</b> — renaming or deleting never breaks history (falls back to “Other”). 13 India-friendly defaults seeded once.</p></div>
+  <div class="card"><span class="file">Theme/*</span><h4>Design system</h4><p>Paper #F7F5F2 / ink #121110 / sage #6B8F71 accent, serif display numerals (monospaced digits), PaperGround texture, VineBorder, organic surfaces, seed-growth opening. Motion policy respects Reduce Motion everywhere; every decorative Canvas has an accessibility label.</p></div>
+  <div class="card"><span class="file">Settings/SettingsView.swift</span><h4>Settings</h4><p>Currency (17, shared with extensions via App Group defaults), appearance override, weekly log target, faster-ways guide, Pro + Restore, delete-all (resets streaks, cancels the recap notification, zeroes category learning). Warns visibly when the App Group isn't available (widget/share blind).</p></div>
+  <div class="card"><span class="file">Export/CSVExporter.swift</span><h4>CSV export</h4><p>RFC 4180 quoting, formula-injection neutralization (=+-@ prefixed with '), pending entries excluded, archived included, intent spelled “unmarked” rather than blank. ShareLink-based, free forever.</p></div>
+  <div class="card"><h4>Privacy posture</h4><p><span class="chip sage">No account</span> <span class="chip sage">No server</span> <span class="chip sage">No analytics</span> <span class="chip sage">No tracking</span> <span class="chip sage">No third-party deps</span> Zero networking symbols. The only data that leaves the device is what the user shares themselves (CSV, support email).</p></div>
+</div>
+
+<!-- ================= 10. FUNNELS ================= -->
+<h2><span class="num">10</span>Two more funnels worth seeing</h2>
+
+<h3>A. Share-sheet import funnel (the “zero-effort capture” path)</h3>
+<div class="funnel">
+  <div class="fstep" style="background:#0f2b48"><b>Bank SMS / payment text</b><span>“Rs 1,200 debited HDFC” · “You spent $12.50 at Starbucks”</span></div>
+  <div class="farrow">▼ share →</div>
+  <div class="fstep" style="background:#2d6a4f"><b>TapLogShare extension</b><span>ShareParser: symbol/RS/INR patterns, OTP-gated loose fallback</span></div>
+  <div class="farrow">▼</div>
+  <div class="fstep" style="background:#6b8f71"><b>Pending entry</b><span>amount + merchant note, category Other, isPending = true</span></div>
+  <div class="farrow">▼ next time the app opens</div>
+  <div class="fstep" style="background:#c88a35"><b>History review</b><span>confirm → becomes a normal log (bookkeeping applies) · discard → gone</span></div>
+  <div class="farrow">▼</div>
+  <div class="fstep" style="background:#a34f35"><b>Zero effort spent</b><span>user only categorised — attribution is theirs, one tap</span></div>
+</div>
+
+<h3>B. Widget mis-tap recovery funnel</h3>
+<div class="funnel">
+  <div class="fstep" style="background:#0f2b48"><b>Widget quick-log tap</b><span>QuickLogIntent in widget process, app never opens</span></div>
+  <div class="farrow">▼</div>
+  <div class="fstep" style="background:#2d6a4f"><b>Entry saved + receipt written</b><span>WidgetLogReceipt (createdAt, amount, category)</span></div>
+  <div class="farrow">▼ next app open within 10 min</div>
+  <div class="fstep" style="background:#6b8f71"><b>App offers the same undo as everywhere else</b><span>“Logged ₹40 · Chai from the widget — Undo”</span></div>
+  <div class="farrow">▼</div>
+  <div class="fstep" style="background:#c88a35"><b>No mis-tap becomes permanent data</b><span>the front door with no screen still gets the same courtesy</span></div>
+</div>
+
+<!-- ================= 11. TESTS ================= -->
+<h2><span class="num">11</span>Tests & quality gates</h2>
+<p>23 test files cover every pure-logic subsystem: money parsing (all separator cultures), amount filter, budget math (tree states, cadence conversion), recap math (locale week pinning), streaks (freezes, undo, week rollover), share parser (OTP rejection), store fallback + healing, widget receipts, paywall evidence, Pro gate, onboarding predicates, intent validation, CSV quoting, undo stack, persistence refusals.</p>
+<div class="grid g3">
+  <div class="card"><h4><span class="chip sage">Strength</span></h4><p>The "pure enum + injectable calendar" architecture is why 300+ assertions exist without a UI test rig.</p></div>
+  <div class="card"><h4><span class="chip amber">Watch</span></h4><p>No CI: tests are hand-run, and the generated <code>.xcodeproj</code> is committed beside <code>project.yml</code> — classic drift pair. One GitHub Actions job would lock it in.</p></div>
+  <div class="card"><h4><span class="chip clay">Gap</span></h4><p>UI layer is untested by design; nothing has had a hands-on device pass since the keypad redesign (see Aug 28 review §8).</p></div>
+</div>
+
+<!-- ================= 12. VERDICT ================= -->
+<h2><span class="num">12</span>Verdict & what changed since the last review</h2>
+<p>The Aug 28 deep review found blocking gaps. Reading the current code, <b>most are now fixed</b>:</p>
+<table>
+  <tr><th>Aug 28 finding</th><th>Status today</th></tr>
+  <tr><td>No way to take money; docs disagree on the model</td><td class="ok">Fixed — StoreKit 2 ProStore, one non-consumable, evidence-based paywall, ProGate policy tested</td></tr>
+  <tr><td>Zero notifications</td><td class="ok">Fixed — one weekly recap notification, earned permission, no amounts, idempotent scheduling</td></tr>
+  <tr><td>Streak weeks Monday-hardcoded vs locale recap weeks</td><td class="ok">Fixed — weekStart from calendar.firstWeekday + alignment migration, pinned by tests</td></tr>
+  <tr><td>Share extension crashes / parses OTP as ₹482,910</td><td class="ok">Fixed — throwing store accessor + spend-keyword gate before loose numbers</td></tr>
+  <tr><td>Test launch args live in release builds</td><td class="ok">Fixed — -autolog / -seedSampleData under #if DEBUG (ContentView's -route/-appearance too)</td></tr>
+  <tr><td>print() as the only error channel</td><td class="ok">Fixed — os.Logger everywhere, redaction-safe describe()</td></tr>
+  <tr><td>Bayesian TimeBucket ranker + dead code + onboarding machine</td><td class="ok">Mostly fixed — CategorySuggestions is now a deterministic two-rule sort; dead code gone; deferred prompts are tested predicates</td></tr>
+  <tr><td>Paywall copy “One payment, yours for good”</td><td class="warn">Still present in PaywallView — legal review flags ownership claims (see checklist artifact)</td></tr>
+  <tr><td>Recap/Budgets hidden behind ⋯ menu</td><td class="ok">Fixed — History / Budgets / Recap are toolbar buttons on the home bar</td></tr>
+  <tr><td>isUsingSharedStore “reports intent, not outcome”</td><td class="ok">Fixed — reports the store that actually opened (memoised)</td></tr>
+</table>
+<p><b>Remaining before launch</b> (all process, not code): real-device signing + front-door QA, App Group provisioning for the widget/share, App Store account chain (agreement → tax → bank), privacy manifests for both .appex bundles, the paywall copy fix, and hosting the privacy/support pages. The dedicated checklist artifact walks every item.</p>
+
+<div class="footnote">TapLog repo explainer · compiled 26 Sep 2026 from a full source read · pairs with <code>docs/taplog-repo-explainer.html</code> (this file), the iPhone setup guide, the App Store pre-launch checklist, and the marketing/paywall plan.</div>
+
+</div>
+</body>
+</html>
