@@ -463,14 +463,25 @@
 - Context: issue #115 — the product's premise, stated by the owner on 11 November 2026.
   Logging an expense is a small, frequent act that people abandon when it takes a form;
   every entry point in the app exists to shorten the path from intention to a saved entry.
-- Decision: every capture surface must produce a saved entry in two or three taps, or
-  through one spoken phrase followed by the prompts the existing intent already asks. It
-  does not promise a single numeric phrase: the issue #64 entry records that App Intents
-  cannot express one, and this entry does not reopen that. An extra required step is
-  allowed only when it prevents a real class of error — a wrong amount, a duplicate, a
-  lost entry — and it must remove or automate another step in the same flow. A
-  confirmation, field or screen that only adds a tap is a regression, whatever it makes
-  easier to show later. The same rule covers a fix: if it costs a tap, it gives one back.
+- Decision: every capture surface must produce a saved entry in two or three taps, or one
+  spoken sentence. An extra required step is allowed only when it prevents a real class of
+  error — a wrong amount, a duplicate, a lost entry — and it must remove or automate
+  another step in the same flow. A confirmation, field or screen that only adds a tap is a
+  regression, whatever it makes easier to show later. The same rule covers a fix: if it
+  costs a tap, it gives one back.
 - Consequence: capture cost is measured per route on hardware rather than asserted, and
   that task is in `docs/open-items-2026-11-11.md`. A review of a capture change asks what
   it costs in taps before what it adds, and the pull request answers it.
+
+## The spoken capture promise is a phrase plus prompts, not one sentence
+
+- Context: the entry above promised "one spoken sentence" for the spoken route. That is
+  not expressible: the issue #64 entry records that App Intents cannot interpolate a
+  numeric parameter into a phrase, so the shipped route is one phrase and then the
+  prompts the intent asks. Left as written, the entry invites a later change to promise
+  something the platform refuses.
+- Decision: the spoken promise is one phrase plus those prompts, not a single numeric
+  sentence. The rest of the entry above — the two-or-three-taps rule, the cost an extra
+  step may carry, and the measurement — stands unchanged.
+- Consequence: no code change. The earlier text stays as written so the change is
+  attributable, and this entry governs what a later change may promise.
