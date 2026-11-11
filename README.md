@@ -5,7 +5,7 @@ or three taps**. Things that are good and important should be simple to use, so 
 in that path is a defect, not a trade-off.
 
 Every way in exists to shorten it — the Action Button, a home or Lock Screen widget,
-Siri, the share sheet, a link. Your records stay on the device.
+Control Center, Siri, the share sheet, a link. Your records stay on the device.
 See `investor-pitch.md` for the vision and `build-plan.md` for the milestone plan.
 
 ## Prerequisites
