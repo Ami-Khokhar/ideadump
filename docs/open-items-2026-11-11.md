@@ -34,9 +34,11 @@ Live state, 11 November 2026:
 - [ ] S1–S2 of `docs/release-runbook.md`: a signed Release build of the app and both
       extensions with the archive entitlements inspected; Xcode 26 / iOS 26 SDK
       minimum.
-- [ ] `docs/signed-build-testflight-runbook.md` steps 2–8: archive, validate, upload,
-      resolve processing warnings, install the processed build through TestFlight.
-      Raise `CURRENT_PROJECT_VERSION` on every upload.
+- [ ] `docs/signed-build-testflight-runbook.md` steps 1–6 and 8: regenerate and verify
+      after any `project.yml` edit (including the build-number bump), provision, confirm
+      the App Group, archive, inspect the archive, validate and upload, then install the
+      processed build through TestFlight. Step 7 is the paywall screenshot, tracked with
+      the listing items below.
 - [ ] App Store Connect: app record, product `dev.amteshwar.taplog.pro.lifetime`,
       agreements, tax and banking, regional availability, privacy answers.
 - [ ] Current age-rating questionnaire (the post-31 Jan 2026 system; 4+/9+/13+/16+/18+
