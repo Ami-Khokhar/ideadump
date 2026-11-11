@@ -11,12 +11,15 @@ attached file.
 - Columns are `Date,Amount,Category,Note,Archived,Intent`. There is no currency
   column: the amounts are in the app's current currency.
 - Pending share-sheet captures are not exported. Archived entries are, marked
-  `yes`; a note starting with an apostrophe was escaped to stop a spreadsheet
-  evaluating it.
+  `yes`. A `Note` or `Category` that begins with `=`, `+`, `-` or `@` (ignoring
+  leading spaces and control characters) has an apostrophe added in front so a
+  spreadsheet reads it as text; the apostrophe is not part of what was typed.
 - Every prompt below asks for the row count it used. An answer without a count is
   not checkable, and a number you cannot check is worse than no answer.
 
 ## 1. Where did my money go last month?
+
+Columns read: `Date`, `Amount`, `Category`. Archived rows are included.
 
 ```
 Attached is my expense export (Date, Amount, Category, Note, Archived, Intent).
@@ -33,6 +36,8 @@ notes about rows it did not use.
 
 ## 2. Which category changed most between two months?
 
+Columns read: `Date`, `Amount`, `Category`. Archived rows are included.
+
 ```
 Compare the two most recent complete calendar months in the attached export.
 For each Category, report the total and the row count in each month, then the
@@ -46,6 +51,8 @@ Must not: describe a percentage change without the underlying amounts and counts
 
 ## 3. What are my ten biggest expenses this year?
 
+Columns read: `Date`, `Amount`, `Category`, `Note`. Archived rows are included.
+
 ```
 From the attached export, list the ten largest Amount values in the current
 calendar year, each with its Date, Category, and Note. State the total spent, the
@@ -58,6 +65,8 @@ Answers: the outliers, which are usually the ones people forget.
 Must not: invent a merchant from a note, or merge two rows into one expense.
 
 ## 4. Is anything here a duplicate?
+
+Columns read: `Date`, `Amount`. Archived rows are included.
 
 ```
 Find rows in the attached export that share both the same Date and the same Amount.
@@ -73,6 +82,8 @@ date and amount must both match.
 
 ## 5. How did spending per day look over the last 14 days?
 
+Columns read: `Date`, `Amount`. Archived rows are included.
+
 ```
 Using the attached export, show a daily total for each of the last 14 calendar days,
 including days with no rows as zero. State the first and last date covered and the
@@ -85,6 +96,8 @@ Answers: the shape of a fortnight, including the quiet days.
 Must not: drop empty days, or extend the range past the last row in the file.
 
 ## 6. Which notes mention the same shop, spelled differently?
+
+Columns read: `Note`, plus `Amount` for the totals. Archived rows are included.
 
 ```
 Search the Note column of the attached export for repeated place or merchant names,
