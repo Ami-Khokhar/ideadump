@@ -350,8 +350,8 @@ of sixteen times.
 - [ ] Measure advertised capture speed on real hardware for each route. Record start/finish
   definition, device/OS and warm/cold launch separately. **Missing:** hardware; do not present
   the welcome screen's "about 5 seconds" as measured. It restates the `≤5 s` goal in
-  `build-plan.md` and is not a measurement; the README no longer carries a speed claim, only
-  the two-or-three-taps premise.
+  `build-plan.md` and `investor-pitch.md` and is not a measurement; `README.md` carries no
+  speed claim, only the two-or-three-taps premise.
 - [ ] Profile realistic long-term data volume, fetch/query cost, animation work, widget memory
   and extension time limits. **Missing:** hardware and long-lived data.
 - [ ] Verify offline core usage and notification/purchase failure messages without network.
