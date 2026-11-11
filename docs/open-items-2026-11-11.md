@@ -116,15 +116,18 @@ still says nothing has been designed.
 
 ## P3 — Verification baseline
 
-- [ ] Run the suite on the reconciled `budget-trees-redesign` and record the count.
-      Origin has 512 `func test` declarations; the newest recorded execution count is
-      **423** (11 Oct, different tree). The two numbers are not comparable evidence.
+- [x] Run the suite on the reconciled `budget-trees-redesign` and record the count.
+      **Done 11 Nov 2026, 15:34–15:36 IST**: a clean worktree at
+      `origin/budget-trees-redesign` (`130801d`), regenerated with XcodeGen 2.46
+      (no project diff), and **512 tests executed, 0 failures, `** TEST SUCCEEDED **`**
+      on Xcode 27.2, simulator iPhone 17. Log: `/tmp/taplog-verify-tests.log`.
+      The count matches the 512 declared test functions on origin.
       ```sh
       xcodegen generate
       git status --porcelain -- TapLog.xcodeproj        # must be empty
       xcodebuild test -project TapLog.xcodeproj -scheme TapLog \
         -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
-        CODE_SIGNING_ALLOWED=NO
+        -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO
       ```
 - [ ] Re-run the four device-traced fixes from the closed queue — #63 widget totals,
       #65 share parsing, #64 Siri category, #60 splash-from-widget — once on hardware.
