@@ -68,7 +68,8 @@ Must not: invent a merchant from a note, or merge two rows into one expense.
 
 ## 4. Is anything here a duplicate?
 
-Columns read: `Date`, `Amount` to find the groups; every column of a matching row is echoed back. Archived rows are included.
+Columns read: `Date`, `Amount` to find the groups; every column of a matching row
+is echoed back. Archived rows are included.
 
 ```
 Find rows in the attached export that share both the same Date and the same Amount.

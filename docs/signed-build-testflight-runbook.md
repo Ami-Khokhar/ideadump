@@ -20,8 +20,7 @@ the unsigned Release bundle on 12 October 2026.
 | Product ID | `dev.amteshwar.taplog.pro.lifetime` (non-consumable) |
 | Marketing version | `1.0` |
 | Build | `1` (raise before every upload) |
-| Personal team in tree | `87VL9T9A8H` |
-| Paid team to archive with | `FKM4DL483M` |
+| Signing team in tree | `FKM4DL483M` (paid; the personal team `87VL9T9A8H` is no longer used) |
 
 ## 0. Preconditions
 
@@ -65,8 +64,10 @@ settings:
     CURRENT_PROJECT_VERSION: 2       # was 1; must increase for every upload
 ```
 
-Then `xcodegen generate`. The flip is deliberately not done in the repository yet: it
-changes which account signs local builds, and it cannot be verified from here.
+Then `xcodegen generate`. The paid team is already in `project.yml`; what remains is
+account work that cannot be done from here: registering the app and both extensions
+under that team with the App Group, signing in to the owning account, and inspecting
+the entitlements of a signed archive.
 
 Self-check before archiving:
 
