@@ -18,6 +18,18 @@ Live state at the time of this scan:
 | Tracked release gate list | `docs/release-runbook.md`, S1–S12 and L1–L8, **all unclosed** |
 | Untracked gate list | `docs/appstore-readiness-checklist.md`, "20 proven, 61 open" (12 Oct) |
 
+**Status 11 Nov, 15:55 IST.** The documents are captured in `bc15e57` on
+`docs/release-gate-evidence-2026-11-11`, the 14 dead worktrees are pruned, and the
+remaining work is tracked as issues:
+
+| Issue | Work |
+|---|---|
+| #92 | Reconcile the checkout with origin; archive and retire the superseded source |
+| #93 | Archive or land `chatgpt-plugin` |
+| #94 | Local test baseline on the merged head |
+| #95 | Delete merged branches and stale `pr/*` refs |
+| #96 | Owner inputs and App Store Connect gates |
+
 ---
 
 ## P0 — Stop the only copy of the release work from being lost
@@ -25,7 +37,9 @@ Live state at the time of this scan:
 The release review, its evidence, the submission checklist and the phone QA sheet
 exist **only as untracked files in this checkout**. No commit, no branch, no remote.
 
-- [ ] **Capture the untracked documentation.** 39 modified tracked files
+- [x] **Capture the untracked documentation.** Done in `bc15e57` on
+      `docs/release-gate-evidence-2026-11-11` (124 files, 7.3 MB). Original text:
+      39 modified tracked files
       (+2,290/−388) and 34 untracked paths, of which these have no other copy:
       - `docs/STATE.md`, `docs/plan-issue-queue-2026-11-09.md`
       - `docs/appstore-readiness-checklist.md`, `docs/appstore-code-review.md`,
@@ -88,7 +102,8 @@ still says nothing has been designed.
 
 ## P2 — Repo hygiene
 
-- [ ] Prune **14 prunable worktrees** (`git worktree prune`): `idg-issue79`,
+- [x] Prune **14 prunable worktrees** (`git worktree prune`): done 11 Nov 15:47 IST,
+      3 worktrees remain. Original list: `idg-issue79`,
       `idg-issue84`, `idg-pr77`, `taplog-release-fixes`, `idg-pr67`–`idg-pr76`, `idg-scratch`.
       Two live worktrees stay: `ideadump-worktrees/chatgpt-plugin` and `/review-fixes`.
 - [ ] Delete merged local branches: `codex/issue-58` … `codex/issue-66`,

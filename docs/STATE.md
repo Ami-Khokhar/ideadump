@@ -2,6 +2,12 @@
 
 Started: 2026-11-07. Updated: 2026-11-09 IST.
 
+> **Superseded 2026-11-11** by `docs/open-items-2026-11-11.md`. Three facts
+> below are no longer true: the open queue is 1 issue (#79) and 0 pull
+> requests; the `pr-gatekeeper` credential works again (success 9 Nov 2026
+> 17:08 UTC on PR #90); and this checkout is 51 commits behind
+> `origin/budget-trees-redesign`. Kept as the record of the 7–9 November queue.
+
 > 2026-11-09: current plan is `docs/plan-issue-queue-2026-11-09.md`. Blocker
 > refined — local keychain token `pr-gatekeeper-read-token` still reads the
 > private gate repo, so the GitHub secret is stale, not revoked. One command

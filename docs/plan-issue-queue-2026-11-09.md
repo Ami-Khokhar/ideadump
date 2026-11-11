@@ -3,6 +3,10 @@
 Inventory verified 2026-11-09 02:15 IST with `gh` as Ami-Khokhar. Supersedes the
 progress section of docs/STATE.md (2026-11-07); the blocker changed.
 
+> **Superseded 2026-11-11** by `docs/open-items-2026-11-11.md`. The queue this
+> plan closes is closed: 1 open issue (#79), 0 open pull requests, and the gate
+> ran green again on 9 Nov 2026. The remaining open work is the App Store gate.
+
 ## Where things actually stand
 
 | Fact | Value | How checked |
