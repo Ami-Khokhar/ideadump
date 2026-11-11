@@ -22,14 +22,15 @@ and does not repeat the older checklist's legal/tax conclusions as verified fact
 - **Order of work**, once the owner inputs below arrive:
   1. Support email + two HTTPS URLs, then publish and check the pages on a phone
      (runbook step 0, checklist "Release blockers first").
-  2. Flip `DEVELOPMENT_TEAM` to the paid team and raise `CURRENT_PROJECT_VERSION`, then run
-     [signed-build-testflight-runbook.md](signed-build-testflight-runbook.md) steps 2–6.
+  2. The paid team is already in `project.yml`; raise `CURRENT_PROJECT_VERSION`, then run
+     [signed-build-testflight-runbook.md](signed-build-testflight-runbook.md) steps 2–8.
   3. Install the processed build and work through
      [physical-device-qa-sheet.md](physical-device-qa-sheet.md).
   4. Finish App Store Connect (product, agreements, tax/banking, age rating, screenshots,
      review contact) and submit with explicit authorization.
-- **Only the owner can supply:** support email, hosting URLs, review contact, the signing
-  team flip, the keyword decision (`siri` under guideline 2.3.7), the Pro price and launch
+- **Only the owner can supply:** support email, hosting URLs, review contact, provisioning
+  and signing under the paid team already in `project.yml`, the keyword decision (`siri`
+  under guideline 2.3.7), the Pro price and launch
   countries, and the paid-account/tax conclusions.
 - **Only Apple's servers can prove:** App Store Connect records, agreements, product load
   from the real store, archive validation, TestFlight processing and sandbox purchase.
@@ -54,12 +55,14 @@ and does not repeat the older checklist's legal/tax conclusions as verified fact
   - **Missing:** the real support email and two HTTPS hosting URLs. Add them, then check
     mobile rendering, that no login is required, and that the contact route works. Hosting
     outside the repo is unknown.
-- [ ] **Current configuration:** switch the source-of-truth signing team from the personal
-  team to the intended paid Developer Program team.
-  - **Proven 12 Oct:** `project.yml` currently sets `DEVELOPMENT_TEAM: 87VL9T9A8H` (personal)
-    while the committed project was generated with `FKM4DL483M`; the exact edit and archive
-    commands are in [signed-build-testflight-runbook.md](signed-build-testflight-runbook.md).
-  - **Missing:** the flip itself, provisioning of the app and both extensions with the same
+- [ ] **Current configuration:** sign with the paid team already in the tree, then inspect
+  a signed archive.
+  - **Proven 12 Oct:** `project.yml` then set `DEVELOPMENT_TEAM: 87VL9T9A8H` (personal)
+    while the committed project was generated with `FKM4DL483M`; the archive commands are
+    in [signed-build-testflight-runbook.md](signed-build-testflight-runbook.md). The team
+    has since been flipped: `project.yml:12` and the generated project now both read
+    `FKM4DL483M`.
+  - **Missing:** provisioning of the app and both extensions with the same
     registered App Group in the paid team, and inspection of the signed archive's
     entitlements. Changing accounts is outside this pass's authority.
 - [x] **Fixed and tested:** original P1 code findings addressed with production regressions.
