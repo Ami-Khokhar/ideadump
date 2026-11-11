@@ -24,8 +24,7 @@ and does not repeat the older checklist's legal/tax conclusions as verified fact
   1. Support email + two HTTPS URLs, then publish and check the pages on a phone
      (runbook step 0, checklist "Release blockers first").
   2. The paid team is already in `project.yml`; raise `CURRENT_PROJECT_VERSION`, then run
-     [signed-build-testflight-runbook.md](signed-build-testflight-runbook.md) steps 1–8
-     (regenerate, verify, provision, archive).
+     [signed-build-testflight-runbook.md](signed-build-testflight-runbook.md) steps 1–8.
   3. Install the processed build and work through
      [physical-device-qa-sheet.md](physical-device-qa-sheet.md).
   4. Finish App Store Connect (product, agreements, tax/banking, age rating, screenshots,
@@ -49,7 +48,7 @@ and does not repeat the older checklist's legal/tax conclusions as verified fact
   `Sources/TapLog/Settings/PrivacyPolicyView.swift` and the Settings row is present in the
   12 October Settings capture (`docs/review-evidence/readiness-12oct/max-settings-light.png`). The public metadata policy URL remains pending.
 - [ ] **Missing from listing:** final hosted support and privacy URLs. Local HTML exists but
-  metadata still says Unresolved and both pages still contain `SUPPORT_EMAIL`.
+  metadata marks both URLs *Needed* and both pages still contain `SUPPORT_EMAIL`.
   - **Proven 12 Oct:** policy wording checked against the app's actual behavior
     (`docs/review-evidence/readiness-12oct/`); restore and export instructions and the
     Action Button steps are accurate against the registered shortcuts; the support page now
@@ -364,7 +363,7 @@ of sixteen times.
 
 - [x] Draft metadata, privacy/support HTML and screenshot PNGs exist. Presence is not
   approval/readiness evidence. Re-confirmed 12 Oct.
-- [ ] Replace Unresolved URLs and review draft claims against actual Release behavior.
+- [ ] Replace the *Needed* URLs and review draft claims against actual Release behavior.
   - **Proven 12 Oct:** every functional claim in `appstore/metadata.md` was checked against
     source (3 free budgets, free weekly recap, free CSV export, widget one-tap save, share
     sheet, Siri phrases, Action Button, no account/server). Lengths re-counted and match the
