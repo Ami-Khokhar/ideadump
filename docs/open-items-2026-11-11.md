@@ -34,7 +34,7 @@ Live state, 11 November 2026:
 - [ ] S1–S2 of `docs/release-runbook.md`: a signed Release build of the app and both
       extensions with the archive entitlements inspected; Xcode 26 / iOS 26 SDK
       minimum.
-- [ ] `docs/signed-build-testflight-runbook.md` steps 2–6: archive, validate, upload,
+- [ ] `docs/signed-build-testflight-runbook.md` steps 2–8: archive, validate, upload,
       resolve processing warnings, install the processed build through TestFlight.
       Raise `CURRENT_PROJECT_VERSION` on every upload.
 - [ ] App Store Connect: app record, product `dev.amteshwar.taplog.pro.lifetime`,
@@ -62,8 +62,9 @@ Live state, 11 November 2026:
 - [ ] Decide whether agent tooling belongs in the repo: `.agents/`, `agent/`,
       `.claude/` and `skills-lock.json` are untracked and unignored.
 - [ ] One Release build for generic iOS on the reconciled branch, to confirm no
-      warnings regressed. Last evidence is 11 Oct, in
-      `docs/review-evidence/final-release.log`.
+      warnings regressed. The newest recorded Release build is 12 Oct
+      (`docs/review-evidence/readiness-12oct/final-release.log`, zero warnings);
+      rebuild the reconciled revision.
 
 ## Order of work
 
@@ -73,6 +74,7 @@ Live state, 11 November 2026:
 3. The phone pass, which produces the only evidence that matters for submission.
 4. Repo hygiene, which fits alongside any of the above and blocks nothing.
 
-Nothing in this file can be closed by an agent. `docs/release-runbook.md` states it
+Apart from the Release build above, nothing in this file can be closed by an agent: the
+rest needs the owner, an adviser, an account or a device. `docs/release-runbook.md` states it
 plainly: no gate in that list has been closed, and a row with no artifact is not
 tested.

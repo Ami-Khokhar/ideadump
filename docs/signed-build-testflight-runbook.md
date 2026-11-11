@@ -35,6 +35,9 @@ the unsigned Release bundle on 12 October 2026.
 
 ## 1. Freeze and verify the revision (verified 12 October 2026)
 
+Raise `CURRENT_PROJECT_VERSION` in `project.yml` first: the revision you verify must be
+the one you archive, and every upload needs a higher number than the last.
+
 ```sh
 cd "/Users/amteshwar/FlowyProjects/ideadump"
 git status --short                 # expect only intended edits
@@ -53,21 +56,15 @@ xcodebuild -project TapLog.xcodeproj -scheme TapLog -configuration Release \
 Commit the exact revision that passed, and record its hash. Everything below builds from
 that revision.
 
-## 2. Switch to the paid team and raise the build number (owner action)
+## 2. Provision the paid team (owner action)
 
-Two edits in `project.yml`:
-
-```yaml
-settings:
-  base:
-    DEVELOPMENT_TEAM: FKM4DL483M     # was 87VL9T9A8H (personal team)
-    CURRENT_PROJECT_VERSION: 2       # was 1; must increase for every upload
-```
-
-Then `xcodegen generate`. The paid team is already in `project.yml`; what remains is
-account work that cannot be done from here: registering the app and both extensions
-under that team with the App Group, signing in to the owning account, and inspecting
+The paid team `FKM4DL483M` is already in `project.yml`; no team edit is left to make.
+What remains is account work that cannot be done from here: register the app and both
+extensions under that team with the App Group, sign in to the owning account, and inspect
 the entitlements of a signed archive.
+
+If `CURRENT_PROJECT_VERSION` has to rise again before an upload, change it, run
+`xcodegen generate`, and repeat step 1 so the archive still matches a verified commit.
 
 Self-check before archiving:
 
