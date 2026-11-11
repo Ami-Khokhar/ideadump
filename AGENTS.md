@@ -3,6 +3,15 @@
 Reduce common LLM coding mistakes. Merge with project-specific instructions as
 needed; project instructions take precedence where they are more specific.
 
+## Product Principle
+
+TapLog exists because logging an expense should take two or three taps. Good, important
+things should be simple to use, so friction in a capture path is a defect, not a
+trade-off. Judge a UX change by what it costs in taps before judging what it adds: a new
+required field, confirmation or screen must prevent a real class of error and must give
+back or automate another step. The premise and its consequences are recorded in
+`docs/decisions.md`.
+
 ## Core Principles
 
 ### 1. Think Before Coding
