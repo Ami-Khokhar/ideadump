@@ -18,7 +18,9 @@ Scope: branch `release/readiness-fixes` in `/private/tmp/taplog-release-fixes`, 
 | R6 category usage | Successful category edits move usage with the same save. Failed forward/undo saves restore exact counter snapshots. Undo preserves later logs. Pending confirmation uses its original date. | Counter, rollback and date regressions. |
 | R7 paywall | Loading/unavailable/retry/pending/unverified states, no false charge guarantee, no overlapping purchase/restore operations and stale notice cleanup after verified entitlement. | Production state/operation tests and native loading/unavailable UI. |
 
-An offline Privacy Policy screen is reachable from Settings. RecapNotifier's actor-isolation warning is fixed. Release documentation now distinguishes measured behavior from goals and keeps contacts/URLs unresolved. No signing team, account agreement, pricing account, deployment, upload or purchase was changed.
+An offline Privacy Policy screen is reachable from Settings. RecapNotifier's actor-isolation warning is fixed. Release documentation now distinguishes measured behavior from goals and keeps contacts/URLs unresolved. No signing team, account agreement, pricing account, deployment, upload or purchase was changed in that pass.
+
+_Corrected 11 November 2026: the signing team is now `FKM4DL483M` in `project.yml`; the October evidence above is unchanged._
 
 ## Verification
 
